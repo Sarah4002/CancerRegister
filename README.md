@@ -98,6 +98,26 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
+#### Configuration des clés API
+
+Après avoir copié `.env.example` vers `.env`, configurez les clés API suivantes :
+
+```bash
+# Clé API Groq pour la reconnaissance vocale (obligatoire pour la saisie vocale)
+GROQ_API_KEY=votre_cle_api_groq_ici
+
+# Autres variables d'environnement (optionnelles)
+# Voir backend/.env.example pour tous les paramètres disponibles
+```
+
+**Obtenir une clé Groq API :**
+1. Allez sur [https://console.groq.com/](https://console.groq.com/)
+2. Créez un compte gratuit
+3. Générez une clé API
+4. Copiez-la dans votre fichier `.env`
+
+**⚠️ Sécurité :** Le fichier `.env` est ignoré par Git. Ne commitez jamais de vraies clés API.
+
 #### Frontend
 
 ```bash

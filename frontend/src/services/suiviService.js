@@ -24,14 +24,16 @@ export const suiviService = {
     evolutionPatient: (pid)    => api.get('/suivi/qualite-vie/evolution_patient/', { params: { patient_id: pid } }),
   },
 
-  // Événements cliniques
-  evenements: {
-    list:       (params) => api.get('/suivi/evenements/', { params }),
-    get:        (id)     => api.get(`/suivi/evenements/${id}/`),
-    create:     (data)   => api.post('/suivi/evenements/', data),
-    update:     (id, d)  => api.put(`/suivi/evenements/${id}/`, d),
-    delete:     (id)     => api.delete(`/suivi/evenements/${id}/`),
-    nonResolus: ()       => api.get('/suivi/evenements/non_resolus/'),
-    stats:      ()       => api.get('/suivi/evenements/stats/'),
+
+  // Effets indésirables
+  effets: {
+    list:        (params) => api.get('/suivi/effets-indesirables/', { params }),
+    get:         (id)     => api.get(`/suivi/effets-indesirables/${id}/`),
+    create:      (data)   => api.post('/suivi/effets-indesirables/', data),
+    update:      (id, d)  => api.put(`/suivi/effets-indesirables/${id}/`, d),
+    patch:       (id, d)  => api.patch(`/suivi/effets-indesirables/${id}/`, d),
+    delete:      (id)     => api.delete(`/suivi/effets-indesirables/${id}/`),
+    parPatient:  (pid)    => api.get('/suivi/effets-indesirables/', { params: { patient: pid } }),
+    nonResolus:  ()       => api.get('/suivi/effets-indesirables/', { params: { resolu: false } }),
   },
 };

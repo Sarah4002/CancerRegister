@@ -11,20 +11,21 @@ from .serializers import (
     DiagnosticCreateSerializer, TopographieSerializer, MorphologieSerializer
 )
 from apps.accounts.models import AccessLog
+from apps.accounts.permissions import CanReadOrWriteDiagnostic, can_write_diagnostic
 
 
 class TopographieViewSet(viewsets.ReadOnlyModelViewSet):
-    """Référentiel ICD-O-3 Topographies — lecture seule."""
+    """Referentiel ICD-O-3 Topographies — lecture seule."""
     serializer_class   = TopographieSerializer
     permission_classes = [IsAuthenticated]
     filter_backends    = [filters.SearchFilter]
     search_fields      = ['code', 'libelle', 'categorie']
     queryset           = TopographieICD.objects.filter(est_actif=True)
-    pagination_class   = None  # Pas de pagination pour les référentiels
+    pagination_class   = None
 
 
 class MorphologieViewSet(viewsets.ReadOnlyModelViewSet):
-    """Référentiel ICD-O-3 Morphologies — lecture seule."""
+    """Referentiel ICD-O-3 Morphologies — lecture seule."""
     serializer_class   = MorphologieSerializer
     permission_classes = [IsAuthenticated]
     filter_backends    = [filters.SearchFilter, DjangoFilterBackend]
@@ -35,7 +36,11 @@ class MorphologieViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class DiagnosticViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    # CanReadOrWriteDiagnostic gere automatiquement :
+    #   - SAFE_METHODS => can_read_diagnostic (oncologue + anapath + admin)
+    #   - autres       => can_write_diagnostic (oncologue + anapath + admin)
+    #   - epidemio     => acces REFUSE (meme en lecture)
+    permission_classes = [IsAuthenticated, CanReadOrWriteDiagnostic]
     filter_backends    = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields   = ['patient', 'stade_ajcc', 'lateralite', 'est_principal', 'tnm_type']
     search_fields      = ['topographie_code', 'topographie_libelle',
@@ -48,7 +53,6 @@ class DiagnosticViewSet(viewsets.ModelViewSet):
         qs = Diagnostic.objects.select_related(
             'patient', 'topographie', 'morphologie', 'cree_par'
         )
-        # Filtre par patient via query param
         patient_id = self.request.query_params.get('patient_id')
         if patient_id:
             qs = qs.filter(patient_id=patient_id)
@@ -62,6 +66,9 @@ class DiagnosticViewSet(viewsets.ModelViewSet):
         return DiagnosticDetailSerializer
 
     def perform_create(self, serializer):
+        if not can_write_diagnostic(self.request.user):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Saisie de diagnostics réservée aux oncologues et anatomopathologistes.")
         diag = serializer.save(cree_par=self.request.user)
         AccessLog.objects.create(
             user=self.request.user,
@@ -71,9 +78,14 @@ class DiagnosticViewSet(viewsets.ModelViewSet):
             ip_address=self.request.META.get('REMOTE_ADDR'),
         )
 
+    def perform_update(self, serializer):
+        if not can_write_diagnostic(self.request.user):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Modification de diagnostics réservée aux oncologues et anatomopathologistes.")
+        serializer.save()
+
     @action(detail=False, methods=['get'])
     def stats(self, request):
-        """Statistiques pour le dashboard."""
         qs = Diagnostic.objects.all()
         return Response({
             'total': qs.count(),
@@ -96,7 +108,6 @@ class DiagnosticViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def par_patient(self, request):
-        """Tous les diagnostics d'un patient."""
         patient_id = request.query_params.get('patient_id')
         if not patient_id:
             return Response({'error': 'patient_id requis'}, status=400)

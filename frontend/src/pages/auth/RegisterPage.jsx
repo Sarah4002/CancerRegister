@@ -18,11 +18,11 @@ const WILAYAS = [
   'In Salah','In Guezzam','Touggourt','Djanet',"El M'Ghair",'El Meniaa',
 ];
 
+// ── RÔLES MIS À JOUR ─────────────────────────────────────────
 const ROLES = [
-  { value: 'doctor',         label: 'Médecin Oncologue',  icon: '🩺' },
-  { value: 'registrar',      label: 'Enregistreur',        icon: '📋' },
-  { value: 'epidemiologist', label: 'Épidémiologiste',      icon: '📊' },
-  { value: 'analyst',        label: 'Analyste de données', icon: '🔬' },
+  { value: 'doctor',         label: 'Médecin Oncologue',           icon: '🩺' },
+  { value: 'anapath',        label: 'Médecin Anatomopathologiste', icon: '🔬' },
+  { value: 'epidemiologist', label: 'Épidémiologiste',             icon: '📊' },
 ];
 
 const SPECIALITIES = [
@@ -62,11 +62,6 @@ const step3Schema = z.object({
 });
 
 const STEP_LABELS = ['Identité', 'Sécurité', 'Profil professionnel'];
-
-// ─────────────────────────────────────────────────────────────────
-// Each step is its own component with its own useForm instance.
-// mode: 'onSubmit' → no validation on typing, only on click.
-// ─────────────────────────────────────────────────────────────────
 
 function Step1({ onNext, saved }) {
   const { register, handleSubmit, formState: { errors } } = useForm({
@@ -140,35 +135,52 @@ function Step3({ onNext, onBack, saved, isLoading }) {
   });
   const selectedRole = watch('role') || '';
 
+  // Couleurs par rôle
+  const ROLE_COLORS = {
+    doctor:         { active: 'rgba(0,168,255,0.12)',   border: 'rgba(0,168,255,0.35)',   text: '#00a8ff' },
+    anapath:        { active: 'rgba(155,138,251,0.12)', border: 'rgba(155,138,251,0.35)', text: '#9b8afb' },
+    epidemiologist: { active: 'rgba(0,229,160,0.12)',   border: 'rgba(0,229,160,0.35)',   text: '#00e5a0' },
+  };
+
   return (
     <form onSubmit={handleSubmit(onNext)}>
       <SectionTitle>Profil professionnel</SectionTitle>
 
-      {/* Role selector */}
+      {/* Role selector — 3 cartes sur une ligne */}
       <div style={{ marginBottom: 20 }}>
         <label style={labelStyle}>Rôle *</label>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          {ROLES.map(r => (
-            <label key={r.value} style={{
-              display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-              background: selectedRole === r.value ? 'var(--accent-dim)' : 'var(--bg-elevated)',
-              border: `1px solid ${selectedRole === r.value ? 'rgba(0,168,255,0.3)' : 'var(--border)'}`,
-              borderRadius: 'var(--radius-md)', cursor: 'pointer', transition: 'all 0.15s',
-            }}>
-              <input type="radio" value={r.value} {...register('role')}
-                onChange={() => setValue('role', r.value, { shouldValidate: false })}
-                style={{ display: 'none' }} />
-              <span style={{ fontSize: 18 }}>{r.icon}</span>
-              <span style={{ fontSize: 12, fontWeight: 500, color: selectedRole === r.value ? 'var(--accent)' : 'var(--text-secondary)' }}>
-                {r.label}
-              </span>
-            </label>
-          ))}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          {ROLES.map(r => {
+            const isSelected = selectedRole === r.value;
+            const colors     = ROLE_COLORS[r.value];
+            return (
+              <label key={r.value} style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                gap: 6, padding: '12px 8px',
+                background: isSelected ? colors.active : 'var(--bg-elevated)',
+                border: `1px solid ${isSelected ? colors.border : 'var(--border)'}`,
+                borderRadius: 'var(--radius-md)',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                textAlign: 'center',
+              }}>
+                <input type="radio" value={r.value} {...register('role')}
+                  onChange={() => setValue('role', r.value, { shouldValidate: false })}
+                  style={{ display: 'none' }} />
+                <span style={{ fontSize: 22 }}>{r.icon}</span>
+                <span style={{
+                  fontSize: 11, fontWeight: 600, lineHeight: 1.3,
+                  color: isSelected ? colors.text : 'var(--text-secondary)',
+                }}>
+                  {r.label}
+                </span>
+              </label>
+            );
+          })}
         </div>
         {errors.role && <ErrMsg msg={errors.role.message} />}
       </div>
 
-      {/* Speciality */}
       <SelectField label="Spécialité" name="speciality" register={register} error={errors.speciality?.message}>
         <option value="">Sélectionner une spécialité</option>
         {SPECIALITIES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -179,7 +191,6 @@ function Step3({ onNext, onBack, saved, isLoading }) {
       <InputField label="Établissement / Hôpital *" type="text" placeholder="CHU Oran"
         error={errors.institution?.message} {...register('institution')} />
 
-      {/* Wilaya */}
       <SelectField label="Wilaya *" name="wilaya" register={register} error={errors.wilaya?.message}>
         <option value="">Sélectionner une wilaya</option>
         {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
@@ -193,9 +204,6 @@ function Step3({ onNext, onBack, saved, isLoading }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-// ROOT COMPONENT
-// ─────────────────────────────────────────────────────────────────
 export default function RegisterPage() {
   const { register: registerUser, isLoading } = useAuthStore();
   const [step,    setStep]    = useState(0);
@@ -209,7 +217,6 @@ export default function RegisterPage() {
     if (stepIndex < 2) { setStep(stepIndex + 1); return; }
 
     const allData = Object.assign({}, ...updated);
-    // Remove password_confirm from destructuring - keep it in submitData
     const result = await registerUser(allData);
     if (result.success) {
       setSuccess(true);
@@ -229,7 +236,6 @@ export default function RegisterPage() {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '40px 24px', position: 'relative', overflow: 'hidden',
     }}>
-      {/* BG grid */}
       <div style={{
         position: 'absolute', inset: 0, pointerEvents: 'none',
         backgroundImage: `linear-gradient(rgba(0,168,255,0.025) 1px, transparent 1px),
@@ -243,7 +249,6 @@ export default function RegisterPage() {
       }} />
 
       <div style={{ width: '100%', maxWidth: 540, position: 'relative', animation: 'fadeUp 0.5s ease' }}>
-        {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <Link to="/login" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
             <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #00a8ff, #00e5c0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -324,6 +329,7 @@ function SelectField({ label, name, register, error, children }) {
         border: `1px solid ${error ? 'var(--danger)' : 'var(--border-light)'}`,
         borderRadius: 'var(--radius-md)',
         color: 'var(--text-primary)', fontSize: 14, outline: 'none', cursor: 'pointer',
+        fontFamily: 'var(--font-body)',
       }}>
         {children}
       </select>
@@ -365,7 +371,7 @@ function NavBtns({ onBack, isLast, isLoading }) {
         flex: '0 0 100px', padding: '13px',
         background: 'var(--bg-elevated)', border: '1px solid var(--border)',
         borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)',
-        fontSize: 14, cursor: 'pointer',
+        fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-body)',
       }}>
         ← Retour
       </button>

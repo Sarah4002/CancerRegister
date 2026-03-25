@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import { diagnosticService } from '../../services/diagnosticService';
 import { patientService } from '../../services/patientService';
 import { AppLayout } from '../../components/layout/Sidebar';
+import useCustomFields from '../../hooks/useCustomFields';
+import CustomFieldsSection from '../../components/custom_fields/CustomFieldsSection';
 
 // ── ICD Autocomplete ──────────────────────────────────────────────
 function ICDSearch({ label, onSelect, selectedCode, selectedLabel, searchFn, placeholder, accentColor = '#00a8ff' }) {
@@ -153,6 +155,15 @@ export default function NewDiagnosticPage() {
     }
   });
 
+  // ── Champs personnalisés ────────────────────────────────────────
+  const {
+    champs:    champsCustom,
+    valeurs:   valeursCustom,
+    setValeur,
+    sauvegarder: sauvegarderCustom,
+    loading:   loadingCustom,
+  } = useCustomFields({ module: 'diagnostic', objectId: null });
+
   useEffect(() => {
     patientService.list({ page_size: 100 }).then(({ data }) => {
       setPatients(data.results || data);
@@ -172,6 +183,12 @@ export default function NewDiagnosticPage() {
       Object.keys(payload).forEach(k => { if (payload[k] === '') delete payload[k]; });
 
       const { data: diag } = await diagnosticService.create(payload);
+      
+      // Sauvegarder les champs personnalisés après création
+      if (Object.keys(valeursCustom).length > 0) {
+        await sauvegarderCustom(diag.id);
+      }
+      
       toast.success('Diagnostic enregistré avec succès !');
       navigate(`/diagnostics/${diag.id}`);
     } catch (err) {
@@ -352,6 +369,15 @@ export default function NewDiagnosticPage() {
                   style={{ ...inputSt, resize: 'vertical', lineHeight: 1.6 }} />
               </Field>
             </Section>
+
+            {/* ✅ CHAMPS PERSONNALISÉS */}
+            <CustomFieldsSection
+              module="diagnostic"
+              champs={champsCustom}
+              valeurs={valeursCustom}
+              onChange={setValeur}
+              loading={loadingCustom}
+            />
 
             {/* Buttons */}
             <div style={{ display: 'flex', gap: 10, marginTop: 8, paddingTop: 20, borderTop: '1px solid var(--border)' }}>

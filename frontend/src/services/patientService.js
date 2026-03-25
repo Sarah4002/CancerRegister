@@ -14,6 +14,10 @@ export const patientService = {
   update: (id, data) => api.put(`/patients/${id}/`, data),
   patch: (id, data) => api.patch(`/patients/${id}/`, data),
 
+  // Dossier Médical
+  getDossier: (id) => api.get(`/patients/${id}/dossier/`),
+  updateDossier: (id, data) => api.patch(`/patients/${id}/dossier/`, data),
+
   // Suppression (soft delete)
   delete: (id) => api.delete(`/patients/${id}/`),
 

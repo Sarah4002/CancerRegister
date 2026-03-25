@@ -2,17 +2,33 @@
 Django settings for Cancer Registry project.
 Registre National du Cancer - Algérie
 """
-import os
+
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
+import os
 
+# ─────────────────────────────────────────────
+# Base
+# ─────────────────────────────────────────────
 BASE_DIR = Path(__file__).resolve().parent.parent
+GROQ_API_KEY = config('GROQ_API_KEY', default=None)
 
+# ─────────────────────────────────────────────
+# Security
+# ─────────────────────────────────────────────
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production-2024')
 DEBUG = config('DEBUG', default=True, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'devona-copasetic-chieko.ngrok-free.dev',
+]
+
+# ─────────────────────────────────────────────
+# Applications
+# ─────────────────────────────────────────────
 DJANGO_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -38,10 +54,20 @@ LOCAL_APPS = [
     'apps.treatments',
     'apps.registry',
     'apps.suivi',
+    'apps.stats',
+    'apps.rcp',
+    'apps.voice', 
+    'apps.custom_fields',
+    'apps.sig',
+    'apps.exports',
+    'apps.examens',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
+# ─────────────────────────────────────────────
+# Middleware
+# ─────────────────────────────────────────────
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -54,7 +80,11 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'config.urls'
+WSGI_APPLICATION = 'config.wsgi.application'
 
+# ─────────────────────────────────────────────
+# Templates
+# ─────────────────────────────────────────────
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -71,9 +101,9 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
-
-# Database - PostgreSQL
+# ─────────────────────────────────────────────
+# Database (PostgreSQL)
+# ─────────────────────────────────────────────
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -85,10 +115,14 @@ DATABASES = {
     }
 }
 
-# Custom User Model
+# ─────────────────────────────────────────────
+# Custom User
+# ─────────────────────────────────────────────
 AUTH_USER_MODEL = 'accounts.User'
 
+# ─────────────────────────────────────────────
 # Password validation
+# ─────────────────────────────────────────────
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -96,37 +130,48 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+# ─────────────────────────────────────────────
+# Internationalization
+# ─────────────────────────────────────────────
 LANGUAGE_CODE = 'fr-fr'
 TIME_ZONE = 'Africa/Algiers'
 USE_I18N = True
 USE_TZ = True
 
+# ─────────────────────────────────────────────
+# Static & Media
+# ─────────────────────────────────────────────
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# REST Framework
+# ─────────────────────────────────────────────
+# Django REST Framework
+# ─────────────────────────────────────────────
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    'DEFAULT_PERMISSION_CLASSES': [
+    'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
-    ],
+    ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_FILTER_BACKENDS': [
+    'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
-    ],
+    ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
 }
 
-# JWT Configuration
+# ─────────────────────────────────────────────
+# JWT
+# ─────────────────────────────────────────────
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=8),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -136,17 +181,42 @@ SIMPLE_JWT = {
     'TOKEN_OBTAIN_SERIALIZER': 'apps.accounts.serializers.CustomTokenObtainPairSerializer',
 }
 
+# ─────────────────────────────────────────────
 # CORS
-CORS_ALLOWED_ORIGINS = config(
-    'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://localhost:5173'
-).split(',')
+# ─────────────────────────────────────────────
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "https://patientlifestyleform.vercel.app",
+    " https://devona-copasetic-chieko.ngrok-free.dev",
+]
+
 CORS_ALLOW_CREDENTIALS = True
 
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'ngrok-skip-browser-warning',
+]
+
+# ─────────────────────────────────────────────
+# Mobile App URL (QR Code generation)
+# ─────────────────────────────────────────────
+MOBILE_APP_BASE_URL = 'https://patientlifestyleform.vercel.app/patient'
+
+# ─────────────────────────────────────────────
 # API Documentation
+# ─────────────────────────────────────────────
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Cancer Registry API - Registre National du Cancer',
-    'DESCRIPTION': 'API pour le Registre National du Cancer d\'Algérie',
+    'DESCRIPTION': "API pour le Registre National du Cancer d'Algérie",
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }

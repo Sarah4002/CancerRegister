@@ -3,6 +3,15 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 
+from apps.accounts.permissions import (
+    can_read_patient,    can_write_patient,
+    can_read_diagnostic, can_write_diagnostic,
+    can_read_treatment,  can_write_treatment,
+    can_view_statistics, can_export,
+    can_view_map,        can_manage_users,
+    can_view_rcp,
+)
+
 User = get_user_model()
 
 
@@ -31,12 +40,20 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'wilaya':       user.wilaya,
             'speciality':   user.speciality,
             'avatar':       user.avatar.url if user.avatar else None,
+            # Permissions granulaires calculées dynamiquement selon le rôle
+            # (pas les flags statiques du modèle)
             'permissions': {
-                'can_view_patients':   user.can_view_patients,
-                'can_edit_patients':   user.can_edit_patients,
-                'can_export_data':     user.can_export_data,
-                'can_manage_users':    user.can_manage_users,
-                'can_view_statistics': user.can_view_statistics,
+                'can_read_patient':     can_read_patient(user),
+                'can_write_patient':    can_write_patient(user),
+                'can_read_diagnostic':  can_read_diagnostic(user),
+                'can_write_diagnostic': can_write_diagnostic(user),
+                'can_read_treatment':   can_read_treatment(user),
+                'can_write_treatment':  can_write_treatment(user),
+                'can_view_statistics':  can_view_statistics(user),
+                'can_export':           can_export(user),
+                'can_view_map':         can_view_map(user),
+                'can_manage_users':     can_manage_users(user),
+                'can_view_rcp':         can_view_rcp(user),
             }
         }
         return data
@@ -46,7 +63,7 @@ class UserSummarySerializer(serializers.ModelSerializer):
     """Minimal user info for nested representations."""
     display_name = serializers.CharField(source='get_display_name', read_only=True)
     role_display = serializers.CharField(source='get_role_display', read_only=True)
-    
+
     class Meta:
         model = User
         fields = ['id', 'email', 'username', 'display_name', 'role', 'role_display', 'institution']
@@ -77,7 +94,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
-        # New users are inactive until admin approves
         user.is_active = False
         user.save()
         return user
@@ -108,8 +124,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class ChangePasswordSerializer(serializers.Serializer):
-    old_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True, validators=[validate_password])
+    old_password     = serializers.CharField(required=True)
+    new_password     = serializers.CharField(required=True, validators=[validate_password])
     confirm_password = serializers.CharField(required=True)
 
     def validate(self, attrs):

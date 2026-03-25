@@ -17,6 +17,31 @@ const STATUT_COLORS = {
 };
 const PS_COLORS = ['#00e5a0','#4ade80','#f5a623','#ff7832','#ff4d6a'];
 
+const TABAC_LABELS = { non:'Non-fumeur', ex:'Ex-fumeur', actif:'Fumeur actif', inconnu:'Inconnu' };
+const ALCOOL_LABELS = { non:'Non', oui:'Oui', inconnu:'Inconnu' };
+const ACTIVITE_LABELS = { sedentaire:'Sédentaire', leger:'Légère', modere:'Modérée', intense:'Intense', inconnu:'Inconnu' };
+
+
+const STATUT_VITAL_LABELS = {
+  vivant: 'Vivant', decede: 'Décédé', perdu_de_vue: 'Perdu de vue', inconnu: 'Inconnu'
+};
+function StatutVitalChip({ statut }) {
+  if (!statut) return null;
+  const isDeces = statut === 'decede';
+  const color   = isDeces ? '#6b7280' : '#00e5a0';
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+      <div>
+        <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:1 }}>Statut vital</div>
+        <span style={{ padding:'2px 10px', borderRadius:6, fontSize:12, fontWeight:600,
+          background:`${color}18`, color, border:`1px solid ${color}30` }}>
+          {STATUT_VITAL_LABELS[statut] || statut}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function ConsultationDetailPage() {
   const { id }    = useParams();
   const navigate  = useNavigate();
@@ -48,7 +73,7 @@ export default function ConsultationDetailPage() {
       {/* Header */}
       <div style={{ background:'var(--bg-card)', border:'1px solid rgba(155,138,251,0.2)', borderRadius:'var(--radius-lg)', padding:'20px 24px', marginBottom:20, display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:14 }}>
         <div style={{ display:'flex', gap:14, alignItems:'flex-start' }}>
-          <div style={{ width:46, height:46, borderRadius:12, background:'rgba(155,138,251,0.15)', border:'1px solid rgba(155,138,251,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>📋</div>
+          <div style={{ width:46, height:46, borderRadius:12, background:'rgba(155,138,251,0.15)', border:'1px solid rgba(155,138,251,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, color:'#9b8afb', fontWeight:700 }}>CS</div>
           <div>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
               <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'var(--text-primary)' }}>
@@ -58,27 +83,28 @@ export default function ConsultationDetailPage() {
               {ec && <span style={{ padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:500, background:`${ec.color}18`, color:ec.color, border:`1px solid ${ec.color}30` }}>{ec.label}</span>}
             </div>
             <div style={{ display:'flex', gap:14, flexWrap:'wrap' }}>
-              <Chip  val={data.patient_nom} sub={data.patient_numero} />
-              <Chip  val={new Date(data.date_consultation).toLocaleDateString('fr-DZ', { day:'numeric', month:'long', year:'numeric' })} />
+              <Chip val={data.patient_nom} sub={data.patient_numero} />
+              <Chip val={new Date(data.date_consultation).toLocaleDateString('fr-DZ', { day:'numeric', month:'long', year:'numeric' })} />
               {data.medecin_nom && <Chip val={data.medecin_nom} />}
-              {data.etablissement && <Chip  val={data.etablissement} />}
+              {data.etablissement && <Chip val={data.etablissement} />}
+              <StatutVitalChip statut={data.patient_statut_vital} />
             </div>
           </div>
         </div>
         <div style={{ display:'flex', gap:8 }}>
           <Link to={`/patients/${data.patient}`} style={{ textDecoration:'none' }}>
-            <button style={btnSt('#9b8afb')}> Patient</button>
+            <button style={btnSt('#9b8afb')}>Patient</button>
           </Link>
           <Link to="/suivi" style={{ textDecoration:'none' }}>
-            <button style={btnSt('var(--text-muted)', true)}>← Retour</button>
+            <button style={btnSt('var(--text-muted)', true)}>Retour</button>
           </Link>
         </div>
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
 
-        {/* Paramètres cliniques */}
-        <Card title="Paramètres cliniques" color="#9b8afb">
+        {/* Parametres cliniques */}
+        <Card title="Parametres cliniques" color="#9b8afb">
           {data.ps_ecog !== null && data.ps_ecog !== undefined && (
             <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:'1px solid var(--border)' }}>
               <span style={{ fontSize:11, color:'var(--text-muted)', width:120 }}>Performance Status</span>
@@ -87,8 +113,8 @@ export default function ConsultationDetailPage() {
               </span>
             </div>
           )}
-          {data.poids_kg && <InfoRow label="Poids" value={`${data.poids_kg} kg`} />}
-          {data.taille_cm && <InfoRow label="Taille" value={`${data.taille_cm} cm`} />}
+          {data.poids_kg   && <InfoRow label="Poids"   value={`${data.poids_kg} kg`} />}
+          {data.taille_cm  && <InfoRow label="Taille"  value={`${data.taille_cm} cm`} />}
           {data.imc && (
             <InfoRow label="IMC" value={
               <span style={{ fontFamily:'var(--font-mono)', color: data.imc < 18.5 ? '#f5a623' : data.imc > 30 ? '#ff4d6a' : '#00e5a0' }}>
@@ -99,23 +125,46 @@ export default function ConsultationDetailPage() {
           {(data.ta_systolique || data.ta_diastolique) && (
             <InfoRow label="Tension artérielle" value={<span style={{ fontFamily:'var(--font-mono)' }}>{data.ta_systolique}/{data.ta_diastolique} mmHg</span>} />
           )}
-          {data.frequence_cardiaque && <InfoRow label="FC" value={`${data.frequence_cardiaque} bpm`} />}
-          {data.temperature && <InfoRow label="Température" value={`${data.temperature} °C`} />}
+          {data.frequence_cardiaque && <InfoRow label="FC"          value={`${data.frequence_cardiaque} bpm`} />}
+          {data.temperature         && <InfoRow label="Température" value={`${data.temperature} °C`} />}
           {data.marqueurs_biologiques && <InfoRow label="Marqueurs bio." value={data.marqueurs_biologiques} />}
         </Card>
 
-        {/* Évolution & Planning */}
-        <Card title="Évolution & Planning" color="#00a8ff">
+        {/* Evolution & Planning */}
+        <Card title="Evolution & Planning" color="#00a8ff">
           {data.evolution_maladie && ec && (
             <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:'1px solid var(--border)' }}>
-              <span style={{ fontSize:11, color:'var(--text-muted)', width:120 }}>Évolution tumorale</span>
+              <span style={{ fontSize:11, color:'var(--text-muted)', width:120 }}>Evolution tumorale</span>
               <span style={{ padding:'4px 12px', borderRadius:20, fontSize:12, fontWeight:600, background:`${ec.color}18`, color:ec.color, border:`1px solid ${ec.color}30` }}>{ec.label}</span>
             </div>
           )}
+          {data.rechute && (
+            <InfoRow label="Rechute" value={
+              <span style={{ color:'#ff4d6a', fontWeight:600 }}>
+                Oui — {data.nombre_rechutes || 1} fois
+                {data.date_derniere_rechute && ` (dernière : ${new Date(data.date_derniere_rechute).toLocaleDateString('fr-DZ')})`}
+              </span>
+            } />
+          )}
           {data.prochaine_consultation && (
-            <InfoRow label="Prochaine RDV" value={
+            <InfoRow label="Prochain RDV" value={
               <span style={{ fontFamily:'var(--font-mono)', color:'#00a8ff' }}>
                 {new Date(data.prochaine_consultation).toLocaleDateString('fr-DZ', { day:'numeric', month:'long', year:'numeric' })}
+              </span>
+            } />
+          )}
+          {data.date_dernier_rdv && (
+            <InfoRow label="Dernier RDV" value={
+              <span style={{ fontFamily:'var(--font-mono)' }}>
+                {new Date(data.date_dernier_rdv).toLocaleDateString('fr-DZ', { day:'numeric', month:'long', year:'numeric' })}
+              </span>
+            } />
+          )}
+          {data.patient_statut_vital && data.patient_statut_vital === 'decede' && (
+            <InfoRow label="Statut patient" value={
+              <span style={{ color:'#6b7280', fontWeight:600 }}>
+                Décédé
+                {data.patient_cause_deces && ` — Cause : ${data.patient_cause_deces}`}
               </span>
             } />
           )}
@@ -125,21 +174,50 @@ export default function ConsultationDetailPage() {
             <div style={{ marginTop:12 }}>
               <Link to={`/suivi/qualite-vie/${data.qualite_vie_id}`} style={{ textDecoration:'none' }}>
                 <button style={{ padding:'7px 14px', background:'rgba(0,229,160,0.1)', border:'1px solid rgba(0,229,160,0.2)', borderRadius:8, color:'#00e5a0', fontSize:12, cursor:'pointer' }}>
-                   Voir évaluation QdV associée
+                  Voir évaluation QdV associée
                 </button>
               </Link>
             </div>
           )}
         </Card>
 
+        {/* Rechute & Pathologies */}
+        {(data.pathologies_chroniques) && (
+          <Card title="Antécédents & Pathologies" color="#f5a623">
+            {data.pathologies_chroniques && <InfoRow label="Pathologies chroniques" value={data.pathologies_chroniques} />}
+          </Card>
+        )}
+
+        {/* Habitudes de vie */}
+        {(data.tabac || data.alcool || data.activite_physique || data.exposition_toxique) && (
+          <Card title="Habitudes de vie" color="#00e5a0">
+            {data.tabac && <InfoRow label="Tabac" value={
+              <span>
+                {TABAC_LABELS[data.tabac] || data.tabac}
+                {data.tabac_paquets_annee && <span style={{ fontFamily:'var(--font-mono)', color:'var(--text-muted)', marginLeft:8 }}>{data.tabac_paquets_annee} paquets/an</span>}
+              </span>
+            } />}
+            {data.alcool           && <InfoRow label="Alcool"            value={ALCOOL_LABELS[data.alcool] || data.alcool} />}
+            {data.activite_physique && <InfoRow label="Activité physique" value={ACTIVITE_LABELS[data.activite_physique] || data.activite_physique} />}
+            {data.alimentation     && <InfoRow label="Alimentation"       value={data.alimentation} />}
+            {data.exposition_toxique && (
+              <InfoRow label="Exposition toxique" value={
+                <span style={{ color:'#f5a623' }}>
+                  Oui{data.exposition_toxique_detail && ` — ${data.exposition_toxique_detail}`}
+                </span>
+              } />
+            )}
+          </Card>
+        )}
+
         {/* Compte rendu */}
         {(data.motif || data.examen_clinique || data.conclusion || data.conduite_a_tenir) && (
           <div style={{ gridColumn:'1 / -1' }}>
             <Card title="Compte rendu clinique" color="#9b8afb">
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 24px' }}>
-                {data.motif          && <InfoRow label="Motif"           value={data.motif} />}
-                {data.conclusion     && <InfoRow label="Conclusion"      value={data.conclusion} />}
-                {data.examen_clinique && <InfoRow label="Examen clinique" value={data.examen_clinique} />}
+                {data.motif            && <InfoRow label="Motif"            value={data.motif} />}
+                {data.conclusion       && <InfoRow label="Conclusion"       value={data.conclusion} />}
+                {data.examen_clinique  && <InfoRow label="Examen clinique"  value={data.examen_clinique} />}
                 {data.conduite_a_tenir && <InfoRow label="Conduite à tenir" value={data.conduite_a_tenir} />}
               </div>
             </Card>
@@ -150,7 +228,6 @@ export default function ConsultationDetailPage() {
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────────
 function Card({ title, color, children }) {
   return (
     <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', overflow:'hidden' }}>
@@ -167,10 +244,9 @@ function InfoRow({ label, value }) {
     </div>
   );
 }
-function Chip({ icon, val, sub }) {
+function Chip({ val, sub }) {
   return (
     <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-      <span style={{ fontSize:12 }}>{icon}</span>
       <div>
         <div style={{ fontSize:12.5, color:'var(--text-primary)', fontWeight:500 }}>{val}</div>
         {sub && <div style={{ fontSize:10, color:'var(--text-muted)', fontFamily:'var(--font-mono)' }}>{sub}</div>}

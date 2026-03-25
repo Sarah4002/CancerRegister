@@ -3,18 +3,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import { patientService } from '../../services/patientService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import toast from 'react-hot-toast';
+import CanRegImportExport from '../../components/patients/CanRegImportExport';
 
 const STATUT_COLORS = {
-  nouveau:     { bg: 'rgba(155,138,251,0.15)', color: '#9b8afb', border: 'rgba(155,138,251,0.3)' },
-  traitement:  { bg: 'rgba(0,168,255,0.12)',   color: '#00a8ff', border: 'rgba(0,168,255,0.3)' },
-  remission:   { bg: 'rgba(0,229,160,0.12)',   color: '#00e5a0', border: 'rgba(0,229,160,0.3)' },
-  perdu:       { bg: 'rgba(245,166,35,0.12)',  color: '#f5a623', border: 'rgba(245,166,35,0.3)' },
-  decede:      { bg: 'rgba(255,77,106,0.12)',  color: '#ff4d6a', border: 'rgba(255,77,106,0.3)' },
-  archive:     { bg: 'rgba(107,114,128,0.12)', color: '#9ca3af', border: 'rgba(107,114,128,0.3)' },
+  nouveau:    { bg: 'rgba(155,138,251,0.15)', color: '#9b8afb', border: 'rgba(155,138,251,0.3)' },
+  traitement: { bg: 'rgba(0,168,255,0.12)',   color: '#00a8ff', border: 'rgba(0,168,255,0.3)'  },
+  remission:  { bg: 'rgba(0,229,160,0.12)',   color: '#00e5a0', border: 'rgba(0,229,160,0.3)'  },
+  perdu:      { bg: 'rgba(245,166,35,0.12)',  color: '#f5a623', border: 'rgba(245,166,35,0.3)' },
+  decede:     { bg: 'rgba(255,77,106,0.12)',  color: '#ff4d6a', border: 'rgba(255,77,106,0.3)' },
+  archive:    { bg: 'rgba(107,114,128,0.12)', color: '#9ca3af', border: 'rgba(107,114,128,0.3)'},
 };
 
 const SEXE_COLORS = {
-  M: { bg: 'rgba(0,168,255,0.1)', color: '#00a8ff' },
+  M: { bg: 'rgba(0,168,255,0.1)',    color: '#00a8ff' },
   F: { bg: 'rgba(245,101,196,0.1)', color: '#f565c4' },
   U: { bg: 'rgba(107,114,128,0.1)', color: '#9ca3af' },
 };
@@ -32,20 +33,20 @@ function StatusBadge({ statut, label }) {
 
 export default function PatientsPage() {
   const navigate = useNavigate();
-  const [patients, setPatients]   = useState([]);
-  const [stats, setStats]         = useState(null);
-  const [loading, setLoading]     = useState(true);
-  const [search, setSearch]       = useState('');
-  const [filters, setFilters]     = useState({ sexe: '', statut_dossier: '', wilaya: '' });
+  const [patients,   setPatients]   = useState([]);
+  const [stats,      setStats]      = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [search,     setSearch]     = useState('');
+  const [filters,    setFilters]    = useState({ sexe: '', statut_dossier: '', wilaya: '' });
   const [pagination, setPagination] = useState({ count: 0, next: null, previous: null, page: 1 });
 
   const fetchPatients = useCallback(async () => {
     setLoading(true);
     try {
       const params = { page: pagination.page, search };
-      if (filters.sexe)           params.sexe = filters.sexe;
+      if (filters.sexe)           params.sexe           = filters.sexe;
       if (filters.statut_dossier) params.statut_dossier = filters.statut_dossier;
-      if (filters.wilaya)         params.wilaya = filters.wilaya;
+      if (filters.wilaya)         params.wilaya         = filters.wilaya;
 
       const { data } = await patientService.list(params);
       setPatients(data.results || data);
@@ -65,7 +66,6 @@ export default function PatientsPage() {
     patientService.stats().then(({ data }) => setStats(data)).catch(() => {});
   }, []);
 
-  // Debounce search
   useEffect(() => {
     const t = setTimeout(() => fetchPatients(), 400);
     return () => clearTimeout(t);
@@ -73,21 +73,21 @@ export default function PatientsPage() {
 
   return (
     <AppLayout title="Gestion des Patients">
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
       {/* Stats strip */}
       {stats && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 24 }}>
           {[
-            { label: 'Total patients',  val: stats.total,      color: '#00a8ff' },
-            { label: 'En traitement',   val: stats.traitement,  color: '#9b8afb' },
-            { label: 'En rémission',    val: stats.remission,   color: '#00e5a0' },
-            { label: 'Perdus de vue',   val: stats.perdu_vue,   color: '#f5a623' },
-            { label: 'Décédés',         val: stats.decede,      color: '#ff4d6a' },
+            { label: 'Total patients', val: stats.total,      color: '#00a8ff' },
+            { label: 'En traitement',  val: stats.traitement,  color: '#9b8afb' },
+            { label: 'En rémission',   val: stats.remission,   color: '#00e5a0' },
+            { label: 'Perdus de vue',  val: stats.perdu_vue,   color: '#f5a623' },
+            { label: 'Décédés',        val: stats.decede,      color: '#ff4d6a' },
           ].map(({ label, val, color }) => (
             <div key={label} style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-light)',
-              borderRadius: 'var(--radius-md)',
-              padding: '14px 16px',
+              background: 'var(--bg-card)', border: '1px solid var(--border-light)',
+              borderRadius: 'var(--radius-md)', padding: '14px 16px',
             }}>
               <div style={{ fontSize: 22, fontWeight: 700, color, fontFamily: 'var(--font-display)', marginBottom: 2 }}>
                 {val ?? '—'}
@@ -142,14 +142,21 @@ export default function PatientsPage() {
           </select>
         ))}
 
-        <div style={{ marginLeft: 'auto' }}>
+        {/* ✅ Bouton CanReg5 + Nouveau patient */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+
+          {/* Bouton CanReg5 Import/Export */}
+          <CanRegImportExport onImportDone={() => fetchPatients()} />
+
+          {/* Bouton Nouveau patient */}
           <Link to="/patients/nouveau" style={{ textDecoration: 'none' }}>
             <button style={{
               padding: '9px 18px',
               background: 'linear-gradient(135deg, #00a8ff, #0080cc)',
               border: 'none', borderRadius: 'var(--radius-md)',
               color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-display)',
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontFamily: 'var(--font-display)',
             }}>
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
@@ -172,7 +179,6 @@ export default function PatientsPage() {
           </div>
         ) : patients.length === 0 ? (
           <div style={{ padding: 64, textAlign: 'center' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
             <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>Aucun patient trouvé</div>
           </div>
         ) : (
@@ -194,9 +200,7 @@ export default function PatientsPage() {
                 <tr key={p.id}
                   onClick={() => navigate(`/patients/${p.id}`)}
                   style={{
-                    cursor: 'pointer',
-                    borderBottom: '1px solid var(--border)',
-                    transition: 'background 0.1s',
+                    cursor: 'pointer', borderBottom: '1px solid var(--border)', transition: 'background 0.1s',
                     background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
@@ -211,10 +215,9 @@ export default function PatientsPage() {
                     <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>{p.full_name}</div>
                   </td>
                   <td style={{ padding: '12px 14px' }}>
-                    <span style={{
-                      padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600,
-                      ...( SEXE_COLORS[p.sexe] || SEXE_COLORS.U ),
-                    }}>{p.sexe_label}</span>
+                    <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, ...(SEXE_COLORS[p.sexe] || SEXE_COLORS.U) }}>
+                      {p.sexe_label}
+                    </span>
                   </td>
                   <td style={{ padding: '12px 14px', fontSize: 13, color: 'var(--text-secondary)' }}>
                     {p.age ?? '—'} ans

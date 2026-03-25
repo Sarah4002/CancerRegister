@@ -28,9 +28,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Role(models.TextChoices):
         ADMIN        = 'admin',       'Administrateur'
         DOCTOR       = 'doctor',      'Médecin Oncologue'
-        REGISTRAR    = 'registrar',   'Enregistreur'
+        ANAPATH      = 'anapath',   'Médecin Anapath'
         EPIDEMIOLOGIST = 'epidemiologist', 'Épidémiologiste'
-        ANALYST      = 'analyst',     'Analyste'
         READONLY     = 'readonly',    'Lecture seule'
 
     class Speciality(models.TextChoices):
