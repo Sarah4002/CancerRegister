@@ -13,6 +13,7 @@ const TYPE_CONFIG = {
   chirurgie: { label: 'Chirurgie',         color: '#ff4d6a' },
   hormono:   { label: 'Hormonothérapie',   color: '#00e5a0' },
   immuno:    { label: 'Immunothérapie',    color: '#c084fc' },
+  ciblee:    { label: 'Thérapie ciblée',  color: '#8b5cf6' },
 };
 
 export default function NewTraitementPage() {
@@ -59,7 +60,8 @@ export default function NewTraitementPage() {
     try {
       const payload = { ...data };
       Object.keys(payload).forEach(k => { if (payload[k] === '' || payload[k] === null) delete payload[k]; });
-      const svc = traitementService[type];
+      const serviceKey = type === 'ciblee' ? 'immuno' : type;
+      const svc = traitementService[serviceKey];
       const { data: result } = await svc.create(payload);
       toast.success(`${cfg.label} enregistré avec succès !`);
       navigate(`/traitements/${type}/${result.id}`);

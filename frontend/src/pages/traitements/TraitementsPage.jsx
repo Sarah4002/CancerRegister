@@ -86,6 +86,22 @@ const TYPES = [
       { date: d.date_debut },
     ],
   },
+  {
+    key:   'ciblee',
+    label: 'Thérapie ciblée',
+    color: '#8b5cf6',
+    endpoint: 'ciblee',
+    cols: ['Patient', 'Molécule', 'Type', 'Biomarqueur', 'Cycles', 'Statut', 'Début'],
+    row: (d) => [
+      { main: d.patient_nom, sub: d.patient_numero },
+      { mono: d.molecule || '—' },
+      { badge: d.type_label, color: '#8b5cf6' },
+      { text: d.biomarqueur_cible || '—' },
+      { text: d.nombre_cycles ?? '—' },
+      { statut: d.statut, label: d.statut_label },
+      { date: d.date_debut },
+    ],
+  },
 ];
 
 const STATUT_COLORS = {

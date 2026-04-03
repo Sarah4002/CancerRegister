@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { rcpService } from '../../services/rcpService';
+import { accountsService } from '../../services/accountsService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import toast from 'react-hot-toast';
 
@@ -45,12 +46,20 @@ export default function RCPDetailPage() {
   const [showDossierDetail, setShowDossierDetail] = useState(null);
   const [showVoteModal, setShowVoteModal]         = useState(null);
   const [showAIAssist, setShowAIAssist]           = useState(null);
+  const [showPresenceModal, setShowPresenceModal] = useState(false);
+  const [showAjouterMedecinModal, setShowAjouterMedecinModal] = useState(false);
 
   const [decisionForm, setDecisionForm] = useState({
     type_decision:'chimio', priorite:'normale', description:'', protocole:'', delai_semaines:'',
   });
   const [submittingDecision, setSubmittingDecision] = useState(false);
   const [votes, setVotes] = useState({});
+  const [medecins, setMedecins] = useState([]);
+  const [loadingMedecins, setLoadingMedecins] = useState(false);
+  const [presenceForm, setPresenceForm] = useState({
+    medecin: '', specialite: 'onco', role: '', present: true,
+  });
+  const [submittingPresence, setSubmittingPresence] = useState(false);
 
   const reload = useCallback(() => {
     rcpService.reunions.get(id)
@@ -60,6 +69,14 @@ export default function RCPDetailPage() {
   }, [id, navigate]);
 
   useEffect(() => { reload(); }, [reload]);
+
+  useEffect(() => {
+    setLoadingMedecins(true);
+    accountsService.medecins()
+      .then(({ data }) => setMedecins(data.medecins || []))
+      .catch(() => {})
+      .finally(() => setLoadingMedecins(false));
+  }, []);
 
   const changerStatut = async (statut) => {
     try {
@@ -88,6 +105,39 @@ export default function RCPDetailPage() {
       toast.success('Decision marquee realisee');
       reload();
     } catch { toast.error('Erreur'); }
+  };
+
+  const ajouterPresence = async () => {
+    if (!presenceForm.medecin) { toast.error('Selectionnez un medecin'); return; }
+    setSubmittingPresence(true);
+    try {
+      await rcpService.reunions.ajouterPresence(id, presenceForm);
+      toast.success('Medecin ajoute a la RCP');
+      setShowPresenceModal(false);
+      setPresenceForm({ medecin: '', specialite: 'onco', role: '', present: true });
+      reload();
+    } catch { toast.error('Erreur lors de l\'ajout'); }
+    finally { setSubmittingPresence(false); }
+  };
+
+  const ajouterMedecinPresence = async (medecinId) => {
+    setSubmittingPresence(true);
+    try {
+      const medecin = medecins.find(m => m.id == medecinId);
+      if (!medecin) { toast.error('Medecin introuvable'); return; }
+
+      const presenceData = {
+        medecin: medecinId,
+        specialite: medecin.role === 'anapath' ? 'anapath' : 'onco',
+        role: medecin.role,
+        present: true
+      };
+
+      await rcpService.reunions.ajouterPresence(id, presenceData);
+      toast.success('Medecin ajoute a la RCP');
+      reload();
+    } catch { toast.error('Erreur lors de l\'ajout'); }
+    finally { setSubmittingPresence(false); }
   };
 
   const handleVote = (dossierId, vote) => {
@@ -270,7 +320,13 @@ export default function RCPDetailPage() {
         <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', overflow:'hidden' }}>
           <div style={{ padding:'12px 18px', background:'var(--bg-elevated)', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <span style={{ fontSize:12, fontWeight:600, color:'var(--text-secondary)' }}>Membres de la RCP</span>
-            <span style={{ fontSize:11, color:'var(--text-muted)' }}>{data.nombre_membres_presents} present(s)</span>
+            <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+              <span style={{ fontSize:11, color:'var(--text-muted)' }}>{data.nombre_membres_presents} present(s)</span>
+              <button onClick={() => setShowAjouterMedecinModal(true)}
+                style={{ padding:'6px 12px', background:'linear-gradient(135deg,#00a8ff,#0080cc)', border:'none', borderRadius:6, color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>
+                + Ajouter medecin
+              </button>
+            </div>
           </div>
           {!data.presences?.length ? (
             <EmptyState text="Aucune presence enregistree" />
@@ -425,6 +481,15 @@ export default function RCPDetailPage() {
           )}
         </Modal>
       )}
+
+      {/* MODAL: Ajouter medecin a la presence */}
+      <AjouterMedecinModal
+        isOpen={showAjouterMedecinModal}
+        onClose={() => setShowAjouterMedecinModal(false)}
+        onAjouter={ajouterMedecinPresence}
+        medecins={medecins}
+        loading={loadingMedecins}
+      />
 
       {/* PANEL: Chat medecins */}
       {showChatPanel && (
@@ -951,3 +1016,85 @@ function Loader() {
 const labelSt      = { display:'block', fontSize:11.5, fontWeight:500, color:'var(--text-secondary)', marginBottom:5 };
 const modalInputSt = { width:'100%', padding:'9px 12px', background:'var(--bg-elevated)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', color:'var(--text-primary)', fontSize:13, outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' };
 const modalSelSt   = { ...modalInputSt, cursor:'pointer' };
+
+// Modal pour ajouter un médecin à la présence
+function AjouterMedecinModal({ isOpen, onClose, onAjouter, medecins, loading }) {
+  const [selectedMedecin, setSelectedMedecin] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (selectedMedecin) {
+      onAjouter(selectedMedecin);
+      setSelectedMedecin('');
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <Modal onClose={onClose} maxWidth={400}>
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
+          Ajouter un médecin à la présence
+        </h3>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <div style={{ marginBottom: 20 }}>
+          <label style={labelSt}>Sélectionner un médecin</label>
+          <select
+            value={selectedMedecin}
+            onChange={(e) => setSelectedMedecin(e.target.value)}
+            style={modalSelSt}
+            required
+          >
+            <option value="">Choisir un médecin...</option>
+            {loading ? (
+              <option disabled>Chargement...</option>
+            ) : (
+              medecins.map(medecin => (
+                <option key={medecin.id} value={medecin.id}>
+                  {medecin.full_name || `${medecin.first_name || ''} ${medecin.last_name || ''}`.trim() || medecin.email} ({medecin.role})
+                </option>
+              ))
+            )}
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              padding: '8px 16px',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--text-secondary)',
+              fontSize: 13,
+              cursor: 'pointer'
+            }}
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            disabled={!selectedMedecin || loading}
+            style={{
+              padding: '8px 16px',
+              background: selectedMedecin && !loading ? '#00a8ff' : 'var(--bg-disabled)',
+              border: '1px solid transparent',
+              borderRadius: 'var(--radius-md)',
+              color: '#fff',
+              fontSize: 13,
+              cursor: selectedMedecin && !loading ? 'pointer' : 'not-allowed'
+            }}
+          >
+            Ajouter
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}

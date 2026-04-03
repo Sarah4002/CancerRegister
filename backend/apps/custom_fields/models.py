@@ -41,12 +41,13 @@ class ChampPersonnalise(models.Model):
 
     # Lien cancer spécifique (optionnel)
     # Ex: "C50" pour sein, "C18" pour côlon — code ICD-O-3 préfixe
+    # Peut contenir plusieurs codes séparés par des virgules pour les champs multi-topographies
     # Si vide → champ global pour tous les patients du module
     topographie_code = models.CharField(
-        max_length=10, blank=True,
-        help_text="Code ICD-O-3 si spécifique à un cancer (ex: C50 pour sein). Vide = global."
+        max_length=500, blank=True,
+        help_text="Code(s) ICD-O-3 si spécifique à un/plusieurs cancer(s) (ex: C50 ou C50,C18). Vide = global."
     )
-    topographie_libelle = models.CharField(max_length=100, blank=True)
+    topographie_libelle = models.CharField(max_length=500, blank=True)
 
     # Options pour type SELECT (JSON liste de strings)
     # Ex: '["Positif", "Négatif", "Inconnu"]'

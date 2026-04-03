@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
 import { apiClient } from '../../services/apiClient';
+import { diagnosticService } from '../../services/diagnosticService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import {
  BarChart, Bar, AreaChart, Area, XAxis, YAxis,
@@ -68,6 +70,7 @@ function ActionBadge({ action, label }) {
 // ------------------------------------------------------------
 
 function SectionUsers() {
+ const navigate = useNavigate();
  const [users, setUsers] = useState([]);
  const [stats, setStats] = useState(null);
  const [loading, setLoading] = useState(true);
@@ -167,6 +170,9 @@ function SectionUsers() {
  <option value="true">Actifs</option>
  <option value="false">Inactifs</option>
  </select>
+ <button onClick={() => navigate('/register')} style={{ padding:'8px 14px', borderRadius:8, background:'linear-gradient(135deg, #00a8ff, #00e5a0)', border:'none', color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>
+ Créer un utilisateur
+ </button>
  {(search || roleFilter || activeFilter) && (
  <button onClick={() => { setSearch(''); setRole(''); setActive(''); }}
  style={{ padding:'6px 12px', background:'rgba(255,77,106,0.1)', border:'1px solid rgba(255,77,106,0.2)', borderRadius:8, color:'#ff4d6a', fontSize:11, cursor:'pointer' }}>
@@ -527,6 +533,11 @@ function SectionCustomFields() {
  const [showForm, setShowForm] = useState(false);
  const [editChamp, setEditChamp] = useState(null);
  const [saving, setSaving] = useState(false);
+ const [topoQuery, setTopoQuery] = useState('');
+ const [topoResults, setTopoResults] = useState([]);
+ const [topoLoading, setTopoLoading] = useState(false);
+ const topoRef = useRef(null);
+ const [showTopoDropdown, setShowTopoDropdown] = useState(false);
 
  const MODULE_LABELS = {
    patient:    { label: 'Dossier patient',      color: '#00a8ff' },
@@ -544,9 +555,73 @@ function SectionCustomFields() {
    { value: 'select',   label: 'Liste deroulante' },
  ];
 
+ // Recherche de topographies
+ useEffect(() => {
+   if (!topoQuery || topoQuery.length < 2) {
+     setTopoResults([]);
+     return;
+   }
+   const handler = setTimeout(async () => {
+     setTopoLoading(true);
+     try {
+       const { data } = await diagnosticService.searchTopographies(topoQuery);
+       setTopoResults(data || []);
+       setShowTopoDropdown(true);
+     } catch {
+       setTopoResults([]);
+     } finally {
+       setTopoLoading(false);
+     }
+   }, 300);
+   return () => clearTimeout(handler);
+ }, [topoQuery]);
+
+ // Fermer dropdown quand on clique en dehors
+ useEffect(() => {
+   const handler = (e) => {
+     if (topoRef.current && !topoRef.current.contains(e.target)) {
+       setShowTopoDropdown(false);
+     }
+   };
+   document.addEventListener('mousedown', handler);
+   return () => document.removeEventListener('mousedown', handler);
+ }, []);
+
+ const handleSelectTopographie = (topo) => {
+   // Ajouter la topographie à la liste (éviter les doublons)
+   const topographies = editChamp?.topographies_list || [];
+   const alreadyExists = topographies.some(t => t.code === topo.code);
+   if (!alreadyExists) {
+     topographies.push(topo);
+   }
+   setEditChamp(p => ({
+     ...p,
+     topographies_list: topographies
+   }));
+   setTopoQuery('');
+   setTopoResults([]);
+   setShowTopoDropdown(false);
+ };
+
+ const handleRemoveTopographie = (code) => {
+   setEditChamp(p => ({
+     ...p,
+     topographies_list: (p.topographies_list || []).filter(t => t.code !== code)
+   }));
+ };
+
+ const handleClearAllTopographies = () => {
+   setEditChamp(p => ({
+     ...p,
+     topographies_list: []
+   }));
+   setTopoQuery('');
+   setTopoResults([]);
+ };
+
  const CHAMP_VIDE = {
    nom: '', description: '', type_champ: 'texte', module: 'patient',
-   topographie_code: '', topographie_libelle: '',
+   topographie_code: '', topographie_libelle: '', topographies_list: [],
    obligatoire: false, actif: true, ordre: 0,
    valeur_min: '', valeur_max: '', unite: '',
    options: [],
@@ -556,7 +631,20 @@ function SectionCustomFields() {
    setLoading(true);
    try {
      const { data } = await apiClient.get('/custom-fields/champs/');
-     setChamps(data.results || data);
+     // Convertir le topographie_code en topographies_list si nécessaire
+     const champsAvecLists = (data.results || data).map(champ => {
+       if (champ.topographie_code && !champ.topographies_list) {
+         return {
+           ...champ,
+           topographies_list: champ.topographie_code.split(',').map(code => ({
+             code: code.trim(),
+             libelle: champ.topographie_libelle || ''
+           }))
+         };
+       }
+       return champ;
+     });
+     setChamps(champsAvecLists);
    } catch {
      toast.error('Erreur lors du chargement.');
    } finally {
@@ -568,12 +656,27 @@ function SectionCustomFields() {
 
  const handleSave = async (form) => {
    setSaving(true);
+   // Convertir topographies_list en topographie_code CSV
+   const topographiesCodes = (form.topographies_list || []).map(t => t.code).join(',');
+   const topographiesLibelles = (form.topographies_list || []).map(t => `${t.code} – ${t.libelle}`).join('; ');
+   
+   // Créer un payload clean sans données internes/invalides
    const payload = {
-     ...form,
+     nom: form.nom || '',
+     description: form.description || '',
+     type_champ: form.type_champ || 'texte',
+     module: form.module || 'patient',
+     topographie_code: topographiesCodes,
+     topographie_libelle: topographiesLibelles,
+     obligatoire: form.obligatoire || false,
+     actif: form.actif !== false, // true par défaut
+     ordre: form.ordre === '' || form.ordre === undefined ? 0 : Number(form.ordre),
+     options: form.options || [],
      valeur_min: form.valeur_min === '' || form.valeur_min === undefined ? null : Number(form.valeur_min),
      valeur_max: form.valeur_max === '' || form.valeur_max === undefined ? null : Number(form.valeur_max),
-     ordre:      form.ordre === '' || form.ordre === undefined ? 0 : Number(form.ordre),
+     unite: form.unite || '',
    };
+   
    try {
      if (form.id) {
        await apiClient.patch(`/custom-fields/champs/${form.id}/`, payload);
@@ -681,6 +784,78 @@ function SectionCustomFields() {
                ))}
              </select>
            </div>
+           {editChamp?.module === 'diagnostic' && (
+             <div style={{ marginBottom: 12, gridColumn: '1 / -1', padding: '12px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 6 }}>
+               <label style={{ display: 'block', fontSize: 11, color: 'var(--text-primary)', marginBottom: 8, fontWeight: 600 }}>
+                 Topographie(s) ICD-O-3 (optionnel)
+               </label>
+               <p style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 10 }}>
+                 Sélectionner une ou plusieurs topographies pour rendre ce champ spécifique à certains types de cancer. Laisser vide pour un champ global.
+               </p>
+               
+               {/* Liste des topographies sélectionnées */}
+               {(editChamp?.topographies_list || []).length > 0 && (
+                 <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                   {editChamp.topographies_list.map((topo, idx) => (
+                     <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6 }}>
+                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', minWidth: 50 }}>{topo.code}</span>
+                       <span style={{ fontSize: 12, color: 'var(--text-primary)', flex: 1 }}>{topo.libelle}</span>
+                       <button type="button" onClick={() => handleRemoveTopographie(topo.code)} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 4, padding: '4px 8px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Retirer</button>
+                     </div>
+                   ))}
+                   <button type="button" onClick={handleClearAllTopographies} style={{ padding: '6px 12px', background: 'rgba(255,77,106,0.1)', border: 'none', borderRadius: 4, color: '#ff4d6a', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>✕ Réinitialiser tous</button>
+                 </div>
+               )}
+               
+               {/* Recherche et ajout */}
+               <div style={{ position: 'relative' }} ref={topoRef}>
+                 <input
+                   type="text"
+                   value={topoQuery}
+                   onChange={e => { setTopoQuery(e.target.value); setShowTopoDropdown(true); }}
+                   placeholder="Rechercher et ajouter des topographies (ex: C50, sein)"
+                   style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', fontSize: 12 }}
+                   onFocus={() => topoQuery.length >= 2 && setShowTopoDropdown(true)}
+                 />
+                 <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 12 }}>
+                   {topoLoading ? (
+                     <div style={{ width: 14, height: 14, border: '2px solid var(--border)', borderTopColor: '#00a8ff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                   ) : (
+                    '🔍'
+                   )}
+                 </div>
+                 
+                 {showTopoDropdown && topoResults.length > 0 && (
+                   <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 6, marginTop: 4, maxHeight: 240, overflow: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+                     {topoResults.map(r => {
+                       const isSelected = (editChamp?.topographies_list || []).some(t => t.code === r.code);
+                       return (
+                         <button
+                           key={r.id}
+                           type="button"
+                           onClick={() => handleSelectTopographie(r)}
+                           disabled={isSelected}
+                           style={{
+                             display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 12px',
+                             background: isSelected ? 'rgba(0, 168, 255, 0.1)' : 'none',
+                             border: 'none', cursor: isSelected ? 'not-allowed' : 'pointer', textAlign: 'left',
+                             borderBottom: '1px solid var(--border)', transition: 'background 0.2s', opacity: isSelected ? 0.6 : 1
+                           }}
+                           onMouseEnter={e => !isSelected && (e.currentTarget.style.background = 'var(--bg-hover)')}
+                           onMouseLeave={e => !isSelected && (e.currentTarget.style.background = 'none')}
+                         >
+                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#00a8ff', minWidth: 60 }}>{r.code}</span>
+                           <span style={{ fontSize: 12.5, color: 'var(--text-primary)' }}>{r.libelle}</span>
+                           {r.categorie && <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 'auto' }}>{r.categorie}</span>}
+                           {isSelected && <span style={{ marginLeft: 'auto', color: '#00a8ff', fontWeight: 700 }}>✓ Ajoutée</span>}
+                         </button>
+                       );
+                     })}
+                   </div>
+                 )}
+               </div>
+             </div>
+           )}
            <div style={{ marginBottom: 12 }}>
              <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Ordre d'affichage</label>
              <input type="number" value={editChamp?.ordre || 0} onChange={e => setEditChamp(p => ({ ...p, ordre: parseInt(e.target.value) || 0 }))}
@@ -752,7 +927,22 @@ function SectionCustomFields() {
                    </td>
                    <td style={{ padding: '10px 14px' }}>
                      <div style={{ display: 'flex', gap: 4 }}>
-                       <button onClick={() => { setEditChamp(champ); setShowForm(true); }} style={{ padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>Modifier</button>
+                       <button onClick={() => { 
+                         // Convertir topographie_code (CSV) en topographies_list (array) pour édition
+                         const champAvecList = { ...champ };
+                         if (champ.topographie_code && !champ.topographies_list) {
+                           const codes = champ.topographie_code.split(',').map(c => c.trim());
+                           const libelles = champ.topographie_libelle ? champ.topographie_libelle.split(';').map(l => l.trim()) : [];
+                           champAvecList.topographies_list = codes.map((code, idx) => ({
+                             code: code,
+                             libelle: libelles[idx] ? libelles[idx].replace(`${code} – `, '').trim() : ''
+                           }));
+                         } else {
+                           champAvecList.topographies_list = champ.topographies_list || [];
+                         }
+                         setEditChamp(champAvecList); 
+                         setShowForm(true); 
+                       }} style={{ padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>Modifier</button>
                        <button onClick={() => handleDelete(champ)} style={{ padding: '4px 8px', background: 'rgba(255,77,106,0.08)', border: '1px solid rgba(255,77,106,0.2)', borderRadius: 4, color: '#ff4d6a', fontSize: 11, cursor: 'pointer' }}>Supprimer</button>
                      </div>
                    </td>

@@ -54,4 +54,13 @@ export const traitementService = {
     update: (id, d)  => api.put(`${BASE}/immunotherapies/${id}/`, d),
     delete: (id)     => api.delete(`${BASE}/immunotherapies/${id}/`),
   },
+
+  // ── Thérapie ciblée (alias immunothérapie) ────────────────
+  ciblee: {
+    list:   (params) => api.get(`${BASE}/immunotherapies/`, { params }),
+    get:    (id)     => api.get(`${BASE}/immunotherapies/${id}/`),
+    create: (data)   => api.post(`${BASE}/immunotherapies/`, data),
+    update: (id, d)  => api.put(`${BASE}/immunotherapies/${id}/`, d),
+    delete: (id)     => api.delete(`${BASE}/immunotherapies/${id}/`),
+  },
 };

@@ -14,6 +14,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
+from django.db.models import Count
+from django.utils import timezone
+from datetime import datetime, timedelta
 
 from .permissions import CanManageUsers
 from .models import AccessLog
@@ -45,6 +48,43 @@ class AdminUserLogSerializer(serializers.ModelSerializer):
     class Meta:
         model  = AccessLog
         fields = ['id', 'action', 'resource', 'resource_id', 'ip_address', 'timestamp', 'details']
+
+
+# ── Liste des médecins (pour formulaires) ──────────────────────
+class MedecinsListView(APIView):
+    """
+    Liste des médecins actifs (rôles DOCTOR et ANAPATH) pour les formulaires.
+    Exclut les admins et épidémiologistes.
+    """
+    permission_classes = []  # Accessible à tous les utilisateurs authentifiés
+
+    def get(self, request):
+        medecins = User.objects.filter(
+            is_active=True,
+            role__in=['doctor', 'anapath']
+        ).exclude(
+            role__in=['admin', 'epidemiologist']
+        ).values(
+            'id', 'first_name', 'last_name', 'email', 'role', 'speciality', 'institution'
+        ).order_by('last_name', 'first_name')
+
+        data = []
+        for m in medecins:
+            full_name = f"{m['first_name']} {m['last_name']}".strip()
+            if not full_name:
+                full_name = m['email']
+            data.append({
+                'id': m['id'],
+                'full_name': full_name,
+                'role': m['role'],
+                'speciality': m['speciality'],
+                'institution': m['institution'] or '',
+            })
+
+        return Response({
+            'count': len(data),
+            'medecins': data
+        })
 
 
 # ── Liste / création ───────────────────────────────────────────
@@ -117,6 +157,103 @@ class AdminUserLogsView(APIView):
         return Response({
             'count':   logs.count(),
             'results': serializer.data,
+        })
+
+
+class AdminAuditLogsView(generics.ListAPIView):
+    """GET /api/v1/auth/admin/audit-logs/"""
+    permission_classes = [CanManageUsers]
+    serializer_class = AdminUserLogSerializer
+
+    def get_queryset(self):
+        qs = AccessLog.objects.all().order_by('-timestamp')
+        action = self.request.query_params.get('action')
+        date_from = self.request.query_params.get('date_from')
+        date_to = self.request.query_params.get('date_to')
+
+        if action:
+            qs = qs.filter(action=action)
+        if date_from:
+            qs = qs.filter(timestamp__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(timestamp__date__lte=date_to)
+        return qs
+
+
+class AdminAuditStatsView(APIView):
+    """GET /api/v1/auth/admin/audit-logs/stats/"""
+    permission_classes = [CanManageUsers]
+
+    def get(self, request):
+        now = timezone.now()
+        today = timezone.localdate()
+        today_start_naive = datetime.combine(today, datetime.min.time())
+        today_start = timezone.make_aware(today_start_naive, timezone.get_current_timezone())
+
+        total = AccessLog.objects.count()
+        aujourd_hui = AccessLog.objects.filter(timestamp__gte=today_start).count()
+        cette_semaine = AccessLog.objects.filter(timestamp__gte=now - timedelta(days=7)).count()
+        ce_mois = AccessLog.objects.filter(timestamp__year=now.year, timestamp__month=now.month).count()
+
+        activite_7j = []
+        for day_offset in range(6, -1, -1):
+            day = today - timedelta(days=day_offset)
+            count = AccessLog.objects.filter(timestamp__date=day).count()
+            activite_7j.append({'date': day.isoformat(), 'count': count})
+
+        par_action = [
+            {'action': r['action'], 'n': r['n']}
+            for r in AccessLog.objects.values('action').annotate(n=Count('id')).order_by('-n')
+        ]
+
+        top_users = [
+            {
+                'user__first_name': r['user__first_name'],
+                'user__last_name': r['user__last_name'],
+                'user__username': r['user__username'],
+                'n': r['n'],
+            }
+            for r in AccessLog.objects.values('user__first_name', 'user__last_name', 'user__username')
+                .annotate(n=Count('id')).order_by('-n')[:8]
+        ]
+
+        return Response({
+            'total': total,
+            'aujourd_hui': aujourd_hui,
+            'cette_semaine': cette_semaine,
+            'ce_mois': ce_mois,
+            'activite_7j': activite_7j,
+            'par_action': par_action,
+            'top_users': top_users,
+        })
+
+
+class AdminUserStatsView(APIView):
+    """GET /api/v1/auth/admin/users/stats/"""
+    permission_classes = [CanManageUsers]
+
+    def get(self, request):
+        total = User.objects.count()
+        actifs = User.objects.filter(is_active=True).count()
+        inactifs = total - actifs
+        dernier_7j = timezone.now() - timedelta(days=7)
+        connectes_7j = AccessLog.objects.filter(
+            action=AccessLog.Action.LOGIN,
+            timestamp__gte=dernier_7j
+        ).values('user').distinct().count()
+
+        roles = User.objects.values('role').annotate(count=Count('id')).order_by('-count')
+        role_stats = [
+            {'role': r['role'], 'n': r['count']}
+            for r in roles
+        ]
+
+        return Response({
+            'total': total,
+            'actifs': actifs,
+            'inactifs': inactifs,
+            'connectes_7j': connectes_7j,
+            'par_role': role_stats,
         })
 
 

@@ -68,7 +68,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     can_view_statistics  = models.BooleanField(default=True)
 
     # Status
-    is_active       = models.BooleanField(default=False)  # requires admin activation
+    # Par défaut, un compte nouveau est activé immédiatement (activation manuelle non requise).
+    is_active       = models.BooleanField(default=True)
     is_staff        = models.BooleanField(default=False)
     is_verified     = models.BooleanField(default=False)
 

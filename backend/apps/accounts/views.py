@@ -14,6 +14,7 @@ from .serializers import (
     ChangePasswordSerializer,
 )
 from .models import AccessLog
+from .permissions import CanManageUsers
 
 User = get_user_model()
 
@@ -47,9 +48,12 @@ class LoginView(TokenObtainPairView):
 
 
 class RegisterView(generics.CreateAPIView):
-    """POST /api/v1/auth/register/ - Register a new user (pending admin approval)."""
+    """POST /api/v1/auth/register/ - Register a new user (admin only).
+
+    L'accès public est désactivé : les comptes sont créés depuis la console admin.
+    """
     serializer_class   = UserRegistrationSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, CanManageUsers]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -57,9 +61,9 @@ class RegisterView(generics.CreateAPIView):
         user = serializer.save()
         return Response(
             {
-                "message": "Compte créé avec succès. En attente de validation par l'administrateur.",
+                "message": "Compte créé avec succès. Le compte est activé et peut se connecter immédiatement.",
                 "email": user.email,
-                "status": "pending",
+                "status": "active",
             },
             status=status.HTTP_201_CREATED,
         )

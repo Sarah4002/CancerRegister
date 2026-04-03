@@ -339,33 +339,9 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Divider */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '24px 0' }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Nouveau sur la plateforme ?</span>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          <div style={{ marginTop: 20, marginBottom: 10, fontSize: 12, color: 'var(--text-muted)' }}>
+            Enregistrement direct désactivé. Seul un administrateur peut créer de nouveaux comptes depuis le panneau d'administration.
           </div>
-
-          <Link to="/register" style={{ textDecoration: 'none', display: 'block' }}>
-            <button style={{
-              width: '100%',
-              padding: '12px 24px',
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-light)',
-              borderRadius: 'var(--radius-md)',
-              color: 'var(--text-secondary)',
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              letterSpacing: 0.2,
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-            >
-              Créer un compte professionnel
-            </button>
-          </Link>
 
           {/* Security notice */}
           <div style={{

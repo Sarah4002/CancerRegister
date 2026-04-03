@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -205,7 +205,16 @@ function Step3({ onNext, onBack, saved, isLoading }) {
 }
 
 export default function RegisterPage() {
-  const { register: registerUser, isLoading } = useAuthStore();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, register: registerUser, isLoading } = useAuthStore();
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.permissions?.can_manage_users) {
+      toast.error("Accès refusé. Seuls les administrateurs peuvent créer des comptes.");
+      navigate('/login');
+    }
+  }, [isAuthenticated, user, navigate]);
+
   const [step,    setStep]    = useState(0);
   const [saved,   setSaved]   = useState([{}, {}, {}]);
   const [success, setSuccess] = useState(false);
@@ -264,7 +273,7 @@ export default function RegisterPage() {
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>
             Créer un compte
           </h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Accès soumis à validation administrative</p>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Compte actif immédiatement après création</p>
         </div>
 
         <Stepper step={step} />
@@ -434,7 +443,7 @@ function SuccessScreen() {
         </div>
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>Demande soumise !</h2>
         <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: 32 }}>
-          Votre demande d'accès a été enregistrée. Un administrateur examinera votre dossier et vous notifiera par email une fois votre compte activé.
+          Le compte a été créé et activé. L'utilisateur pourra se connecter immédiatement.
         </p>
         <Link to="/login" style={{ textDecoration: 'none' }}>
           <PrimaryBtn label="Retour à la connexion" />

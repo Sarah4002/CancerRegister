@@ -377,6 +377,7 @@ export default function NewDiagnosticPage() {
               valeurs={valeursCustom}
               onChange={setValeur}
               loading={loadingCustom}
+              topographieCode={topoSelected?.code}
             />
 
             {/* Buttons */}

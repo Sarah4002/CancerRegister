@@ -183,9 +183,27 @@ export default function CustomFieldsSection({
 
   if (!champs || champs.length === 0) return null;
 
+  // Parser topographie_code qui peut contenir plusieurs codes séparés par des virgules
+  const getTopographieCodes = (topographieCode) => {
+    if (!topographieCode) return [];
+    return typeof topographieCode === 'string' 
+      ? topographieCode.split(',').map(c => c.trim()).filter(Boolean)
+      : [];
+  };
+
+  const selectedCodes = getTopographieCodes(topographieCode);
+
   // Séparer champs globaux et spécifiques cancer
   const champsGlobaux    = champs.filter(c => !c.topographie_code);
-  const champsSpecifiques = champs.filter(c => c.topographie_code);
+  // Filtrer champs spécifiques : afficher ceux qui contiennent le code sélectionné
+  const champsSpecifiques = selectedCodes.length > 0
+    ? champs.filter(c => {
+        if (!c.topographie_code) return false;
+        const champCodes = getTopographieCodes(c.topographie_code);
+        // Le champ s'affiche si AU MOINS UN code correspond
+        return champCodes.some(code => selectedCodes.includes(code));
+      })
+    : [];
 
   return (
     <div style={{ marginTop: 24 }}>
@@ -217,10 +235,10 @@ export default function CustomFieldsSection({
           borderRadius: 'var(--radius-md)',
         }}>
           <div style={{
-            fontSize: 11, fontWeight: 600, color: 'var(--accent)',
+            fontSize: 11, fontWeight: 600, color: 'var(--text-primary)',
             marginBottom: 14, letterSpacing: 0.5, textTransform: 'uppercase',
           }}>
-            🎯 Spécifique — {champsSpecifiques[0]?.topographie_libelle || topographieCode}
+            Spécifique — {champsSpecifiques[0]?.topographie_libelle || selectedCodes.join(', ')}
           </div>
           <ChampsGrid champs={champsSpecifiques} valeurs={valeurs} onChange={onChange} erreurs={erreurs} />
         </div>

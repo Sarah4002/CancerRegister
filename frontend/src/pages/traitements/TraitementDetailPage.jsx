@@ -10,6 +10,7 @@ const TYPE_CONFIG = {
   chirurgie: { label: 'Chirurgie',         color: '#ff4d6a' },
   hormono:   { label: 'Hormonothérapie',   color: '#00e5a0' },
   immuno:    { label: 'Immunothérapie',    color: '#c084fc' },
+  ciblee:    { label: 'Thérapie ciblée',  color: '#8b5cf6' },
 };
 
 const STATUT_COLORS = {
@@ -148,9 +149,9 @@ export default function TraitementDetailPage() {
           </Card>
         )}
 
-        {/* Spécifique immuno */}
-        {type === 'immuno' && (
-          <Card title="Immunothérapie" color={cfg.color}>
+        {/* Spécifique immuno / thérapie ciblée */}
+        {(type === 'immuno' || type === 'ciblee') && (
+          <Card title={type === 'ciblee' ? 'Thérapie ciblée' : 'Immunothérapie'} color={cfg.color}>
             <InfoRow label="Type"         value={data.type_label} />
             <InfoRow label="Molécule"     value={<span style={{ fontFamily:'var(--font-mono)', color:cfg.color }}>{data.molecule}</span>} />
             {data.dose && <InfoRow label="Dose" value={data.dose} />}

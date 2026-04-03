@@ -248,6 +248,7 @@ def fusionner_patients(
     id_principal: int,
     id_secondaire: int,
     user=None,
+    champs_fusion=None,
 ) -> dict:
     """
     Fusionne le dossier secondaire dans le principal.
@@ -263,27 +264,31 @@ def fusionner_patients(
     secondaire = Patient.objects.get(id=id_secondaire, est_actif=True)
 
     CHAMPS_FUSIONNABLES = [
+        'nom', 'prenom', 'date_naissance', 'sexe', 'id_national',
         'num_securite_sociale', 'telephone', 'telephone2', 'email',
         'adresse', 'commune', 'wilaya', 'code_postal',
         'niveau_instruction', 'profession', 'situation_familiale',
         'nombre_enfants', 'lieu_naissance', 'nationalite',
         'tabagisme', 'alcool', 'activite_physique', 'alimentation',
         'antecedents_familiaux', 'antecedents_personnels',
-        'etablissement_pec', 'notes',
+        'etablissement_pec', 'medecin_referent', 'notes',
     ]
 
     champs_mis_a_jour = []
 
-    for champ in CHAMPS_FUSIONNABLES:
-        val_p = getattr(principal, champ, None)
-        val_s = getattr(secondaire, champ, None)
-        if val_p in (None, '', 'inconnu') and val_s not in (None, '', 'inconnu'):
-            setattr(principal, champ, val_s)
-            champs_mis_a_jour.append(champ)
-    if champs_mis_a_jour:
-        for champ, valeur in champs_mis_a_jour.items():
-            if hasattr(principal, champ) and champ not in ('id', 'registration_number'):
-                setattr(principal, champ, valeur or None)
+    if champs_fusion and isinstance(champs_fusion, dict):
+        for champ, valeur in champs_fusion.items():
+            if champ in CHAMPS_FUSIONNABLES and hasattr(principal, champ):
+                # Conserver la valeur explicitement choisie par l'utilisateur
+                setattr(principal, champ, valeur if valeur not in ('', 'inconnu') else None)
+                champs_mis_a_jour.append(champ)
+    else:
+        for champ in CHAMPS_FUSIONNABLES:
+            val_p = getattr(principal, champ, None)
+            val_s = getattr(secondaire, champ, None)
+            if val_p in (None, '', 'inconnu') and val_s not in (None, '', 'inconnu'):
+                setattr(principal, champ, val_s)
+                champs_mis_a_jour.append(champ)
 
     # Archiver le secondaire
     secondaire.est_actif = False
