@@ -148,10 +148,10 @@ export default function DiagnosticDetailPage() {
             <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(155,138,251,0.15)', border: '1px solid rgba(155,138,251,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}></div>
             <div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>
-                {diag.topographie_libelle || 'Diagnostic'}
+                {diag.diagnostic_resume || diag.topographie_libelle || 'Diagnostic'}
               </h2>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                <Code val={diag.topographie_code} color="#00a8ff" />
+                <Code val={diag.categorie_cancer === 'liquide' ? 'HEMATO' : diag.topographie_code} color="#00a8ff" />
                 {diag.morphologie_code && <Code val={diag.morphologie_code} color="#9b8afb" />}
                 {diag.tnm_complet && diag.tnm_complet !== '—' && <Code val={diag.tnm_complet} color="#00e5a0" />}
                 <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: `${stadeColor}18`, color: stadeColor, border: `1px solid ${stadeColor}30`, fontFamily: 'var(--font-mono)' }}>
@@ -209,11 +209,14 @@ export default function DiagnosticDetailPage() {
             {/* Ici on garde exactement ton rendu existant */}
             {tab === 'icd' && (
               <Grid>
-                <InfoRow label="Code Topographie ICD-O-3" value={diag.topographie_code} mono />
-                <InfoRow label="Localisation" value={diag.topographie_libelle || '—'} />
+                <InfoRow label="Catégorie" value={diag.categorie_cancer_label || '—'} />
+                <InfoRow label="Code Topographie ICD-O-3" value={diag.categorie_cancer === 'liquide' ? 'HEMATO' : diag.topographie_code} mono />
+                <InfoRow label="Localisation / Diagnostic" value={diag.diagnostic_resume || diag.topographie_libelle || '—'} />
                 <InfoRow label="Latéralité" value={diag.lateralite_label} />
                 <InfoRow label="Code Morphologie ICD-O-3" value={diag.morphologie_code || '—'} mono />
                 <InfoRow label="Type histologique" value={diag.morphologie_libelle || '—'} />
+                <InfoRow label="Hémopathie maligne" value={diag.hemopathie_maligne_label || '—'} />
+                <InfoRow label="Examens complémentaires" value={diag.examens_complementaires || '—'} full />
                 <InfoRow label="Grade histologique" value={diag.grade_label} />
                 <InfoRow label="Base du diagnostic" value={diag.base_diag_label} />
                 <InfoRow label="N° bloc anatomopath." value={diag.numero_bloc_anapath || '—'} mono />

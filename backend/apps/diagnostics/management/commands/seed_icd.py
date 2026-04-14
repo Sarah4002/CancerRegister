@@ -1,16 +1,58 @@
+from pathlib import Path
+
 from django.core.management.base import BaseCommand
 from apps.diagnostics.models import TopographieICD, MorphologieICD
 from apps.diagnostics.icd_data import TOPOGRAPHIES, MORPHOLOGIES
+from apps.diagnostics.canreg_dictionary import extract_topographies_and_morphologies
+
+
+def get_default_dictionary_path():
+    project_root = Path(__file__).resolve().parents[5]
+    candidates = (
+        project_root / 'data' / 'references' / 'dictionnaire',
+        project_root / 'data' / 'references' / 'dictionnaire_canreg.txt',
+    )
+    for candidate in candidates:
+        if candidate.exists():
+            return str(candidate)
+    return ''
 
 
 class Command(BaseCommand):
     help = 'Charge les référentiels ICD-O-3 (topographies et morphologies)'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--dictionary',
+            type=str,
+            default='',
+            help='Chemin vers un fichier "dictionnaire" CanReg (format #<id>\\t----section).',
+        )
+
     def handle(self, *args, **options):
+        dictionary_path = (options.get('dictionary') or '').strip() or get_default_dictionary_path()
+
+        topographies = TOPOGRAPHIES
+        morphologies = MORPHOLOGIES
+
+        if dictionary_path:
+            self.stdout.write(f'⏳ Lecture du dictionnaire CanReg: {dictionary_path}')
+            parsed_topos, parsed_morphos = extract_topographies_and_morphologies(dictionary_path)
+            if parsed_topos:
+                topographies = parsed_topos
+            if parsed_morphos:
+                morphologies = parsed_morphos
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f'  ✓ Dictionnaire chargé ({len(topographies)} topographies, {len(morphologies)} morphologies)'
+                )
+            )
+
         self.stdout.write('⏳ Chargement des topographies ICD-O-3...')
         created_t = 0
-        for item in TOPOGRAPHIES:
-            _, created = TopographieICD.objects.get_or_create(
+        updated_t = 0
+        for item in topographies:
+            _, created = TopographieICD.objects.update_or_create(
                 code=item['code'],
                 defaults={
                     'libelle':   item['libelle'],
@@ -19,12 +61,19 @@ class Command(BaseCommand):
             )
             if created:
                 created_t += 1
-        self.stdout.write(self.style.SUCCESS(f'  ✓ {created_t} topographies créées ({len(TOPOGRAPHIES)} total)'))
+            else:
+                updated_t += 1
+        self.stdout.write(
+            self.style.SUCCESS(
+                f'  ✓ {created_t} topographies créées, {updated_t} mises à jour ({len(topographies)} total)'
+            )
+        )
 
         self.stdout.write('⏳ Chargement des morphologies ICD-O-3...')
         created_m = 0
-        for item in MORPHOLOGIES:
-            _, created = MorphologieICD.objects.get_or_create(
+        updated_m = 0
+        for item in morphologies:
+            _, created = MorphologieICD.objects.update_or_create(
                 code=item['code'],
                 defaults={
                     'libelle':      item['libelle'],
@@ -34,5 +83,11 @@ class Command(BaseCommand):
             )
             if created:
                 created_m += 1
-        self.stdout.write(self.style.SUCCESS(f'  ✓ {created_m} morphologies créées ({len(MORPHOLOGIES)} total)'))
+            else:
+                updated_m += 1
+        self.stdout.write(
+            self.style.SUCCESS(
+                f'  ✓ {created_m} morphologies créées, {updated_m} mises à jour ({len(morphologies)} total)'
+            )
+        )
         self.stdout.write(self.style.SUCCESS('✅ Référentiels ICD-O-3 chargés avec succès !'))

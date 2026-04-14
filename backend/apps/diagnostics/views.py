@@ -42,9 +42,10 @@ class DiagnosticViewSet(viewsets.ModelViewSet):
     #   - epidemio     => acces REFUSE (meme en lecture)
     permission_classes = [IsAuthenticated, CanReadOrWriteDiagnostic]
     filter_backends    = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields   = ['patient', 'stade_ajcc', 'lateralite', 'est_principal', 'tnm_type']
+    filterset_fields   = ['patient', 'stade_ajcc', 'lateralite', 'est_principal', 'tnm_type', 'categorie_cancer', 'hemopathie_maligne']
     search_fields      = ['topographie_code', 'topographie_libelle',
                           'morphologie_code', 'morphologie_libelle',
+                          'hemopathie_maligne', 'examens_complementaires',
                           'patient__nom', 'patient__registration_number']
     ordering_fields    = ['date_diagnostic', 'date_creation']
     ordering           = ['-date_diagnostic']

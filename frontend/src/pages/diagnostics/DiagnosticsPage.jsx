@@ -101,7 +101,7 @@ export default function DiagnosticsPage() {
         borderRadius: 'var(--radius-md)', padding: '14px 18px',
         display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap',
       }}>
-        <SearchBox value={search} onChange={setSearch} placeholder="Rechercher par topographie, patient, morphologie..." />
+        <SearchBox value={search} onChange={setSearch} placeholder="Rechercher par topographie, hémopathie, patient, morphologie..." />
         <select value={stadeFilter} onChange={e => setStadeFilter(e.target.value)} style={selectStyle}>
           <option value="">Stade : Tous</option>
           {['0','I','IA','IB','II','IIA','IIB','IIC','III','IIIA','IIIB','IIIC','IV','U'].map(s => (
@@ -126,7 +126,7 @@ export default function DiagnosticsPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'var(--bg-elevated)' }}>
-                {['Patient', 'Date', 'Topographie (ICD-O-3)', 'Morphologie', 'TNM', 'Stade', 'Grade', 'Base Diag.', ''].map(h => (
+                {['Patient', 'Date', 'Diagnostic / Localisation', 'Morphologie', 'TNM', 'Stade', 'Grade', 'Base Diag.', ''].map(h => (
                   <th key={h} style={thStyle}>{h}</th>
                 ))}
               </tr>
@@ -147,8 +147,8 @@ export default function DiagnosticsPage() {
                     {new Date(d.date_diagnostic).toLocaleDateString('fr-DZ')}
                   </td>
                   <td style={tdStyle}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', marginBottom: 2 }}>{d.topographie_code}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.topographie_libelle || '—'}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', marginBottom: 2 }}>{d.categorie_cancer === 'liquide' ? 'HEMATO' : d.topographie_code}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.diagnostic_resume || d.topographie_libelle || '—'}</div>
                   </td>
                   <td style={tdStyle}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#9b8afb', marginBottom: 2 }}>{d.morphologie_code}</div>
