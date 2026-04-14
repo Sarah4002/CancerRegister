@@ -1,39 +1,15 @@
-from pathlib import Path
-
 from django.core.management.base import BaseCommand
 from apps.diagnostics.models import TopographieICD, MorphologieICD
 from apps.diagnostics.icd_data import TOPOGRAPHIES, MORPHOLOGIES
-from apps.diagnostics.canreg_dictionary import extract_topographies_and_morphologies
-
-
-def get_default_dictionary_path():
-    project_root = Path(__file__).resolve().parents[5]
-    candidates = (
-        project_root / 'data' / 'references' / 'dictionnaire',
-        project_root / 'data' / 'references' / 'dictionnaire_canreg.txt',
-    )
-    for candidate in candidates:
-        if candidate.exists():
-            return str(candidate)
-    return ''
 
 
 class Command(BaseCommand):
     help = 'Charge les référentiels ICD-O-3 (topographies et morphologies)'
 
-    def add_arguments(self, parser):
-        parser.add_argument(
-            '--dictionary',
-            type=str,
-            default='',
-            help='Chemin vers un fichier "dictionnaire" CanReg (format #<id>\\t----section).',
-        )
-
     def handle(self, *args, **options):
-        dictionary_path = (options.get('dictionary') or '').strip() or get_default_dictionary_path()
-
         topographies = TOPOGRAPHIES
         morphologies = MORPHOLOGIES
+        dictionary_path = None
 
         if dictionary_path:
             self.stdout.write(f'⏳ Lecture du dictionnaire CanReg: {dictionary_path}')
