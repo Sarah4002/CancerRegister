@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ReunionRCP, PresenceRCP, DossierRCP, DecisionRCP
+from .models import ReunionRCP, PresenceRCP, DossierRCP, DecisionRCP, MessageRCP
 
 
 class PresenceRCPSerializer(serializers.ModelSerializer):
@@ -16,6 +16,21 @@ class PresenceRCPSerializer(serializers.ModelSerializer):
         return obj.nom_externe or '—'
 
 
+class MessageRCPSerializer(serializers.ModelSerializer):
+    auteur_nom = serializers.CharField(source='auteur.get_full_name', read_only=True)
+    auteur_specialite = serializers.CharField(source='auteur.speciality', read_only=True)
+    date_envoi_format = serializers.DateTimeField(source='date_envoi', format="%H:%M", read_only=True)
+
+    class Meta:
+        model = MessageRCP
+        fields = [
+            'id', 'reunion', 'dossier', 'auteur', 'auteur_nom', 
+            'auteur_specialite', 'contenu', 'est_important', 
+            'date_envoi', 'date_envoi_format'
+        ]
+        read_only_fields = ['auteur', 'date_envoi']
+
+
 class DecisionRCPSerializer(serializers.ModelSerializer):
     type_label     = serializers.CharField(source='get_type_decision_display', read_only=True)
     priorite_label = serializers.CharField(source='get_priorite_display', read_only=True)
@@ -23,7 +38,12 @@ class DecisionRCPSerializer(serializers.ModelSerializer):
 
     class Meta:
         model  = DecisionRCP
-        fields = '__all__'
+        fields = [
+            'id', 'dossier', 'type_decision', 'type_label', 'priorite', 'priorite_label',
+            'description', 'protocole', 'referentiel', 'medecin_referent', 'referent_nom',
+            'delai_semaines', 'accord_patient', 'validee_par_coordinateur', 'realise',
+            'date_realisation', 'observations', 'date_creation'
+        ]
         read_only_fields = ['date_creation']
 
     def get_referent_nom(self, obj):
@@ -117,13 +137,16 @@ class ReunionRCPDetailSerializer(serializers.ModelSerializer):
     coordinateur_nom  = serializers.SerializerMethodField()
     presences         = PresenceRCPSerializer(many=True, read_only=True)
     dossiers          = DossierRCPListSerializer(many=True, read_only=True)
+    messages          = MessageRCPSerializer(many=True, read_only=True)
     nombre_dossiers   = serializers.IntegerField(read_only=True)
     nombre_membres_presents = serializers.IntegerField(read_only=True)
+    secretaire_nom    = serializers.CharField(source='secretaire.get_full_name', read_only=True)
+    quorum_atteint    = serializers.BooleanField(read_only=True)
 
     class Meta:
         model  = ReunionRCP
         fields = '__all__'
-        read_only_fields = ['date_creation', 'date_modification', 'cree_par']
+        read_only_fields = ['date_creation', 'date_modification', 'cree_par', 'quorum_atteint']
 
     def get_coordinateur_nom(self, obj):
         if obj.coordinateur:

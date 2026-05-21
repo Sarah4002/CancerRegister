@@ -9,6 +9,18 @@ class ContactUrgenceSerializer(serializers.ModelSerializer):
         fields = ['id', 'nom', 'prenom', 'lien', 'telephone', 'telephone2']
         read_only_fields = ['id']
 
+    def validate_telephone(self, value):
+        if not value:
+            return value
+        val = ''.join(ch for ch in value if ch.isdigit())
+        import re
+        if not re.match(r'^(0(5|6|7))\d{8}$', val):
+            raise serializers.ValidationError('Numéro de téléphone invalide. Doit comporter 10 chiffres et commencer par 05, 06 ou 07.')
+        return val
+
+    def validate_telephone2(self, value):
+        return self.validate_telephone(value)
+
 
 class DossierMedicalSerializer(serializers.ModelSerializer):
     class Meta:
@@ -116,6 +128,23 @@ class PatientDetailSerializer(serializers.ModelSerializer):
             base = getattr(settings, 'MOBILE_APP_BASE_URL', None)
         return obj.get_qr_url(base_url=base)
 
+    def validate_telephone(self, value):
+        if not value:
+            return value
+        val = ''.join(ch for ch in value if ch.isdigit())
+        import re
+        if not re.match(r'^(0(5|6|7))\d{8}$', val):
+            raise serializers.ValidationError('Numéro de téléphone invalide. Doit comporter 10 chiffres et commencer par 05, 06 ou 07.')
+        return val
+
+    def validate_telephone2(self, value):
+        return self.validate_telephone(value)
+
+    def validate_email(self, value):
+        if not value:
+            return value
+        return value.strip().lower()
+
 
 class PatientCreateSerializer(serializers.ModelSerializer):
     contacts_urgence = ContactUrgenceSerializer(many=True, required=False)
@@ -154,6 +183,23 @@ class PatientCreateSerializer(serializers.ModelSerializer):
         for contact_data in contacts_data:
             ContactUrgence.objects.create(patient=patient, **contact_data)
         return patient
+
+    def validate_telephone(self, value):
+        if not value:
+            return value
+        val = ''.join(ch for ch in value if ch.isdigit())
+        import re
+        if not re.match(r'^(0(5|6|7))\d{8}$', val):
+            raise serializers.ValidationError('Numéro de téléphone invalide. Doit comporter 10 chiffres et commencer par 05, 06 ou 07.')
+        return val
+
+    def validate_telephone2(self, value):
+        return self.validate_telephone(value)
+
+    def validate_email(self, value):
+        if not value:
+            return value
+        return value.strip().lower()
 
     def update(self, instance, validated_data):
         contacts_data = validated_data.pop('contacts_urgence', None)

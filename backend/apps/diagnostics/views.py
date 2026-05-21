@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count, Q
+import csv
+from django.http import HttpResponse
 
 from .models import Diagnostic, TopographieICD, MorphologieICD
 from .serializers import (
@@ -114,3 +116,40 @@ class DiagnosticViewSet(viewsets.ModelViewSet):
             return Response({'error': 'patient_id requis'}, status=400)
         qs = self.get_queryset().filter(patient_id=patient_id)
         return Response(DiagnosticListSerializer(qs, many=True).data)
+
+    @action(detail=False, methods=['get'])
+    def export_csv(self, request):
+        """Export des diagnostics filtrés au format CSV."""
+        qs = self.filter_queryset(self.get_queryset())
+
+        # Colonnes à exporter
+        headers = [
+            'id', 'patient_numero', 'patient_nom', 'date_diagnostic',
+            'categorie_cancer', 'topographie_code', 'topographie_libelle',
+            'morphologie_code', 'morphologie_libelle', 'hemopathie_maligne',
+            'stade_ajcc', 'etat_cancer'
+        ]
+
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="diagnostics.csv"'
+        writer = csv.writer(response)
+        writer.writerow(headers)
+
+        for d in qs.select_related('patient', 'topographie', 'morphologie'):
+            row = [
+                d.id,
+                getattr(d.patient, 'registration_number', ''),
+                getattr(d.patient, 'get_full_name', '')() if hasattr(d.patient, 'get_full_name') else f"{d.patient.nom} {d.patient.prenom}",
+                d.date_diagnostic,
+                d.categorie_cancer,
+                d.topographie_code,
+                d.topographie_libelle,
+                d.morphologie_code,
+                d.morphologie_libelle,
+                d.hemopathie_maligne,
+                d.stade_ajcc,
+                d.etat_cancer,
+            ]
+            writer.writerow(row)
+
+        return response

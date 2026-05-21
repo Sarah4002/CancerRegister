@@ -140,3 +140,14 @@ class CanManageUsers(BasePermission):
     message = "Gestion des utilisateurs réservée aux administrateurs."
     def has_permission(self, request, view):
         return can_manage_users(request.user)
+
+
+class IsRCPCoordinator(BasePermission):
+    message = "Action réservée au coordinateur de la réunion."
+    def has_object_permission(self, request, view, obj):
+        # Support pour ReunionRCP, DossierRCP ou DecisionRCP
+        if hasattr(obj, 'reunion'):
+            return request.user == obj.reunion.coordinateur or request.user.role == 'admin'
+        if hasattr(obj, 'dossier'):
+            return request.user == obj.dossier.reunion.coordinateur or request.user.role == 'admin'
+        return request.user == getattr(obj, 'coordinateur', None) or request.user.role == 'admin'

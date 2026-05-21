@@ -18,6 +18,8 @@ class ReunionRCP(models.Model):
         TERMINEE   = 'terminee',   'Terminée'
         ANNULEE    = 'annulee',    'Annulée'
         REPORTEE   = 'reportee',   'Reportée'
+        VALIDEE    = 'validee',    'Validée & Archivée'
+        SUSPENDUE  = 'suspendue',  'Suspendue'
 
     class TypeRCP(models.TextChoices):
         SEIN           = 'sein',        'RCP Sein'
@@ -47,11 +49,20 @@ class ReunionRCP(models.Model):
         related_name='rcps_coordonnees',
         help_text="Médecin coordinateur de la RCP"
     )
+    secretaire     = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='rcps_secretariees'
+    )
     etablissement  = models.CharField(max_length=200, blank=True)
     objectif       = models.TextField(blank=True, help_text="Ordre du jour / objectifs de la réunion")
     compte_rendu   = models.TextField(blank=True)
     observations   = models.TextField(blank=True)
     nombre_dossiers_prevus = models.PositiveSmallIntegerField(default=0)
+    
+    # Télé-RCP & Visio
+    est_virtuelle  = models.BooleanField(default=False)
+    lien_visio     = models.URLField(max_length=500, blank=True)
+    code_acces     = models.CharField(max_length=50, blank=True)
 
     date_creation     = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now=True)
@@ -73,6 +84,18 @@ class ReunionRCP(models.Model):
     @property
     def nombre_membres_presents(self):
         return self.presences.filter(present=True).count()
+
+    def verifier_quorum(self):
+        """
+        Vérifie si le quorum est atteint (Min 3 spécialités distinctes présentes).
+        Règle INCa / ONCOPL.
+        """
+        specialites_presents = self.presences.filter(present=True).values_list('specialite', flat=True).distinct()
+        return specialites_presents.count() >= 3
+
+    @property
+    def quorum_atteint(self):
+        return self.verifier_quorum()
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -109,6 +132,23 @@ class PresenceRCP(models.Model):
     def __str__(self):
         nom = self.medecin.get_full_name() if self.medecin else self.nom_externe
         return f"{nom} – {self.reunion}"
+
+
+# ─────────────────────────────────────────────────────────────────
+# 2b. CHAT MÉDICAL COLLABORATIF
+# ─────────────────────────────────────────────────────────────────
+
+class MessageRCP(models.Model):
+    reunion = models.ForeignKey(ReunionRCP, on_delete=models.CASCADE, related_name='messages')
+    dossier = models.ForeignKey('DossierRCP', on_delete=models.CASCADE, related_name='discussions', null=True, blank=True)
+    auteur  = models.ForeignKey(User, on_delete=models.CASCADE)
+    contenu = models.TextField()
+    est_important = models.BooleanField(default=False)
+    date_envoi = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'rcp_messages'
+        ordering = ['date_envoi']
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -188,14 +228,17 @@ class DecisionRCP(models.Model):
     type_decision    = models.CharField(max_length=20, choices=TypeDecision.choices)
     priorite         = models.CharField(max_length=10, choices=Priorite.choices, default='normale')
     description      = models.TextField(help_text="Détail de la décision thérapeutique")
-    protocole        = models.CharField(max_length=200, blank=True, help_text="Protocole proposé ex: FOLFOX, AC-T")
+    protocole        = models.CharField(max_length=200, blank=True, help_text="Ex: FOLFOX, AC-T, Recommandations INCa")
+    referentiel      = models.CharField(max_length=100, blank=True, help_text="Source : INCa, NCCN, ESMO")
+    
     medecin_referent = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='decisions_rcp_referentes',
     )
     delai_semaines   = models.PositiveSmallIntegerField(null=True, blank=True, help_text="Délai de mise en œuvre en semaines")
     accord_patient   = models.BooleanField(default=False, help_text="Accord du patient requis")
-    realise          = models.BooleanField(default=False)
+    validee_par_coordinateur = models.BooleanField(default=False)
+    realise          = models.BooleanField(default=False, verbose_name="Traitement initié")
     date_realisation = models.DateField(null=True, blank=True)
     observations     = models.TextField(blank=True)
     date_creation    = models.DateTimeField(auto_now_add=True)

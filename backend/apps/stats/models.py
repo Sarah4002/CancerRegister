@@ -175,6 +175,7 @@ class AIReport(models.Model):
     payload         = models.JSONField(default=dict, blank=True)
     contenu_md      = models.TextField(blank=True)
     recommandations = models.JSONField(default=list, blank=True)
+    charts_json     = models.JSONField(default=list, blank=True)
     created_by      = models.ForeignKey(                                       # ← list_display + search
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
         related_name='ai_reports'

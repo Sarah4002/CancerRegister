@@ -220,6 +220,35 @@ class DiagnosticCreateSerializer(serializers.ModelSerializer):
         if errors:
             raise serializers.ValidationError(errors)
 
+        # Vérification simple de cohérence sexe <-> topographie (ex: sein/prostate)
+        try:
+            patient = attrs.get('patient') or (instance.patient if instance else None)
+        except Exception:
+            patient = None
+
+        if patient and topographie:
+            libelle = ''
+            try:
+                # topographie peut être une instance ou une PK
+                if hasattr(topographie, 'libelle'):
+                    libelle = (topographie.libelle or '')
+                else:
+                    tp = TopographieICD.objects.filter(pk=topographie).first()
+                    libelle = (tp.libelle if tp else '')
+            except Exception:
+                libelle = ''
+
+            libelle_low = libelle.lower()
+            sexe = (getattr(patient, 'sexe', '') or '').lower()
+            # règles simples — augmenter la liste si besoin
+            if 'sein' in libelle_low and sexe and not sexe.startswith('f'):
+                errors['topographie'] = 'Incohérence: diagnostic sur le sein pour un patient déclaré de sexe masculin.'
+            if 'prostate' in libelle_low and sexe and sexe.startswith('f'):
+                errors['topographie'] = 'Incohérence: diagnostic sur la prostate pour un patient déclaré de sexe féminin.'
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
         return attrs
 
     def create(self, validated_data):

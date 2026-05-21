@@ -6,12 +6,14 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count, Prefetch
 from django.utils import timezone
 
-from .models import ReunionRCP, PresenceRCP, DossierRCP, DecisionRCP
-from .serializers import (
+from apps.rcp.models import ReunionRCP, PresenceRCP, DossierRCP, DecisionRCP, MessageRCP
+from apps.rcp.serializers import (
     ReunionRCPListSerializer, ReunionRCPDetailSerializer, ReunionRCPCreateSerializer,
     DossierRCPListSerializer, DossierRCPDetailSerializer, DossierRCPCreateSerializer,
-    DecisionRCPSerializer, PresenceRCPSerializer,
+    DecisionRCPSerializer, PresenceRCPSerializer, MessageRCPSerializer
 )
+
+from apps.accounts.permissions import IsRCPCoordinator
 
 
 class ReunionRCPViewSet(viewsets.ModelViewSet):
@@ -23,7 +25,7 @@ class ReunionRCPViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return ReunionRCP.objects.select_related('coordinateur', 'cree_par') \
-            .prefetch_related('presences', 'dossiers')
+            .prefetch_related('presences', 'dossiers', 'messages__auteur')
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -55,6 +57,12 @@ class ReunionRCPViewSet(viewsets.ModelViewSet):
             'total_decisions': DecisionRCP.objects.count(),
             'decisions_en_attente': DecisionRCP.objects.filter(realise=False).count(),
         })
+
+    @action(detail=True, methods=['get'])
+    def verifier_quorum(self, request, pk=None):
+        reunion = self.get_object()
+        atteint = reunion.verifier_quorum()
+        return Response({'quorum_atteint': atteint, 'nb_presents': reunion.nombre_membres_presents})
 
     @action(detail=True, methods=['post'])
     def changer_statut(self, request, pk=None):
@@ -122,6 +130,20 @@ class DossierRCPViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
 
+    @action(detail=True, methods=['post'])
+    def generer_resume_ia(self, request, pk=None):
+        dossier = self.get_object()
+        assistant = RCPAIAssistant()
+        resume = assistant.generer_resume_cas(dossier)
+        return Response({'resume_ia': resume})
+
+    @action(detail=True, methods=['get'])
+    def suggestions_ia(self, request, pk=None):
+        dossier = self.get_object()
+        assistant = RCPAIAssistant()
+        options = assistant.suggerer_decision(dossier)
+        return Response({'suggestions': options})
+
     @action(detail=False, methods=['get'])
     def par_patient(self, request):
         pid = request.query_params.get('patient_id')
@@ -143,6 +165,14 @@ class DecisionRCPViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return DecisionRCP.objects.select_related('dossier__patient', 'medecin_referent')
 
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsRCPCoordinator])
+    def valider(self, request, pk=None):
+        """Validation collégiale par le coordinateur."""
+        decision = self.get_object()
+        decision.validee_par_coordinateur = True
+        decision.save()
+        return Response({'status': 'validée', 'id': decision.id})
+
     @action(detail=True, methods=['post'])
     def marquer_realise(self, request, pk=None):
         decision = self.get_object()
@@ -151,3 +181,22 @@ class DecisionRCPViewSet(viewsets.ModelViewSet):
         decision.date_realisation = timezone.now().date()
         decision.save()
         return Response(DecisionRCPSerializer(decision).data)
+
+
+class MessageRCPViewSet(viewsets.ModelViewSet):
+    """Gestion du chat médical en temps réel."""
+    serializer_class = MessageRCPSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        rid = self.request.query_params.get('reunion_id')
+        did = self.request.query_params.get('dossier_id')
+        qs = MessageRCP.objects.select_related('auteur', 'reunion', 'dossier')
+        if rid:
+            qs = qs.filter(reunion_id=rid)
+        if did:
+            qs = qs.filter(dossier_id=did)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(auteur=self.request.user)

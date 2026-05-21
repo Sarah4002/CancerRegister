@@ -18,6 +18,7 @@ même si ces tables ne sont pas encore migrées.
 """
 
 from datetime import date, timedelta
+from datetime import datetime
 from collections import defaultdict
 
 from django.db import models
@@ -50,20 +51,18 @@ try:
         Chimiotherapie, Radiotherapie, Chirurgie,
         Hormonotherapie, Immunotherapie
     )
-    # Create a combined queryset for backward compatibility
-    class Traitement:
+    class TraitementHelper:
         """Proxy class that combines all treatment types for stats queries."""
         _treatment_models = [
             Chimiotherapie, Radiotherapie, Chirurgie,
             Hormonotherapie, Immunotherapie
         ]
-        
-        @classmethod
-        def objects(cls):
+        @property
+        def all_objects(self):
             from django.db.models import QuerySet
-            # Return a combined queryset from all treatment models
-            querysets = [model.objects.all() for model in cls._treatment_models]
+            querysets = [model.objects.all() for model in self._treatment_models]
             return querysets[0].union(*querysets[1:]) if querysets else QuerySet()
+    Traitement = TraitementHelper()
 except ImportError:
     Traitement = None
 
@@ -250,12 +249,11 @@ class KPIView(APIView):
         deces_annee = 0
         deces_n1    = 0
         if Patient is not None:
-            deces_annee = qs_for(annee).filter(
-                patient__date_deces__year=annee
-            ).values('patient_id').distinct().count()
-            deces_n1 = qs_for(annee - 1).filter(
-                patient__date_deces__year=annee - 1
-            ).values('patient_id').distinct().count()
+            dq = Patient.objects.filter(date_deces__isnull=False)
+            if sexe and sexe not in ('all', 'Tous', ''):
+                dq = dq.filter(sexe=sexe)
+            deces_annee = dq.filter(date_deces__year=annee).count()
+            deces_n1    = dq.filter(date_deces__year=annee - 1).count()
 
         variation_mort_n1 = None
         if deces_n1 > 0:
@@ -909,7 +907,7 @@ class DelaiTraitementView(APIView):
                 {'delai': '>3 mois', 'count':  80, 'delai_moyen': 18},
             ]
             return _response(data)
-        qs = Traitement.objects.select_related('diagnostic')
+        qs = Traitement.all_objects
         rows = []
         for t in qs:
             if t.date_debut and t.diagnostic and t.diagnostic.date_diagnostic:
