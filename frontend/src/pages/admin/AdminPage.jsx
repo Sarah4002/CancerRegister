@@ -12,25 +12,25 @@ import toast from 'react-hot-toast';
 
 // -- Constantes --
 const ROLE_CFG = {
- admin: { color:'#ff4d6a', label:'Administrateur' },
- doctor: { color:'#00a8ff', label:'Medecin Oncologue' },
- registrar: { color:'#9b8afb', label:'Enregistreur' },
- epidemiologist: { color:'#00e5a0', label:'Epidemiologist' },
- analyst: { color:'#f5a623', label:'Analyste' },
- readonly: { color:'#6b7280', label:'Lecture seule' } };
+ admin: { color:'#1d4ed8', label:'Administrateur' },
+ doctor: { color:'#2563eb', label:'Medecin Oncologue' },
+ registrar: { color:'#3b82f6', label:'Enregistreur' },
+ epidemiologist: { color:'#60a5fa', label:'Epidemiologist' },
+ analyst: { color:'#93c5fd', label:'Analyste' },
+ readonly: { color:'#64748b', label:'Lecture seule' } };
 const ACTION_CFG = {
- login: { color:'#00e5a0' }, logout: { color:'#6b7280' },
- view: { color:'#00a8ff' }, create: { color:'#9b8afb' },
- update: { color:'#f5a623' }, delete: { color:'#ff4d6a' },
- export: { color:'#fb923c' }, report: { color:'#38bdf8' },
- import: { color:'#a78bfa' } };
-const C = ['#00a8ff','#9b8afb','#00e5a0','#f5a623','#ff4d6a','#c084fc','#38bdf8','#34d399'];
+ login: { color:'#60a5fa' }, logout: { color:'#64748b' },
+ view: { color:'#2563eb' }, create: { color:'#3b82f6' },
+ update: { color:'#1d4ed8' }, delete: { color:'#dc2626' },
+ export: { color:'#60a5fa' }, report: { color:'#2563eb' },
+ import: { color:'#93c5fd' } };
+const C = ['#2563eb','#3b82f6','#60a5fa','#93c5fd','#1d4ed8','#2563eb','#60a5fa','#bfdbfe'];
 
 const CustomTooltip = ({ active, payload, label }) => {
  if (!active || !payload?.length) return null;
  return (
- <div style={{ background:'#0f1420', border:'1px solid #1e2a3a', borderRadius:8, padding:'10px 14px', fontSize:12 }}>
- {label && <div style={{ color:'#9ca3af', marginBottom:4, fontWeight:600 }}>{label}</div>}
+ <div style={{ background:'#ffffff', border:'1px solid #f1f5f9', borderRadius:8, padding:'10px 14px', fontSize:12 }}>
+ {label && <div style={{ color:'#64748b', marginBottom:4, fontWeight:600 }}>{label}</div>}
  {payload.map((p,i) => <div key={i} style={{ color:p.color||'#e2e8f0' }}>{p.name||'Valeur'} : <b>{p.value}</b></div>)}
  </div>
  );
@@ -39,16 +39,16 @@ const CustomTooltip = ({ active, payload, label }) => {
 // -- Composants --
 function StatCard({ label, value, color, sub }) {
  return (
- <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', padding:'14px 18px' }}>
+ <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', padding:'14px 18px' }}>
  <div style={{ fontSize:26, fontWeight:800, fontFamily:'var(--font-display)', color, marginBottom:2 }}>{value ?? '—'}</div>
- <div style={{ fontSize:11, color:'var(--text-muted)' }}>{label}</div>
+ <div style={{ fontSize:11, color:'#64748b' }}>{label}</div>
  {sub && <div style={{ fontSize:10, color, marginTop:3 }}>{sub}</div>}
  </div>
  );
 }
 
 function RoleBadge({ role }) {
- const cfg = ROLE_CFG[role] || { color:'#9ca3af', label:role };
+ const cfg = ROLE_CFG[role] || { color:'#64748b', label:role };
  return (
  <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:500, background:`${cfg.color}15`, color:cfg.color, border:`1px solid ${cfg.color}25` }}>
  {cfg.label}
@@ -57,7 +57,7 @@ function RoleBadge({ role }) {
 }
 
 function ActionBadge({ action, label }) {
- const cfg = ACTION_CFG[action] || { color:'#9ca3af' };
+ const cfg = ACTION_CFG[action] || { color:'#64748b' };
  return (
  <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:20, fontSize:10, fontWeight:600, background:`${cfg.color}12`, color:cfg.color, border:`1px solid ${cfg.color}20` }}>
  {label}
@@ -135,22 +135,22 @@ function SectionUsers() {
  <div>
  {stats && (
  <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
- <StatCard label="Utilisateurs total" value={stats.total} color="#00a8ff" />
- <StatCard label="Comptes actifs" value={stats.actifs} color="#00e5a0" />
- <StatCard label="En attente" value={stats.inactifs} color="#f5a623" />
- <StatCard label="Connectes (7j)" value={stats.connectes_7j} color="#9b8afb" />
+ <StatCard label="Utilisateurs total" value={stats.total} color="#2563eb" />
+ <StatCard label="Comptes actifs" value={stats.actifs} color="#3b82f6" />
+ <StatCard label="En attente" value={stats.inactifs} color="#60a5fa" />
+ <StatCard label="Connectes (7j)" value={stats.connectes_7j} color="#1d4ed8" />
  </div>
  )}
 
  {stats?.par_role && (
  <div style={{ display:'flex', gap:8, marginBottom:16, flexWrap:'wrap' }}>
  {stats.par_role.map(r => {
- const cfg = ROLE_CFG[r.role] || { color:'#9ca3af', label:r.role };
+ const cfg = ROLE_CFG[r.role] || { color:'#64748b', label:r.role };
  return (
  <div key={r.role} onClick={() => setRole(roleFilter === r.role ? '' : r.role)}
  style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:20, cursor:'pointer',
- background: roleFilter===r.role ? `${cfg.color}20` : 'var(--bg-card)',
- border:`1px solid ${roleFilter===r.role ? cfg.color+'40' : 'var(--border-light)'}`,
+ background: roleFilter===r.role ? `${cfg.color}20` : '#ffffff',
+ border:`1px solid ${roleFilter===r.role ? cfg.color+'40' : 'rgba(37,99,235,0.08)'}`,
  color:cfg.color, fontSize:12, fontWeight:500 }}>
  {cfg.label} <span style={{ fontFamily:'var(--font-mono)', fontSize:11 }}>({r.n})</span>
  </div>
@@ -159,48 +159,48 @@ function SectionUsers() {
  </div>
  )}
 
- <div style={{ display:'flex', gap:10, marginBottom:14, flexWrap:'wrap', alignItems:'center', background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', padding:'10px 14px' }}>
- <div style={{ flex:1, minWidth:200, display:'flex', alignItems:'center', gap:8, background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-md)', padding:'7px 12px' }}>
- <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--text-muted)"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+ <div style={{ display:'flex', gap:10, marginBottom:14, flexWrap:'wrap', alignItems:'center', background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', padding:'10px 14px' }}>
+ <div style={{ flex:1, minWidth:200, display:'flex', alignItems:'center', gap:8, background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:'12px', padding:'7px 12px' }}>
+ <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#64748b"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
  <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Nom, email, username..."
- style={{ background:'none', border:'none', outline:'none', flex:1, fontSize:12.5, color:'var(--text-primary)', fontFamily:'var(--font-body)' }} />
+ style={{ background:'none', border:'none', outline:'none', flex:1, fontSize:12.5, color:'#0f172a', fontFamily:'var(--font-body)' }} />
  </div>
  <select value={activeFilter} onChange={e => setActive(e.target.value)} style={selSt}>
  <option value="">Tous les statuts</option>
  <option value="true">Actifs</option>
  <option value="false">Inactifs</option>
  </select>
- <button onClick={() => navigate('/register')} style={{ padding:'8px 14px', borderRadius:8, background:'linear-gradient(135deg, #00a8ff, #00e5a0)', border:'none', color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>
+ <button onClick={() => navigate('/register')} style={{ padding:'8px 14px', borderRadius:8, background:'linear-gradient(135deg, #2563eb, #1d4ed8)', border:'none', color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>
  Créer un utilisateur
  </button>
  {(search || roleFilter || activeFilter) && (
  <button onClick={() => { setSearch(''); setRole(''); setActive(''); }}
- style={{ padding:'6px 12px', background:'rgba(255,77,106,0.1)', border:'1px solid rgba(255,77,106,0.2)', borderRadius:8, color:'#ff4d6a', fontSize:11, cursor:'pointer' }}>
+ style={{ padding:'6px 12px', background:'rgba(255,77,106,0.1)', border:'1px solid rgba(255,77,106,0.2)', borderRadius:8, color:'#dc2626', fontSize:11, cursor:'pointer' }}>
  Reset
  </button>
  )}
  </div>
 
- <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', overflow:'hidden' }}>
+ <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', overflow:'hidden' }}>
  {loading ? (
- <div style={{ padding:48, textAlign:'center', color:'var(--text-muted)' }}>
- <div style={{ width:28, height:28, border:'3px solid var(--border)', borderTopColor:'#00a8ff', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 10px' }} />
+ <div style={{ padding:48, textAlign:'center', color:'#64748b' }}>
+ <div style={{ width:28, height:28, border:'3px solid rgba(37,99,235,0.12)', borderTopColor:'#2563eb', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 10px' }} />
  Chargement...
  </div>
  ) : (
  <table style={{ width:'100%', borderCollapse:'collapse' }}>
  <thead>
- <tr style={{ background:'var(--bg-elevated)' }}>
+ <tr style={{ background:'#f1f5f9' }}>
  {['Utilisateur','Role','Institution','Wilaya','Statut','Derniere connexion','Actions'].map(h => (
- <th key={h} style={{ padding:'10px 14px', textAlign:'left', fontSize:10, fontWeight:600, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5, borderBottom:'1px solid var(--border)', whiteSpace:'nowrap' }}>{h}</th>
+ <th key={h} style={{ padding:'10px 14px', textAlign:'left', fontSize:10, fontWeight:600, color:'#64748b', textTransform:'uppercase', letterSpacing:0.5, borderBottom:'1px solid rgba(37,99,235,0.12)', whiteSpace:'nowrap' }}>{h}</th>
  ))}
  </tr>
  </thead>
  <tbody>
  {users.map((u, i) => (
  <tr key={u.id}
- style={{ borderBottom:'1px solid var(--border)', background:i%2===0?'transparent':'rgba(255,255,255,0.01)', cursor:'pointer' }}
- onMouseEnter={e => e.currentTarget.style.background='var(--bg-hover)'}
+ style={{ borderBottom:'1px solid rgba(37,99,235,0.12)', background:i%2===0?'transparent':'rgba(255,255,255,0.01)', cursor:'pointer' }}
+ onMouseEnter={e => e.currentTarget.style.background='#eff6ff'}
  onMouseLeave={e => e.currentTarget.style.background=i%2===0?'transparent':'rgba(255,255,255,0.01)'}
  onClick={() => { setSelected(u); setEditMode(false); setEditData({}); }}
  >
@@ -210,34 +210,34 @@ function SectionUsers() {
  {(u.role || 'U')[0].toUpperCase()}
  </div>
  <div>
- <div style={{ fontWeight:700, fontSize:13, color:'var(--text-primary)' }}>{u.full_name || u.username}</div>
- <div style={{ fontSize:10, color:'var(--text-muted)' }}>{u.email}</div>
+ <div style={{ fontWeight:700, fontSize:13, color:'#0f172a' }}>{u.full_name || u.username}</div>
+ <div style={{ fontSize:10, color:'#64748b' }}>{u.email}</div>
  </div>
  </div>
  </td>
  <td style={{ padding:'11px 14px' }}><RoleBadge role={u.role} /></td>
- <td style={{ padding:'11px 14px', fontSize:12, color:'var(--text-secondary)', maxWidth:150, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{u.institution || '—'}</td>
- <td style={{ padding:'11px 14px', fontSize:12, color:'var(--text-muted)' }}>{u.wilaya || '—'}</td>
+ <td style={{ padding:'11px 14px', fontSize:12, color:'#334155', maxWidth:150, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{u.institution || '—'}</td>
+ <td style={{ padding:'11px 14px', fontSize:12, color:'#64748b' }}>{u.wilaya || '—'}</td>
  <td style={{ padding:'11px 14px' }}>
- <span style={{ fontSize:11, fontWeight:600, color: u.is_active ? '#00e5a0' : '#f5a623' }}>
+ <span style={{ fontSize:11, fontWeight:600, color: u.is_active ? '#16a34a' : '#d97706' }}>
  {u.is_active ? 'Actif' : 'Inactif'}
  </span>
  </td>
- <td style={{ padding:'11px 14px', fontSize:11, color:'var(--text-muted)' }}>{u.last_login_str}</td>
+ <td style={{ padding:'11px 14px', fontSize:11, color:'#64748b' }}>{u.last_login_str}</td>
  <td style={{ padding:'11px 14px' }} onClick={e => e.stopPropagation()}>
  <div style={{ display:'flex', gap:5 }}>
  {!u.is_active ? (
- <BtnTiny color="#00e5a0" onClick={() => handleAction('activer', u.id)}> Activer</BtnTiny>
+ <BtnTiny color="#16a34a" onClick={() => handleAction('activer', u.id)}> Activer</BtnTiny>
  ) : (
- <BtnTiny color="#f5a623" onClick={() => handleAction('desactiver', u.id)}>Desact.</BtnTiny>
+ <BtnTiny color="#d97706" onClick={() => handleAction('desactiver', u.id)}>Desact.</BtnTiny>
  )}
- <BtnTiny color="#9b8afb" onClick={() => { setShowResetModal(u); setResetPwd(''); }}></BtnTiny>
+ <BtnTiny color="#7c3aed" onClick={() => { setShowResetModal(u); setResetPwd(''); }}></BtnTiny>
  </div>
  </td>
  </tr>
  ))}
  {users.length === 0 && (
- <tr><td colSpan={7} style={{ padding:48, textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>Aucun utilisateur trouve</td></tr>
+ <tr><td colSpan={7} style={{ padding:48, textAlign:'center', color:'#64748b', fontSize:13 }}>Aucun utilisateur trouve</td></tr>
  )}
  </tbody>
  </table>
@@ -246,18 +246,18 @@ function SectionUsers() {
 
  {selected && (
  <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}>
- <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', width:'100%', maxWidth:580, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 24px 64px rgba(0,0,0,0.5)' }}>
- <div style={{ padding:'18px 24px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+ <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.12)', borderRadius:'16px', width:'100%', maxWidth:580, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 24px 64px rgba(0,0,0,0.5)' }}>
+ <div style={{ padding:'18px 24px', borderBottom:'1px solid rgba(37,99,235,0.12)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
  <div style={{ display:'flex', alignItems:'center', gap:12 }}>
  <div style={{ width:42, height:42, borderRadius:'50%', background:`${ROLE_CFG[selected.role]?.color||'#9ca3af'}20`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20 }}>
  {(selected.role || 'U')[0].toUpperCase()}
  </div>
  <div>
- <div style={{ fontWeight:800, fontSize:15, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>{selected.full_name || selected.username}</div>
- <div style={{ fontSize:11, color:'var(--text-muted)' }}>{selected.email}</div>
+ <div style={{ fontWeight:800, fontSize:15, color:'#0f172a', fontFamily:'var(--font-display)' }}>{selected.full_name || selected.username}</div>
+ <div style={{ fontSize:11, color:'#64748b' }}>{selected.email}</div>
  </div>
  </div>
- <button onClick={() => setSelected(null)} style={{ background:'none', border:'none', color:'var(--text-muted)', fontSize:22, cursor:'pointer', padding:'0 6px', lineHeight:1 }}>x</button>
+ <button onClick={() => setSelected(null)} style={{ background:'none', border:'none', color:'#64748b', fontSize:22, cursor:'pointer', padding:'0 6px', lineHeight:1 }}>x</button>
  </div>
 
  <div style={{ padding:'20px 24px' }}>
@@ -266,23 +266,23 @@ function SectionUsers() {
  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 16px', marginBottom:18 }}>
  {[
  ['Role', <RoleBadge role={selected.role} />],
- ['Statut', <span style={{ color: selected.is_active ? '#00e5a0' : '#f5a623', fontWeight:600, fontSize:12 }}>{selected.is_active ? 'Actif' : 'Inactif'}</span>],
+ ['Statut', <span style={{ color: selected.is_active ? '#16a34a' : '#d97706', fontWeight:600, fontSize:12 }}>{selected.is_active ? 'Actif' : 'Inactif'}</span>],
  ['Username', selected.username],
  ['Telephone', selected.phone || '—'],
  ['Institution',selected.institution || '—'],
  ['Wilaya', selected.wilaya || '—'],
  ['Inscrit le', selected.date_joined ? new Date(selected.date_joined).toLocaleDateString('fr-DZ') : '—'],
- ['Actions', <span style={{ fontFamily:'var(--font-mono)', color:'#9b8afb' }}>{selected.nb_actions}</span>],
+ ['Actions', <span style={{ fontFamily:'var(--font-mono)', color:'#7c3aed' }}>{selected.nb_actions}</span>],
  ].map(([label, val]) => (
- <div key={label} style={{ padding:'7px 0', borderBottom:'1px solid var(--border)' }}>
- <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:2 }}>{label}</div>
- <div style={{ fontSize:12.5, color:'var(--text-primary)' }}>{val}</div>
+ <div key={label} style={{ padding:'7px 0', borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
+ <div style={{ fontSize:10, color:'#64748b', marginBottom:2 }}>{label}</div>
+ <div style={{ fontSize:12.5, color:'#0f172a' }}>{val}</div>
  </div>
  ))}
  </div>
 
  <div style={{ marginBottom:18 }}>
- <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>Permissions</div>
+ <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>Permissions</div>
  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
  {[
  ['Voir patients', selected.can_view_patients],
@@ -291,43 +291,43 @@ function SectionUsers() {
  ['Gerer utilisateurs', selected.can_manage_users],
  ['Voir statistiques', selected.can_view_statistics],
  ].map(([perm, val]) => (
- <div key={perm} style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 8px', borderRadius:6, background:`${val ? '#00e5a0' : '#ff4d6a'}08`, border:`1px solid ${val ? '#00e5a0' : '#ff4d6a'}15` }}>
- <span style={{ color: val ? '#00e5a0' : '#ff4d6a', fontSize:12 }}>{val ? 'Oui' : 'Non'}</span>
- <span style={{ fontSize:11, color:'var(--text-secondary)' }}>{perm}</span>
+ <div key={perm} style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 8px', borderRadius:6, background:`${val ? '#16a34a' : '#dc2626'}08`, border:`1px solid ${val ? '#16a34a' : '#dc2626'}15` }}>
+ <span style={{ color: val ? '#16a34a' : '#dc2626', fontSize:12 }}>{val ? 'Oui' : 'Non'}</span>
+ <span style={{ fontSize:11, color:'#334155' }}>{perm}</span>
  </div>
  ))}
  </div>
  </div>
 
  <div style={{ marginBottom:18 }}>
- <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>Changer le role</div>
+ <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>Changer le role</div>
  <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
  {Object.entries(ROLE_CFG).map(([role, cfg]) => (
  <button key={role}
  onClick={() => handleAction('setRole', selected.id, role)}
  style={{ padding:'5px 10px', borderRadius:20, fontSize:11, cursor:'pointer', fontWeight: selected.role === role ? 700 : 400,
- background: selected.role === role ? `${cfg.color}25` : 'var(--bg-elevated)',
- border:`1px solid ${selected.role === role ? cfg.color : 'var(--border)'}`,
- color: selected.role === role ? cfg.color : 'var(--text-secondary)' }}>
+ background: selected.role === role ? `${cfg.color}25` : '#f1f5f9',
+ border:`1px solid ${selected.role === role ? cfg.color : 'rgba(37,99,235,0.12)'}`,
+ color: selected.role === role ? cfg.color : '#334155' }}>
  {cfg.label}
  </button>
  ))}
  </div>
  </div>
 
- <div style={{ display:'flex', gap:8, flexWrap:'wrap', paddingTop:14, borderTop:'1px solid var(--border)' }}>
+ <div style={{ display:'flex', gap:8, flexWrap:'wrap', paddingTop:14, borderTop:'1px solid rgba(37,99,235,0.12)' }}>
  <button onClick={() => { setEditMode(true); setEditData({ first_name: selected.first_name, last_name: selected.last_name, phone: selected.phone, institution: selected.institution, wilaya: selected.wilaya }); }}
- style={actionBtnSt('#00a8ff')}> Modifier</button>
+ style={actionBtnSt('#2563eb')}> Modifier</button>
  {!selected.is_active
- ? <button onClick={() => handleAction('activer', selected.id)} style={actionBtnSt('#00e5a0')}> Activer le compte</button>
- : <button onClick={() => handleAction('desactiver', selected.id)} style={actionBtnSt('#f5a623')}>Desactiver</button>
+ ? <button onClick={() => handleAction('activer', selected.id)} style={actionBtnSt('#16a34a')}> Activer le compte</button>
+ : <button onClick={() => handleAction('desactiver', selected.id)} style={actionBtnSt('#d97706')}>Desactiver</button>
  }
- <button onClick={() => { setShowResetModal(selected); setResetPwd(''); setSelected(null); }} style={actionBtnSt('#9b8afb')}> Reinitialiser MDP</button>
+ <button onClick={() => { setShowResetModal(selected); setResetPwd(''); setSelected(null); }} style={actionBtnSt('#7c3aed')}> Reinitialiser MDP</button>
  </div>
  </>
  ) : (
  <div>
- <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', marginBottom:14 }}> Modifier les informations</div>
+ <div style={{ fontSize:13, fontWeight:700, color:'#0f172a', marginBottom:14 }}> Modifier les informations</div>
  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 16px' }}>
  {[
  ['Prenom', 'first_name', 'text'],
@@ -337,14 +337,14 @@ function SectionUsers() {
  ['Wilaya', 'wilaya', 'text'],
  ].map(([label, field, type]) => (
  <div key={field} style={{ marginBottom:12 }}>
- <label style={{ display:'block', fontSize:11, color:'var(--text-muted)', marginBottom:4 }}>{label}</label>
+ <label style={{ display:'block', fontSize:11, color:'#64748b', marginBottom:4 }}>{label}</label>
  <input type={type} value={editData[field] || ''} onChange={e => setEditData(p => ({...p, [field]: e.target.value}))} style={inputSt} />
  </div>
  ))}
  </div>
  <div style={{ display:'flex', gap:8, marginTop:16 }}>
- <button onClick={() => setEditMode(false)} style={{ flex:'0 0 90px', padding:'10px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:8, color:'var(--text-secondary)', fontSize:12, cursor:'pointer' }}>Annuler</button>
- <button onClick={handleSaveEdit} disabled={saving} style={{ flex:1, padding:'10px', background:'linear-gradient(135deg,#00a8ff,#0080cc)', border:'none', borderRadius:8, color:'#fff', fontSize:12.5, fontWeight:600, cursor:saving?'not-allowed':'pointer', opacity:saving?0.7:1 }}>
+ <button onClick={() => setEditMode(false)} style={{ flex:'0 0 90px', padding:'10px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:8, color:'#334155', fontSize:12, cursor:'pointer' }}>Annuler</button>
+ <button onClick={handleSaveEdit} disabled={saving} style={{ flex:1, padding:'10px', background:'linear-gradient(135deg,#2563eb,#2563eb)', border:'none', borderRadius:8, color:'#fff', fontSize:12.5, fontWeight:600, cursor:saving?'not-allowed':'pointer', opacity:saving?0.7:1 }}>
  {saving ? 'Enregistrement...' : 'Sauvegarder'}
  </button>
  </div>
@@ -357,19 +357,19 @@ function SectionUsers() {
 
  {showResetModal && (
  <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1001 }}>
- <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'24px 28px', width:'100%', maxWidth:400 }}>
- <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)', marginBottom:16 }}> Reinitialiser le mot de passe</div>
- <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:14 }}>Pour : <strong style={{ color:'#9b8afb' }}>{showResetModal.full_name || showResetModal.username}</strong></div>
+ <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.12)', borderRadius:'16px', padding:'24px 28px', width:'100%', maxWidth:400 }}>
+ <div style={{ fontSize:15, fontWeight:700, color:'#0f172a', marginBottom:16 }}> Reinitialiser le mot de passe</div>
+ <div style={{ fontSize:12, color:'#64748b', marginBottom:14 }}>Pour : <strong style={{ color:'#7c3aed' }}>{showResetModal.full_name || showResetModal.username}</strong></div>
  <input type="password" value={resetPwd} onChange={e => setResetPwd(e.target.value)}
  placeholder="Nouveau mot de passe (min. 8 caracteres)"
  style={{ ...inputSt, marginBottom:16, width:'100%', boxSizing:'border-box' }} />
  <div style={{ display:'flex', gap:8 }}>
- <button onClick={() => setShowResetModal(null)} style={{ flex:'0 0 80px', padding:'10px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:8, color:'var(--text-secondary)', fontSize:12, cursor:'pointer' }}>Annuler</button>
+ <button onClick={() => setShowResetModal(null)} style={{ flex:'0 0 80px', padding:'10px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:8, color:'#334155', fontSize:12, cursor:'pointer' }}>Annuler</button>
  <button onClick={async () => {
  if (resetPwd.length < 8) { toast.error('Min. 8 caracteres'); return; }
  await handleAction('resetPwd', showResetModal.id, resetPwd);
  setShowResetModal(null);
- }} style={{ flex:1, padding:'10px', background:'linear-gradient(135deg,#9b8afb,#7c6fcd)', border:'none', borderRadius:8, color:'#fff', fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
+ }} style={{ flex:1, padding:'10px', background:'linear-gradient(135deg,#7c3aed,#7c6fcd)', border:'none', borderRadius:8, color:'#fff', fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
  Confirmer
  </button>
  </div>
@@ -411,29 +411,29 @@ function SectionAudit() {
  <div>
  {stats && (
  <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
- <StatCard label="Logs total" value={stats.total?.toLocaleString()} color="#9b8afb" />
- <StatCard label="Aujourd'hui" value={stats.aujourd_hui} color="#00a8ff" />
- <StatCard label="Cette semaine" value={stats.cette_semaine} color="#00e5a0" />
- <StatCard label="Ce mois" value={stats.ce_mois} color="#f5a623" />
+ <StatCard label="Logs total" value={stats.total?.toLocaleString()} color="#7c3aed" />
+ <StatCard label="Aujourd'hui" value={stats.aujourd_hui} color="#2563eb" />
+ <StatCard label="Cette semaine" value={stats.cette_semaine} color="#16a34a" />
+ <StatCard label="Ce mois" value={stats.ce_mois} color="#d97706" />
  </div>
  )}
 
  {stats?.activite_7j && (
- <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', padding:'14px 16px', marginBottom:20 }}>
- <div style={{ fontSize:11, fontWeight:600, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>Activite — 7 derniers jours</div>
+ <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', padding:'14px 16px', marginBottom:20 }}>
+ <div style={{ fontSize:11, fontWeight:600, color:'#64748b', textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>Activite — 7 derniers jours</div>
  <ResponsiveContainer width="100%" height={100}>
  <AreaChart data={stats.activite_7j} margin={{top:0,right:0,bottom:0,left:-30}}>
  <defs>
  <linearGradient id="gA" x1="0" y1="0" x2="0" y2="1">
- <stop offset="5%" stopColor="#9b8afb" stopOpacity={0.35} />
- <stop offset="95%" stopColor="#9b8afb" stopOpacity={0} />
+ <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.35} />
+ <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
  </linearGradient>
  </defs>
- <CartesianGrid strokeDasharray="3 3" stroke="#1e2a3a" />
- <XAxis dataKey="date" tick={{fill:'#6b7280',fontSize:9}} axisLine={false} tickLine={false} tickFormatter={d => d.slice(5)} />
- <YAxis tick={{fill:'#6b7280',fontSize:9}} axisLine={false} tickLine={false} allowDecimals={false} />
+ <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+ <XAxis dataKey="date" tick={{fill:'#94a3b8',fontSize:9}} axisLine={false} tickLine={false} tickFormatter={d => d.slice(5)} />
+ <YAxis tick={{fill:'#94a3b8',fontSize:9}} axisLine={false} tickLine={false} allowDecimals={false} />
  <Tooltip content={<CustomTooltip />} />
- <Area type="monotone" dataKey="count" name="Actions" stroke="#9b8afb" fill="url(#gA)" strokeWidth={2} dot={false} />
+ <Area type="monotone" dataKey="count" name="Actions" stroke="#7c3aed" fill="url(#gA)" strokeWidth={2} dot={false} />
  </AreaChart>
  </ResponsiveContainer>
  </div>
@@ -441,26 +441,26 @@ function SectionAudit() {
 
  {stats && (
  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:20 }}>
- <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', padding:'14px 16px' }}>
- <div style={{ fontSize:11, fontWeight:600, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>Par type d'action</div>
+ <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', padding:'14px 16px' }}>
+ <div style={{ fontSize:11, fontWeight:600, color:'#64748b', textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>Par type d'action</div>
  {stats.par_action.map((a, i) => {
- const cfg = ACTION_CFG[a.action] || { color:'#9ca3af' };
+ const cfg = ACTION_CFG[a.action] || { color:'#64748b' };
  return (
- <div key={a.action} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'6px 0', borderBottom:'1px solid var(--border)' }}>
- <span style={{ fontSize:12, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}>{a.action}</span>
+ <div key={a.action} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'6px 0', borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
+ <span style={{ fontSize:12, color:'#334155', display:'flex', alignItems:'center', gap:6 }}>{a.action}</span>
  <span style={{ fontFamily:'var(--font-mono)', fontSize:12, fontWeight:700, color:cfg.color }}>{a.n}</span>
  </div>
  );
  })}
  </div>
- <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', padding:'14px 16px' }}>
- <div style={{ fontSize:11, fontWeight:600, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>Utilisateurs les plus actifs</div>
+ <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', padding:'14px 16px' }}>
+ <div style={{ fontSize:11, fontWeight:600, color:'#64748b', textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>Utilisateurs les plus actifs</div>
  {(stats.top_users || []).map((u, i) => {
  const nom = `${u.user__first_name || ''} ${u.user__last_name || ''}`.trim() || u.user__username || '?';
  return (
- <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'6px 0', borderBottom:'1px solid var(--border)' }}>
- <span style={{ fontSize:12, color:'var(--text-secondary)' }}>{nom}</span>
- <span style={{ fontFamily:'var(--font-mono)', fontSize:12, fontWeight:700, color:'#9b8afb' }}>{u.n}</span>
+ <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'6px 0', borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
+ <span style={{ fontSize:12, color:'#334155' }}>{nom}</span>
+ <span style={{ fontFamily:'var(--font-mono)', fontSize:12, fontWeight:700, color:'#7c3aed' }}>{u.n}</span>
  </div>
  );
  })}
@@ -468,52 +468,52 @@ function SectionAudit() {
  </div>
  )}
 
- <div style={{ display:'flex', gap:10, marginBottom:12, alignItems:'center', background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', padding:'10px 14px' }}>
+ <div style={{ display:'flex', gap:10, marginBottom:12, alignItems:'center', background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', padding:'10px 14px' }}>
  <select value={action} onChange={e => setAction(e.target.value)} style={selSt}>
  <option value="">Toutes les actions</option>
  {Object.entries(ACTION_CFG).map(([k, v]) => <option key={k} value={k}>{k}</option>)}
  </select>
  <input type="date" value={dateFrom} onChange={e => setDF(e.target.value)} style={selSt} />
- <span style={{ fontSize:11, color:'var(--text-muted)' }}>{'->'}</span>
+ <span style={{ fontSize:11, color:'#64748b' }}>{'->'}</span>
  <input type="date" value={dateTo} onChange={e => setDT(e.target.value)} style={selSt} />
  {(action || dateFrom || dateTo) && (
- <button onClick={() => { setAction(''); setDF(''); setDT(''); }} style={{ padding:'6px 12px', background:'rgba(255,77,106,0.1)', border:'1px solid rgba(255,77,106,0.2)', borderRadius:8, color:'#ff4d6a', fontSize:11, cursor:'pointer' }}> Reset</button>
+ <button onClick={() => { setAction(''); setDF(''); setDT(''); }} style={{ padding:'6px 12px', background:'rgba(255,77,106,0.1)', border:'1px solid rgba(255,77,106,0.2)', borderRadius:8, color:'#dc2626', fontSize:11, cursor:'pointer' }}> Reset</button>
  )}
  </div>
 
- <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', overflow:'hidden' }}>
+ <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', overflow:'hidden' }}>
  {loading ? (
- <div style={{ padding:36, textAlign:'center', color:'var(--text-muted)' }}>
- <div style={{ width:24, height:24, border:'3px solid var(--border)', borderTopColor:'#9b8afb', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 8px' }} />
+ <div style={{ padding:36, textAlign:'center', color:'#64748b' }}>
+ <div style={{ width:24, height:24, border:'3px solid rgba(37,99,235,0.12)', borderTopColor:'#7c3aed', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 8px' }} />
  </div>
  ) : (
  <table style={{ width:'100%', borderCollapse:'collapse' }}>
  <thead>
- <tr style={{ background:'var(--bg-elevated)' }}>
+ <tr style={{ background:'#f1f5f9' }}>
  {['Horodatage','Utilisateur','Action','Ressource','IP'].map(h => (
- <th key={h} style={{ padding:'9px 12px', textAlign:'left', fontSize:10, fontWeight:600, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5, borderBottom:'1px solid var(--border)', whiteSpace:'nowrap' }}>{h}</th>
+ <th key={h} style={{ padding:'9px 12px', textAlign:'left', fontSize:10, fontWeight:600, color:'#64748b', textTransform:'uppercase', letterSpacing:0.5, borderBottom:'1px solid rgba(37,99,235,0.12)', whiteSpace:'nowrap' }}>{h}</th>
  ))}
  </tr>
  </thead>
  <tbody>
  {logs.map((log, i) => (
- <tr key={log.id} style={{ borderBottom:'1px solid var(--border)', background:i%2===0?'transparent':'rgba(255,255,255,0.01)' }}>
- <td style={{ padding:'9px 12px', fontFamily:'var(--font-mono)', fontSize:11, color:'var(--text-muted)', whiteSpace:'nowrap' }}>
+ <tr key={log.id} style={{ borderBottom:'1px solid rgba(37,99,235,0.12)', background:i%2===0?'transparent':'rgba(255,255,255,0.01)' }}>
+ <td style={{ padding:'9px 12px', fontFamily:'var(--font-mono)', fontSize:11, color:'#64748b', whiteSpace:'nowrap' }}>
  {new Date(log.timestamp).toLocaleString('fr-DZ', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' })}
  </td>
  <td style={{ padding:'9px 12px' }}>
- <div style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)' }}>{log.user_nom}</div>
- <div style={{ fontSize:10, color:'var(--text-muted)' }}>{log.user_role}</div>
+ <div style={{ fontSize:12, fontWeight:600, color:'#0f172a' }}>{log.user_nom}</div>
+ <div style={{ fontSize:10, color:'#64748b' }}>{log.user_role}</div>
  </td>
  <td style={{ padding:'9px 12px' }}><ActionBadge action={log.action} label={log.action_label} /></td>
- <td style={{ padding:'9px 12px', fontSize:11, color:'var(--text-secondary)', fontFamily:'var(--font-mono)' }}>
+ <td style={{ padding:'9px 12px', fontSize:11, color:'#334155', fontFamily:'var(--font-mono)' }}>
  {log.resource}{log.resource_id ? `#${log.resource_id}` : ''}
  </td>
- <td style={{ padding:'9px 12px', fontFamily:'var(--font-mono)', fontSize:10, color:'var(--text-muted)' }}>{log.ip_address || '—'}</td>
+ <td style={{ padding:'9px 12px', fontFamily:'var(--font-mono)', fontSize:10, color:'#64748b' }}>{log.ip_address || '—'}</td>
  </tr>
  ))}
  {logs.length === 0 && (
- <tr><td colSpan={5} style={{ padding:32, textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>Aucun log trouve</td></tr>
+ <tr><td colSpan={5} style={{ padding:32, textAlign:'center', color:'#64748b', fontSize:13 }}>Aucun log trouve</td></tr>
  )}
  </tbody>
  </table>
@@ -540,10 +540,10 @@ function SectionCustomFields() {
  const [showTopoDropdown, setShowTopoDropdown] = useState(false);
 
  const MODULE_LABELS = {
-   patient:    { label: 'Dossier patient',      color: '#00a8ff' },
-   diagnostic: { label: 'Diagnostic',           color: '#9b8afb' },
-   traitement: { label: 'Traitement',           color: '#f5a623' },
-   suivi:      { label: 'Suivi / Consultation', color: '#00e5a0' },
+   patient:    { label: 'Dossier patient',      color: '#2563eb' },
+   diagnostic: { label: 'Diagnostic',           color: '#7c3aed' },
+   traitement: { label: 'Traitement',           color: '#d97706' },
+   suivi:      { label: 'Suivi / Consultation', color: '#16a34a' },
  };
 
  const TYPE_OPTIONS = [
@@ -726,13 +726,13 @@ function SectionCustomFields() {
    <div>
      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
        <div>
-         <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>Gestionnaire de champs personnalises</h3>
-         <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Creez des champs supplementaires qui apparaissent dans les formulaires</p>
+         <h3 style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 4 }}>Gestionnaire de champs personnalises</h3>
+         <p style={{ fontSize: 12, color: '#64748b' }}>Creez des champs supplementaires qui apparaissent dans les formulaires</p>
        </div>
        {!showForm && (
          <button onClick={() => { setEditChamp(null); setShowForm(true); }} style={{
-           padding: '8px 14px', background: 'linear-gradient(135deg, #00a8ff, #0080cc)',
-           border: 'none', borderRadius: 'var(--radius-md)',
+           padding: '8px 14px', background: 'linear-gradient(135deg, #2563eb, #2563eb)',
+           border: 'none', borderRadius: '12px',
            color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer',
          }}>
            + Nouveau champ
@@ -741,55 +741,55 @@ function SectionCustomFields() {
      </div>
 
      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
-       <div style={{ padding: '12px 14px', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', borderLeft: '3px solid #00a8ff' }}>
-         <div style={{ fontSize: 20, fontWeight: 700, color: '#00a8ff' }}>{total}</div>
-         <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Total champs</div>
+       <div style={{ padding: '12px 14px', background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', borderLeft: '3px solid #2563eb' }}>
+         <div style={{ fontSize: 20, fontWeight: 700, color: '#2563eb' }}>{total}</div>
+         <div style={{ fontSize: 10, color: '#64748b' }}>Total champs</div>
        </div>
-       <div style={{ padding: '12px 14px', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', borderLeft: '3px solid #00e5a0' }}>
-         <div style={{ fontSize: 20, fontWeight: 700, color: '#00e5a0' }}>{actifs}</div>
-         <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Actifs</div>
+       <div style={{ padding: '12px 14px', background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', borderLeft: '3px solid #16a34a' }}>
+         <div style={{ fontSize: 20, fontWeight: 700, color: '#16a34a' }}>{actifs}</div>
+         <div style={{ fontSize: 10, color: '#64748b' }}>Actifs</div>
        </div>
-       <div style={{ padding: '12px 14px', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', borderLeft: '3px solid #9b8afb' }}>
-         <div style={{ fontSize: 20, fontWeight: 700, color: '#9b8afb' }}>{total - actifs}</div>
-         <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Inactifs</div>
+       <div style={{ padding: '12px 14px', background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', borderLeft: '3px solid #7c3aed' }}>
+         <div style={{ fontSize: 20, fontWeight: 700, color: '#7c3aed' }}>{total - actifs}</div>
+         <div style={{ fontSize: 10, color: '#64748b' }}>Inactifs</div>
        </div>
      </div>
 
      {showForm && (
-       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '20px 24px', marginBottom: 20 }}>
-         <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 16 }}>
+       <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '20px 24px', marginBottom: 20 }}>
+         <h4 style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 16 }}>
            {editChamp ? `Modifier - ${editChamp.nom}` : 'Nouveau champ personnalise'}
          </h4>
          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
            <div style={{ marginBottom: 12 }}>
-             <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Nom du champ *</label>
+             <label style={{ display: 'block', fontSize: 11, color: '#64748b', marginBottom: 4 }}>Nom du champ *</label>
              <input value={editChamp?.nom || ''} onChange={e => setEditChamp(p => ({ ...p, nom: e.target.value }))}
-               style={{ width: '100%', padding: '8px 10px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', fontSize: 12 }} />
+               style={{ width: '100%', padding: '8px 10px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#0f172a', fontSize: 12 }} />
            </div>
            <div style={{ marginBottom: 12 }}>
-             <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Module *</label>
+             <label style={{ display: 'block', fontSize: 11, color: '#64748b', marginBottom: 4 }}>Module *</label>
              <select value={editChamp?.module || 'patient'} onChange={e => setEditChamp(p => ({ ...p, module: e.target.value }))}
-               style={{ width: '100%', padding: '8px 10px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', fontSize: 12, cursor: 'pointer' }}>
+               style={{ width: '100%', padding: '8px 10px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#0f172a', fontSize: 12, cursor: 'pointer' }}>
                {Object.entries(MODULE_LABELS).map(([v, m]) => (
                  <option key={v} value={v}>{m.label}</option>
                ))}
              </select>
            </div>
            <div style={{ marginBottom: 12 }}>
-             <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Type de champ *</label>
+             <label style={{ display: 'block', fontSize: 11, color: '#64748b', marginBottom: 4 }}>Type de champ *</label>
              <select value={editChamp?.type_champ || 'texte'} onChange={e => setEditChamp(p => ({ ...p, type_champ: e.target.value }))}
-               style={{ width: '100%', padding: '8px 10px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', fontSize: 12, cursor: 'pointer' }}>
+               style={{ width: '100%', padding: '8px 10px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#0f172a', fontSize: 12, cursor: 'pointer' }}>
                {TYPE_OPTIONS.map(t => (
                  <option key={t.value} value={t.value}>{t.label}</option>
                ))}
              </select>
            </div>
            {editChamp?.module === 'diagnostic' && (
-             <div style={{ marginBottom: 12, gridColumn: '1 / -1', padding: '12px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 6 }}>
-               <label style={{ display: 'block', fontSize: 11, color: 'var(--text-primary)', marginBottom: 8, fontWeight: 600 }}>
+             <div style={{ marginBottom: 12, gridColumn: '1 / -1', padding: '12px', background: '#ffffff', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6 }}>
+               <label style={{ display: 'block', fontSize: 11, color: '#0f172a', marginBottom: 8, fontWeight: 600 }}>
                  Topographie(s) ICD-O-3 (optionnel)
                </label>
-               <p style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 10 }}>
+               <p style={{ fontSize: 10, color: '#64748b', marginBottom: 10 }}>
                  Sélectionner une ou plusieurs topographies pour rendre ce champ spécifique à certains types de cancer. Laisser vide pour un champ global.
                </p>
                
@@ -797,13 +797,13 @@ function SectionCustomFields() {
                {(editChamp?.topographies_list || []).length > 0 && (
                  <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
                    {editChamp.topographies_list.map((topo, idx) => (
-                     <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6 }}>
-                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', minWidth: 50 }}>{topo.code}</span>
-                       <span style={{ fontSize: 12, color: 'var(--text-primary)', flex: 1 }}>{topo.libelle}</span>
-                       <button type="button" onClick={() => handleRemoveTopographie(topo.code)} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 4, padding: '4px 8px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Retirer</button>
+                     <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6 }}>
+                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#334155', minWidth: 50 }}>{topo.code}</span>
+                       <span style={{ fontSize: 12, color: '#0f172a', flex: 1 }}>{topo.libelle}</span>
+                       <button type="button" onClick={() => handleRemoveTopographie(topo.code)} style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 4, padding: '4px 8px', color: '#334155', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Retirer</button>
                      </div>
                    ))}
-                   <button type="button" onClick={handleClearAllTopographies} style={{ padding: '6px 12px', background: 'rgba(255,77,106,0.1)', border: 'none', borderRadius: 4, color: '#ff4d6a', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>✕ Réinitialiser tous</button>
+                   <button type="button" onClick={handleClearAllTopographies} style={{ padding: '6px 12px', background: 'rgba(255,77,106,0.1)', border: 'none', borderRadius: 4, color: '#dc2626', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>✕ Réinitialiser tous</button>
                  </div>
                )}
                
@@ -814,19 +814,19 @@ function SectionCustomFields() {
                    value={topoQuery}
                    onChange={e => { setTopoQuery(e.target.value); setShowTopoDropdown(true); }}
                    placeholder="Rechercher et ajouter des topographies (ex: C50, sein)"
-                   style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', fontSize: 12 }}
+                   style={{ width: '100%', padding: '10px 12px 10px 36px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#0f172a', fontSize: 12 }}
                    onFocus={() => topoQuery.length >= 2 && setShowTopoDropdown(true)}
                  />
-                 <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 12 }}>
+                 <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: 12 }}>
                    {topoLoading ? (
-                     <div style={{ width: 14, height: 14, border: '2px solid var(--border)', borderTopColor: '#00a8ff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                     <div style={{ width: 14, height: 14, border: '2px solid rgba(37,99,235,0.12)', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                    ) : (
                     '🔍'
                    )}
                  </div>
                  
                  {showTopoDropdown && topoResults.length > 0 && (
-                   <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 6, marginTop: 4, maxHeight: 240, overflow: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+                   <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 6, marginTop: 4, maxHeight: 240, overflow: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
                      {topoResults.map(r => {
                        const isSelected = (editChamp?.topographies_list || []).some(t => t.code === r.code);
                        return (
@@ -839,15 +839,15 @@ function SectionCustomFields() {
                              display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 12px',
                              background: isSelected ? 'rgba(0, 168, 255, 0.1)' : 'none',
                              border: 'none', cursor: isSelected ? 'not-allowed' : 'pointer', textAlign: 'left',
-                             borderBottom: '1px solid var(--border)', transition: 'background 0.2s', opacity: isSelected ? 0.6 : 1
+                             borderBottom: '1px solid rgba(37,99,235,0.12)', transition: 'background 0.2s', opacity: isSelected ? 0.6 : 1
                            }}
-                           onMouseEnter={e => !isSelected && (e.currentTarget.style.background = 'var(--bg-hover)')}
+                           onMouseEnter={e => !isSelected && (e.currentTarget.style.background = '#eff6ff')}
                            onMouseLeave={e => !isSelected && (e.currentTarget.style.background = 'none')}
                          >
-                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#00a8ff', minWidth: 60 }}>{r.code}</span>
-                           <span style={{ fontSize: 12.5, color: 'var(--text-primary)' }}>{r.libelle}</span>
-                           {r.categorie && <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 'auto' }}>{r.categorie}</span>}
-                           {isSelected && <span style={{ marginLeft: 'auto', color: '#00a8ff', fontWeight: 700 }}>✓ Ajoutée</span>}
+                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#2563eb', minWidth: 60 }}>{r.code}</span>
+                           <span style={{ fontSize: 12.5, color: '#0f172a' }}>{r.libelle}</span>
+                           {r.categorie && <span style={{ fontSize: 10, color: '#64748b', marginLeft: 'auto' }}>{r.categorie}</span>}
+                           {isSelected && <span style={{ marginLeft: 'auto', color: '#2563eb', fontWeight: 700 }}>✓ Ajoutée</span>}
                          </button>
                        );
                      })}
@@ -857,46 +857,46 @@ function SectionCustomFields() {
              </div>
            )}
            <div style={{ marginBottom: 12 }}>
-             <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Ordre d'affichage</label>
+             <label style={{ display: 'block', fontSize: 11, color: '#64748b', marginBottom: 4 }}>Ordre d'affichage</label>
              <input type="number" value={editChamp?.ordre || 0} onChange={e => setEditChamp(p => ({ ...p, ordre: parseInt(e.target.value) || 0 }))}
-               style={{ width: '100%', padding: '8px 10px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', fontSize: 12 }} />
+               style={{ width: '100%', padding: '8px 10px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#0f172a', fontSize: 12 }} />
            </div>
            <div style={{ marginBottom: 12, gridColumn: '1 / -1' }}>
-             <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Description (optionnel)</label>
+             <label style={{ display: 'block', fontSize: 11, color: '#64748b', marginBottom: 4 }}>Description (optionnel)</label>
              <input value={editChamp?.description || ''} onChange={e => setEditChamp(p => ({ ...p, description: e.target.value }))}
-               style={{ width: '100%', padding: '8px 10px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', fontSize: 12 }} />
+               style={{ width: '100%', padding: '8px 10px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#0f172a', fontSize: 12 }} />
            </div>
            <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
              <input type="checkbox" checked={editChamp?.obligatoire || false} onChange={e => setEditChamp(p => ({ ...p, obligatoire: e.target.checked }))}
                style={{ width: 14, height: 14 }} />
-             <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Champ obligatoire</span>
+             <span style={{ fontSize: 12, color: '#334155' }}>Champ obligatoire</span>
            </div>
          </div>
-         <div style={{ display: 'flex', gap: 8, marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-           <button onClick={() => { setShowForm(false); setEditChamp(null); }} style={{ padding: '8px 16px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>Annuler</button>
-           <button onClick={() => handleSave(editChamp || CHAMP_VIDE)} disabled={saving} style={{ flex: 1, padding: '8px 16px', background: 'linear-gradient(135deg, #00a8ff, #0080cc)', border: 'none', borderRadius: 6, color: '#fff', fontSize: 12, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+         <div style={{ display: 'flex', gap: 8, marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(37,99,235,0.12)' }}>
+           <button onClick={() => { setShowForm(false); setEditChamp(null); }} style={{ padding: '8px 16px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 12, cursor: 'pointer' }}>Annuler</button>
+           <button onClick={() => handleSave(editChamp || CHAMP_VIDE)} disabled={saving} style={{ flex: 1, padding: '8px 16px', background: 'linear-gradient(135deg, #2563eb, #2563eb)', border: 'none', borderRadius: 6, color: '#fff', fontSize: 12, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
              {saving ? 'Enregistrement...' : editChamp?.id ? 'Modifier' : 'Creer'}
            </button>
          </div>
        </div>
      )}
 
-     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+     <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', overflow: 'hidden' }}>
        {loading ? (
          <div style={{ padding: 40, textAlign: 'center' }}>
-           <div style={{ width: 24, height: 24, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 10px' }} />
-           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chargement...</div>
+           <div style={{ width: 24, height: 24, border: '2px solid rgba(37,99,235,0.12)', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 10px' }} />
+           <div style={{ fontSize: 12, color: '#64748b' }}>Chargement...</div>
          </div>
        ) : champs.length === 0 ? (
-         <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+         <div style={{ padding: 40, textAlign: 'center', color: '#64748b', fontSize: 13 }}>
            Aucun champ personnalise - cliquez sur "+ Nouveau champ" pour commencer.
          </div>
        ) : (
          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
            <thead>
-             <tr style={{ borderBottom: '1px solid var(--border)' }}>
+             <tr style={{ borderBottom: '1px solid rgba(37,99,235,0.12)' }}>
                {['Nom', 'Module', 'Type', 'Obligatoire', 'Statut', 'Actions'].map(h => (
-                 <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{h}</th>
+                 <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>{h}</th>
                ))}
              </tr>
            </thead>
@@ -904,15 +904,15 @@ function SectionCustomFields() {
              {champs.map((champ, i) => {
                const mod = MODULE_LABELS[champ.module] || {};
                return (
-                 <tr key={champ.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                 <tr key={champ.id} style={{ borderBottom: '1px solid rgba(37,99,235,0.12)' }}>
                    <td style={{ padding: '10px 14px' }}>
-                     <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text-primary)' }}>{champ.nom}</div>
-                     {champ.description && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{champ.description}</div>}
+                     <div style={{ fontSize: 12.5, fontWeight: 500, color: '#0f172a' }}>{champ.nom}</div>
+                     {champ.description && <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{champ.description}</div>}
                    </td>
                    <td style={{ padding: '10px 14px' }}>
                      <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10.5, fontWeight: 500, background: `${mod.color}15`, color: mod.color }}>{mod.label}</span>
                    </td>
-                   <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-secondary)' }}>
+                   <td style={{ padding: '10px 14px', fontSize: 12, color: '#334155' }}>
                      {TYPE_OPTIONS.find(t => t.value === champ.type_champ)?.label}
                    </td>
                    <td style={{ padding: '10px 14px', fontSize: 12 }}>{champ.obligatoire ? 'Oui' : 'Non'}</td>
@@ -920,7 +920,7 @@ function SectionCustomFields() {
                      <button onClick={() => handleToggleActif(champ)} style={{
                        padding: '3px 8px', borderRadius: 20, fontSize: 10, fontWeight: 500, cursor: 'pointer', border: 'none',
                        background: champ.actif ? 'rgba(0,229,160,0.1)' : 'rgba(255,77,106,0.1)',
-                       color: champ.actif ? '#00e5a0' : '#ff4d6a',
+                       color: champ.actif ? '#16a34a' : '#dc2626',
                      }}>
                        {champ.actif ? 'Actif' : 'Inactif'}
                      </button>
@@ -942,8 +942,8 @@ function SectionCustomFields() {
                          }
                          setEditChamp(champAvecList); 
                          setShowForm(true); 
-                       }} style={{ padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>Modifier</button>
-                       <button onClick={() => handleDelete(champ)} style={{ padding: '4px 8px', background: 'rgba(255,77,106,0.08)', border: '1px solid rgba(255,77,106,0.2)', borderRadius: 4, color: '#ff4d6a', fontSize: 11, cursor: 'pointer' }}>Supprimer</button>
+                       }} style={{ padding: '4px 8px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 4, color: '#334155', fontSize: 11, cursor: 'pointer' }}>Modifier</button>
+                       <button onClick={() => handleDelete(champ)} style={{ padding: '4px 8px', background: 'rgba(255,77,106,0.08)', border: '1px solid rgba(255,77,106,0.2)', borderRadius: 4, color: '#dc2626', fontSize: 11, cursor: 'pointer' }}>Supprimer</button>
                      </div>
                    </td>
                  </tr>
@@ -965,24 +965,24 @@ export default function AdminPage() {
  const [tab, setTab] = useState('users');
 
  const TABS = [
- { key:'users', label:'Utilisateurs', color:'#00a8ff' },
- { key:'audit', label:'Audit Logs', color:'#9b8afb' },
- { key:'champs', label:'Champs personnalises', color:'#f5a623' },
+ { key:'users', label:'Utilisateurs', color:'#2563eb' },
+ { key:'audit', label:'Audit Logs', color:'#7c3aed' },
+ { key:'champs', label:'Champs personnalises', color:'#d97706' },
  ];
 
  return (
  <AppLayout title="Administration">
  <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20 }}>
- <div style={{ width:42, height:42, borderRadius:12, background:'rgba(255,77,106,0.12)', border:'1px solid rgba(255,77,106,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'#ff4d6a' }}>ADM</div>
+ <div style={{ width:42, height:42, borderRadius:12, background:'rgba(255,77,106,0.12)', border:'1px solid rgba(255,77,106,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'#dc2626' }}>ADM</div>
  <div>
- <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:800, color:'var(--text-primary)', marginBottom:2 }}>Panneau d'administration</h2>
- <p style={{ fontSize:11, color:'var(--text-muted)' }}>Gestion des utilisateurs - Audit logs - Informations systeme</p>
+ <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:800, color:'#0f172a', marginBottom:2 }}>Panneau d'administration</h2>
+ <p style={{ fontSize:11, color:'#64748b' }}>Gestion des utilisateurs - Audit logs - Informations systeme</p>
  </div>
  </div>
 
- <div style={{ display:'flex', background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', overflow:'hidden', marginBottom:20 }}>
+ <div style={{ display:'flex', background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', overflow:'hidden', marginBottom:20 }}>
  {TABS.map(t => (
- <button key={t.key} onClick={() => setTab(t.key)} style={{ flex:1, padding:'12px', background:'none', border:'none', borderBottom:`2px solid ${tab===t.key ? t.color : 'transparent'}`, color:tab===t.key ? t.color : 'var(--text-muted)', fontSize:13, fontWeight:tab===t.key ? 600 : 400, cursor:'pointer', fontFamily:'var(--font-body)', transition:'color 0.15s' }}>
+ <button key={t.key} onClick={() => setTab(t.key)} style={{ flex:1, padding:'12px', background:'none', border:'none', borderBottom:`2px solid ${tab===t.key ? t.color : 'transparent'}`, color:tab===t.key ? t.color : '#64748b', fontSize:13, fontWeight:tab===t.key ? 600 : 400, cursor:'pointer', fontFamily:'var(--font-body)', transition:'color 0.15s' }}>
  {t.label}
  </button>
  ))}
@@ -1004,5 +1004,5 @@ function BtnTiny({ color, onClick, children }) {
  );
 }
 const actionBtnSt = (color) => ({ padding:'8px 14px', background:`${color}12`, border:`1px solid ${color}25`, borderRadius:8, color, fontSize:12, fontWeight:600, cursor:'pointer' });
-const selSt = { padding:'7px 10px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:8, color:'var(--text-secondary)', fontSize:12, outline:'none', cursor:'pointer' };
-const inputSt = { width:'100%', padding:'8px 11px', background:'var(--bg-elevated)', border:'1px solid var(--border-light)', borderRadius:8, color:'var(--text-primary)', fontSize:12.5, outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' };
+const selSt = { padding:'7px 10px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:8, color:'#334155', fontSize:12, outline:'none', cursor:'pointer' };
+const inputSt = { width:'100%', padding:'8px 11px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.08)', borderRadius:8, color:'#0f172a', fontSize:12.5, outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' };

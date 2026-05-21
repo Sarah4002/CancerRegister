@@ -11,10 +11,10 @@ import { apiClient } from '../../services/apiClient';
 import toast from 'react-hot-toast';
 
 const MODULE_LABELS = {
-  patient:    { label: 'Dossier patient',      color: '#00a8ff', icon: '' },
-  diagnostic: { label: 'Diagnostic',           color: '#9b8afb', icon: '' },
-  traitement: { label: 'Traitement',           color: '#f5a623', icon: '' },
-  suivi:      { label: 'Suivi / Consultation', color: '#00e5a0', icon: '' },
+  patient:    { label: 'Dossier patient',      color: '#2563eb', icon: '' },
+  diagnostic: { label: 'Diagnostic',           color: '#7c3aed', icon: '' },
+  traitement: { label: 'Traitement',           color: '#d97706', icon: '' },
+  suivi:      { label: 'Suivi / Consultation', color: '#16a34a', icon: '' },
 };
 
 const TYPE_OPTIONS = [
@@ -62,10 +62,10 @@ function ChampForm({ initial, onSave, onCancel, saving }) {
 
   const input = {
     width: '100%', padding: '9px 12px',
-    background: 'var(--bg-elevated)',
-    border: '1px solid var(--border-light)',
-    borderRadius: 'var(--radius-md)',
-    color: 'var(--text-primary)', fontSize: 13.5,
+    background: '#f1f5f9',
+    border: '1px solid rgba(37,99,235,0.08)',
+    borderRadius: '12px',
+    color: '#0f172a', fontSize: 13.5,
     outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box',
   };
 
@@ -148,9 +148,9 @@ function ChampForm({ initial, onSave, onCancel, saving }) {
                 style={{ ...input, flex: 1 }}
               />
               <button type="button" onClick={addOption} style={{
-                padding: '9px 16px', background: 'var(--accent-dim)',
-                border: '1px solid var(--accent)', borderRadius: 'var(--radius-md)',
-                color: 'var(--accent)', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                padding: '9px 16px', background: 'rgba(37,99,235,0.08)',
+                border: '1px solid #2563eb', borderRadius: '12px',
+                color: '#2563eb', cursor: 'pointer', fontSize: 13, fontWeight: 600,
               }}>+ Ajouter</button>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -158,19 +158,19 @@ function ChampForm({ initial, onSave, onCancel, saving }) {
                 <span key={i} style={{
                   display: 'inline-flex', alignItems: 'center', gap: 6,
                   padding: '4px 10px', borderRadius: 20,
-                  background: 'var(--bg-elevated)',
-                  border: '1px solid var(--border-light)',
-                  fontSize: 12.5, color: 'var(--text-primary)',
+                  background: '#f1f5f9',
+                  border: '1px solid rgba(37,99,235,0.08)',
+                  fontSize: 12.5, color: '#0f172a',
                 }}>
                   {opt}
                   <button type="button" onClick={() => removeOption(i)} style={{
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--text-muted)', fontSize: 14, lineHeight: 1, padding: 0,
+                    color: '#64748b', fontSize: 14, lineHeight: 1, padding: 0,
                   }}>×</button>
                 </span>
               ))}
               {(!form.options || form.options.length === 0) && (
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Aucune option ajoutée</span>
+                <span style={{ fontSize: 12, color: '#64748b' }}>Aucune option ajoutée</span>
               )}
             </div>
           </div>
@@ -178,7 +178,7 @@ function ChampForm({ initial, onSave, onCancel, saving }) {
 
         {/* Obligatoire + ordre */}
         <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13.5, color: 'var(--text-primary)' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13.5, color: '#0f172a' }}>
             <input type="checkbox" checked={form.obligatoire} onChange={e => set('obligatoire', e.target.checked)}
               style={{ width: 15, height: 15, cursor: 'pointer' }} />
             Champ obligatoire
@@ -192,17 +192,17 @@ function ChampForm({ initial, onSave, onCancel, saving }) {
       </div>
 
       {/* Actions */}
-      <div style={{ display: 'flex', gap: 10, marginTop: 8, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', gap: 10, marginTop: 8, paddingTop: 16, borderTop: '1px solid rgba(37,99,235,0.12)' }}>
         <button type="button" onClick={onCancel} style={{
           flex: '0 0 100px', padding: '10px',
-          background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)',
+          background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)',
+          borderRadius: '12px', color: '#334155',
           fontSize: 13, cursor: 'pointer',
         }}>Annuler</button>
         <button type="submit" disabled={saving} style={{
           flex: 1, padding: '10px',
-          background: 'linear-gradient(135deg, #00a8ff, #0080cc)',
-          border: 'none', borderRadius: 'var(--radius-md)',
+          background: 'linear-gradient(135deg, #2563eb, #2563eb)',
+          border: 'none', borderRadius: '12px',
           color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer',
           opacity: saving ? 0.7 : 1,
         }}>
@@ -311,17 +311,17 @@ export default function AdminCustomFieldsPage() {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4, fontFamily: 'var(--font-display)' }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginBottom: 4, fontFamily: 'var(--font-display)' }}>
               Gestionnaire de champs
             </h2>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            <p style={{ fontSize: 13, color: '#64748b' }}>
               Créez des champs supplémentaires qui apparaissent dans les formulaires
             </p>
           </div>
           {!showForm && (
             <button onClick={() => { setEditChamp(null); setShowForm(true); }} style={{
-              padding: '10px 18px', background: 'linear-gradient(135deg, #00a8ff, #0080cc)',
-              border: 'none', borderRadius: 'var(--radius-md)',
+              padding: '10px 18px', background: 'linear-gradient(135deg, #2563eb, #2563eb)',
+              border: 'none', borderRadius: '12px',
               color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
             }}>
@@ -333,21 +333,21 @@ export default function AdminCustomFieldsPage() {
         {/* KPIs */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10, marginBottom: 24 }}>
           {[
-            { label: 'Total champs', value: total, color: '#00a8ff' },
-            { label: 'Actifs',       value: actifs, color: '#00e5a0' },
+            { label: 'Total champs', value: total, color: '#2563eb' },
+            { label: 'Actifs',       value: actifs, color: '#16a34a' },
             ...Object.entries(MODULE_LABELS).map(([m, info]) => ({
               label: info.label, value: parModule[m] || 0, color: info.color,
             })),
           ].map((kpi, i) => (
             <div key={i} style={{
               padding: '14px 16px',
-              background: 'var(--bg-card)',
+              background: '#ffffff',
               border: `1px solid ${kpi.color}25`,
-              borderRadius: 'var(--radius-md)',
+              borderRadius: '12px',
               borderLeft: `3px solid ${kpi.color}`,
             }}>
               <div style={{ fontSize: 22, fontWeight: 700, color: kpi.color }}>{kpi.value}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{kpi.label}</div>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{kpi.label}</div>
             </div>
           ))}
         </div>
@@ -355,11 +355,11 @@ export default function AdminCustomFieldsPage() {
         {/* Formulaire création/édition */}
         {showForm && (
           <div style={{
-            background: 'var(--bg-card)', border: '1px solid var(--border-light)',
-            borderRadius: 'var(--radius-lg)', padding: '24px 28px', marginBottom: 24,
+            background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)',
+            borderRadius: '16px', padding: '24px 28px', marginBottom: 24,
             animation: 'fadeUp 0.2s ease',
           }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 20, fontFamily: 'var(--font-display)' }}>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', marginBottom: 20, fontFamily: 'var(--font-display)' }}>
               {editChamp ? `Modifier — ${editChamp.nom}` : 'Nouveau champ personnalisé'}
             </h3>
             <ChampForm
@@ -379,8 +379,8 @@ export default function AdminCustomFieldsPage() {
             placeholder="Rechercher un champ..."
             style={{
               flex: 1, padding: '9px 12px',
-              background: 'var(--bg-card)', border: '1px solid var(--border-light)',
-              borderRadius: 'var(--radius-md)', color: 'var(--text-primary)',
+              background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)',
+              borderRadius: '12px', color: '#0f172a',
               fontSize: 13.5, outline: 'none', fontFamily: 'var(--font-body)',
             }}
           />
@@ -388,9 +388,9 @@ export default function AdminCustomFieldsPage() {
             value={filtreModule}
             onChange={e => setFiltreModule(e.target.value)}
             style={{
-              padding: '9px 12px', background: 'var(--bg-card)',
-              border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)',
-              color: 'var(--text-primary)', fontSize: 13, cursor: 'pointer',
+              padding: '9px 12px', background: '#ffffff',
+              border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px',
+              color: '#0f172a', fontSize: 13, cursor: 'pointer',
               outline: 'none', fontFamily: 'var(--font-body)',
             }}
           >
@@ -402,22 +402,22 @@ export default function AdminCustomFieldsPage() {
         </div>
 
         {/* Liste des champs */}
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+        <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', overflow: 'hidden' }}>
           {loading ? (
             <div style={{ padding: 40, textAlign: 'center' }}>
-              <div style={{ width: 24, height: 24, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 10px' }} />
-              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Chargement...</div>
+              <div style={{ width: 24, height: 24, border: '2px solid rgba(37,99,235,0.12)', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 10px' }} />
+              <div style={{ fontSize: 13, color: '#64748b' }}>Chargement...</div>
             </div>
           ) : champsFiltres.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13.5 }}>
+            <div style={{ padding: 40, textAlign: 'center', color: '#64748b', fontSize: 13.5 }}>
               {search || filtreModule ? 'Aucun champ ne correspond à votre recherche.' : 'Aucun champ personnalisé — cliquez sur "+ Nouveau champ" pour commencer.'}
             </div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                <tr style={{ borderBottom: '1px solid rgba(37,99,235,0.12)' }}>
                   {['Nom', 'Module', 'Type', 'Cancer lié', 'Obligatoire', 'Statut', 'Actions'].map(h => (
-                    <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: 0.5, textTransform: 'uppercase' }}>{h}</th>
+                    <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#64748b', letterSpacing: 0.5, textTransform: 'uppercase' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -425,23 +425,23 @@ export default function AdminCustomFieldsPage() {
                 {champsFiltres.map((champ, i) => {
                   const mod = MODULE_LABELS[champ.module] || {};
                   return (
-                    <tr key={champ.id} style={{ borderBottom: i < champsFiltres.length - 1 ? '1px solid var(--border)' : 'none', transition: 'background 0.15s' }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-elevated)'}
+                    <tr key={champ.id} style={{ borderBottom: i < champsFiltres.length - 1 ? '1px solid rgba(37,99,235,0.12)' : 'none', transition: 'background 0.15s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                       <td style={{ padding: '12px 16px' }}>
-                        <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text-primary)' }}>{champ.nom}</div>
-                        {champ.description && <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{champ.description}</div>}
+                        <div style={{ fontSize: 13.5, fontWeight: 500, color: '#0f172a' }}>{champ.nom}</div>
+                        {champ.description && <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>{champ.description}</div>}
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         <span style={{ padding: '3px 8px', borderRadius: 20, fontSize: 11.5, fontWeight: 500, background: `${mod.color}15`, color: mod.color, border: `1px solid ${mod.color}30` }}>
                           {mod.label}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>
+                      <td style={{ padding: '12px 16px', fontSize: 13, color: '#334155' }}>
                         {TYPE_OPTIONS.find(t => t.value === champ.type_champ)?.label}
                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: champ.topographie_code ? 'var(--accent)' : 'var(--text-muted)' }}>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: champ.topographie_code ? '#2563eb' : '#64748b' }}>
                         {champ.topographie_code ? `${champ.topographie_code} — ${champ.topographie_libelle || ''}` : '— Global —'}
                       </td>
                       <td style={{ padding: '12px 16px', textAlign: 'center' }}>
@@ -451,7 +451,7 @@ export default function AdminCustomFieldsPage() {
                         <button onClick={() => handleToggleActif(champ)} style={{
                           padding: '3px 10px', borderRadius: 20, fontSize: 11.5, fontWeight: 500, cursor: 'pointer', border: 'none',
                           background: champ.actif ? 'rgba(0,229,160,0.1)' : 'rgba(255,77,106,0.1)',
-                          color: champ.actif ? '#00e5a0' : '#ff4d6a',
+                          color: champ.actif ? '#16a34a' : '#dc2626',
                         }}>
                           {champ.actif ? '● Actif' : '○ Inactif'}
                         </button>
@@ -459,14 +459,14 @@ export default function AdminCustomFieldsPage() {
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button onClick={() => { setEditChamp(champ); setShowForm(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{
-                            padding: '5px 10px', background: 'var(--bg-elevated)',
-                            border: '1px solid var(--border)', borderRadius: 6,
-                            color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer',
+                            padding: '5px 10px', background: '#f1f5f9',
+                            border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6,
+                            color: '#334155', fontSize: 12, cursor: 'pointer',
                           }}>Modifier</button>
                           <button onClick={() => handleDelete(champ)} style={{
                             padding: '5px 10px', background: 'rgba(255,77,106,0.08)',
                             border: '1px solid rgba(255,77,106,0.2)', borderRadius: 6,
-                            color: '#ff4d6a', fontSize: 12, cursor: 'pointer',
+                            color: '#dc2626', fontSize: 12, cursor: 'pointer',
                           }}>Supprimer</button>
                         </div>
                       </td>
@@ -484,7 +484,7 @@ export default function AdminCustomFieldsPage() {
 
 function Label({ children }) {
   return (
-    <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6, letterSpacing: 0.3 }}>
+    <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#334155', marginBottom: 6, letterSpacing: 0.3 }}>
       {children}
     </label>
   );

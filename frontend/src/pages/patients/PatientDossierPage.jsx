@@ -39,26 +39,26 @@ function parseAntecedents(raw) {
 }
 
 const STATUT_COLORS = {
-  nouveau:    { bg: 'rgba(155,138,251,0.15)', color: '#9b8afb', border: 'rgba(155,138,251,0.3)' },
-  traitement: { bg: 'rgba(0,168,255,0.12)',   color: '#00a8ff', border: 'rgba(0,168,255,0.3)'  },
-  remission:  { bg: 'rgba(0,229,160,0.12)',   color: '#00e5a0', border: 'rgba(0,229,160,0.3)'  },
-  perdu:      { bg: 'rgba(245,166,35,0.12)',  color: '#f5a623', border: 'rgba(245,166,35,0.3)' },
-  decede:     { bg: 'rgba(255,77,106,0.12)',  color: '#ff4d6a', border: 'rgba(255,77,106,0.3)' },
+  nouveau:    { bg: 'rgba(155,138,251,0.15)', color: '#7c3aed', border: 'rgba(155,138,251,0.3)' },
+  traitement: { bg: 'rgba(0,168,255,0.12)',   color: '#2563eb', border: 'rgba(0,168,255,0.3)'  },
+  remission:  { bg: 'rgba(0,229,160,0.12)',   color: '#16a34a', border: 'rgba(0,229,160,0.3)'  },
+  perdu:      { bg: 'rgba(245,166,35,0.12)',  color: '#d97706', border: 'rgba(245,166,35,0.3)' },
+  decede:     { bg: 'rgba(255,77,106,0.12)',  color: '#dc2626', border: 'rgba(255,77,106,0.3)' },
   archive:    { bg: 'rgba(107,114,128,0.12)', color: '#9ca3af', border: 'rgba(107,114,128,0.3)'},
 };
 
 const COLOR_VARS = {
-  success: { color: '#00e5a0', bg: 'rgba(0,229,160,0.1)',  border: 'rgba(0,229,160,0.25)'  },
-  warning: { color: '#f5a623', bg: 'rgba(245,166,35,0.1)', border: 'rgba(245,166,35,0.25)' },
-  danger:  { color: '#ff4d6a', bg: 'rgba(255,77,106,0.1)', border: 'rgba(255,77,106,0.25)' },
+  success: { color: '#16a34a', bg: 'rgba(0,229,160,0.1)',  border: 'rgba(0,229,160,0.25)'  },
+  warning: { color: '#d97706', bg: 'rgba(245,166,35,0.1)', border: 'rgba(245,166,35,0.25)' },
+  danger:  { color: '#dc2626', bg: 'rgba(255,77,106,0.1)', border: 'rgba(255,77,106,0.25)' },
   muted:   { color: '#9ca3af', bg: 'rgba(107,114,128,0.1)',border: 'rgba(107,114,128,0.25)'},
 };
 
 const EXAMEN_STATUT_COLORS = {
-  prescrit:   { bg: 'rgba(155,138,251,0.1)', color: '#9b8afb' },
-  en_attente: { bg: 'rgba(245,166,35,0.1)',  color: '#f5a623' },
-  realise:    { bg: 'rgba(0,229,160,0.1)',   color: '#00e5a0' },
-  annule:     { bg: 'rgba(255,77,106,0.1)',  color: '#ff4d6a' },
+  prescrit:   { bg: 'rgba(155,138,251,0.1)', color: '#7c3aed' },
+  en_attente: { bg: 'rgba(245,166,35,0.1)',  color: '#d97706' },
+  realise:    { bg: 'rgba(0,229,160,0.1)',   color: '#16a34a' },
+  annule:     { bg: 'rgba(255,77,106,0.1)',  color: '#dc2626' },
 };
 
 const EDIT_FIELDS = {
@@ -109,7 +109,7 @@ const EDIT_FIELDS = {
 };
 
 function EditField({ field, value, onChange, allValues }) {
-  const base = { width: '100%', padding: '9px 11px', background: 'var(--bg-elevated)', border: '1px solid var(--accent)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box' };
+  const base = { width: '100%', padding: '9px 11px', background: '#f1f5f9', border: '1px solid #2563eb', borderRadius: '12px', color: '#0f172a', fontSize: 13, fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box' };
   if (field.type === 'select') return (
     <select value={value || ''} onChange={e => onChange(e.target.value)} style={{ ...base, cursor: 'pointer' }}>
       <option value="">— Selectionner —</option>{field.options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
@@ -139,18 +139,18 @@ function QRCodeCard({ patient }) {
   const [copied, setCopied] = useState(false);
   const copyUrl = () => { navigator.clipboard.writeText(mobileUrl).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); };
   return (
-    <div style={{ border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '20px 24px', display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 20 }}>
-      <div style={{ width: 120, height: 120, borderRadius: 'var(--radius-md)', border: '2px solid var(--border-light)', overflow: 'hidden', flexShrink: 0, background: '#fff' }}>
+    <div style={{ border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '20px 24px', display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 20 }}>
+      <div style={{ width: 120, height: 120, borderRadius: '12px', border: '2px solid rgba(37,99,235,0.08)', overflow: 'hidden', flexShrink: 0, background: '#fff' }}>
         <img src={qrApiUrl} alt="QR Code" width={120} height={120} style={{ display: 'block' }} onError={e => { e.target.style.display = 'none'; }} />
       </div>
       <div style={{ flex: 1, minWidth: 200 }}>
-        <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 8 }}>QR Code — Application mobile</div>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.6 }}>Presentez ce code au patient pour qu'il renseigne ses habitudes de vie via son smartphone. Son identite sera pre-remplie automatiquement.</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '8px 12px', marginBottom: 10 }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{mobileUrl}</span>
-          <button onClick={copyUrl} style={{ flexShrink: 0, padding: '4px 10px', background: copied ? 'rgba(0,229,160,0.1)' : 'var(--bg-card)', border: '1px solid ' + (copied ? 'rgba(0,229,160,0.4)' : 'var(--border)'), borderRadius: 6, fontSize: 11, cursor: 'pointer', color: copied ? 'var(--success)' : 'var(--text-secondary)' }}>{copied ? 'Copie' : 'Copier'}</button>
+        <div style={{ fontWeight: 600, fontSize: 14, color: '#0f172a', marginBottom: 8 }}>QR Code — Application mobile</div>
+        <p style={{ fontSize: 12, color: '#334155', marginBottom: 12, lineHeight: 1.6 }}>Presentez ce code au patient pour qu'il renseigne ses habitudes de vie via son smartphone. Son identite sera pre-remplie automatiquement.</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px', padding: '8px 12px', marginBottom: 10 }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#64748b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{mobileUrl}</span>
+          <button onClick={copyUrl} style={{ flexShrink: 0, padding: '4px 10px', background: copied ? 'rgba(0,229,160,0.1)' : '#ffffff', border: '1px solid ' + (copied ? 'rgba(0,229,160,0.4)' : 'rgba(37,99,235,0.12)'), borderRadius: 6, fontSize: 11, cursor: 'pointer', color: copied ? '#16a34a' : '#334155' }}>{copied ? 'Copie' : 'Copier'}</button>
         </div>
-        <a href={qrApiUrl} download={'qr-' + patient.registration_number + '.png'} target="_blank" rel="noreferrer" style={{ display: 'inline-block', padding: '7px 14px', background: 'rgba(0,168,255,0.08)', border: '1px solid rgba(0,168,255,0.25)', borderRadius: 'var(--radius-md)', color: 'var(--accent)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>Telecharger le QR code</a>
+        <a href={qrApiUrl} download={'qr-' + patient.registration_number + '.png'} target="_blank" rel="noreferrer" style={{ display: 'inline-block', padding: '7px 14px', background: 'rgba(0,168,255,0.08)', border: '1px solid rgba(0,168,255,0.25)', borderRadius: '12px', color: '#2563eb', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>Telecharger le QR code</a>
       </div>
     </div>
   );
@@ -252,9 +252,9 @@ export default function PatientDossierPage() {
 
   if (loading || !patient) return (
     <AppLayout title="Fiche Patient">
-       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: 'var(--text-muted)' }}>
+       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: '#64748b' }}>
          <div style={{ textAlign: 'center' }}>
-           <div style={{ width: 36, height: 36, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+           <div style={{ width: 36, height: 36, border: '3px solid rgba(37,99,235,0.12)', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
            Chargement du dossier...
          </div>
        </div>
@@ -280,27 +280,27 @@ export default function PatientDossierPage() {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
-        .sidebar-item { padding: 12px 16px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; color: var(--text-secondary); transition: 0.2s; font-size: 14px; font-weight: 500; }
-        .sidebar-item:hover { background: rgba(0,168,255,0.05); color: var(--text-primary); }
-        .sidebar-item.active { background: rgba(0,168,255,0.1); color: var(--accent); border-left: 3px solid var(--accent); }
-        .main-content { flex: 1; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 12px; padding: 24px; min-height: 500px; }
-        .input-st { width: 100%; padding: 8px 12px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 13px; outline: none; box-sizing: border-box; }
-        .label-st { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; }
+        .sidebar-item { padding: 12px 16px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; color: #334155; transition: 0.2s; font-size: 14px; font-weight: 500; }
+        .sidebar-item:hover { background: rgba(0,168,255,0.05); color: #0f172a; }
+        .sidebar-item.active { background: rgba(0,168,255,0.1); color: #2563eb; border-left: 3px solid #2563eb; }
+        .main-content { flex: 1; background: #ffffff; border: 1px solid rgba(37,99,235,0.08); border-radius: 12px; padding: 24px; min-height: 500px; }
+        .input-st { width: 100%; padding: 8px 12px; background: #f1f5f9; border: 1px solid rgba(37,99,235,0.12); border-radius: 6px; color: #0f172a; font-size: 13px; outline: none; box-sizing: border-box; }
+        .label-st { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 6px; font-weight: 600; }
       `}</style>
       
       {/* ── Header ── */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+      <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ width: 56, height: 56, borderRadius: '50%', flexShrink: 0, background: patient.sexe === 'F' ? 'linear-gradient(135deg, rgba(245,101,196,0.2), rgba(245,101,196,0.1))' : 'linear-gradient(135deg, rgba(0,168,255,0.2), rgba(0,168,255,0.1))', border: '2px solid ' + (patient.sexe === 'F' ? 'rgba(245,101,196,0.3)' : 'rgba(0,168,255,0.3)'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: patient.sexe === 'F' ? 'rgba(245,101,196,0.9)' : 'rgba(0,168,255,0.9)' }}>
             {((patient.nom?.[0] || '') + (patient.prenom?.[0] || '')).toUpperCase()}
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
-              <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>
+              <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#0f172a' }}>
                 {patient.nom} {patient.prenom}
               </h2>
               <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color, border: '1px solid ' + sc.border }}>{patient.statut_label}</span>
-              {editMode && <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, background: 'rgba(245,166,35,0.12)', color: '#f5a623' }}>Mode edition</span>}
+              {editMode && <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, background: 'rgba(245,166,35,0.12)', color: '#d97706' }}>Mode edition</span>}
             </div>
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
               <Info val={patient.registration_number} mono />
@@ -324,7 +324,7 @@ export default function PatientDossierPage() {
       </div>
 
       {editMode && activeMainTab === 'identite' && (
-        <div style={{ marginBottom: 14, padding: '10px 16px', background: 'rgba(245,166,35,0.06)', border: '1px solid rgba(245,166,35,0.2)', borderRadius: 'var(--radius-md)', fontSize: 12, color: '#f5a623', display: 'flex', alignItems: 'center', gap: 8, animation: 'fadeIn 0.2s ease' }}>
+        <div style={{ marginBottom: 14, padding: '10px 16px', background: 'rgba(245,166,35,0.06)', border: '1px solid rgba(245,166,35,0.2)', borderRadius: '12px', fontSize: 12, color: '#d97706', display: 'flex', alignItems: 'center', gap: 8, animation: 'fadeIn 0.2s ease' }}>
           <span style={{ fontWeight: 700 }}>Mode edition actif</span>
           {tabHasEdit ? '— Modifiez les champs ci-dessous puis cliquez sur Enregistrer.' : "— Cet onglet n'est pas editable. Naviguez vers un autre onglet pour modifier."}
         </div>
@@ -352,9 +352,9 @@ export default function PatientDossierPage() {
           {/* == IDENTITe & PROFIL == */}
           {activeMainTab === 'identite' && (
             <>
-              <div style={{ display: 'flex', marginBottom: 16, background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', marginBottom: 16, background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
                 {ID_TABS.map(t => (
-                  <button key={t.key} onClick={() => setActiveIdentiteTab(t.key)} style={{ flex: 1, padding: '12px 6px', background: 'none', border: 'none', borderBottom: '2px solid ' + (activeIdentiteTab === t.key ? 'var(--accent)' : 'transparent'), color: activeIdentiteTab === t.key ? 'var(--accent)' : 'var(--text-muted)', fontSize: 11.5, fontWeight: activeIdentiteTab === t.key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}>
+                  <button key={t.key} onClick={() => setActiveIdentiteTab(t.key)} style={{ flex: 1, padding: '12px 6px', background: 'none', border: 'none', borderBottom: '2px solid ' + (activeIdentiteTab === t.key ? '#2563eb' : 'transparent'), color: activeIdentiteTab === t.key ? '#2563eb' : '#64748b', fontSize: 11.5, fontWeight: activeIdentiteTab === t.key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}>
                     {t.label}
                   </button>
                 ))}
@@ -413,8 +413,8 @@ export default function PatientDossierPage() {
                   )}
                   {activeIdentiteTab === 'habitudes' && (
                     <div>
-                      <div style={{ marginBottom: 20, padding: '10px 14px', background: 'rgba(0,168,255,0.06)', border: '1px solid rgba(0,168,255,0.15)', borderRadius: 'var(--radius-md)', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                        Ces informations sont renseignees par le patient via l'application mobile. Consultez l'onglet <strong style={{ color: 'var(--accent)' }}>QR Code</strong> pour generer le lien de saisie.
+                      <div style={{ marginBottom: 20, padding: '10px 14px', background: 'rgba(0,168,255,0.06)', border: '1px solid rgba(0,168,255,0.15)', borderRadius: '12px', fontSize: 12, color: '#334155', lineHeight: 1.5 }}>
+                        Ces informations sont renseignees par le patient via l'application mobile. Consultez l'onglet <strong style={{ color: '#2563eb' }}>QR Code</strong> pour generer le lien de saisie.
                       </div>
                       <SectionLabel>Habitudes de vie</SectionLabel>
                       <Grid>
@@ -425,21 +425,21 @@ export default function PatientDossierPage() {
                       </Grid>
                       <SectionLabel style={{ marginTop: 24 }}>Antecedents familiaux</SectionLabel>
                       {coches.length === 0 && !commentaire ? (
-                        <p style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', padding: '6px 0' }}>Non renseigne.</p>
+                        <p style={{ fontSize: 13, color: '#64748b', fontStyle: 'italic', padding: '6px 0' }}>Non renseigne.</p>
                       ) : (
                         <div>
                           {coches.length > 0 && (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: commentaire ? 12 : 0 }}>
                               {coches.map(val => (
-                                <span key={val} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, background: val === 'aucun' ? 'rgba(0,229,160,0.1)' : 'rgba(255,77,106,0.08)', border: '1px solid ' + (val === 'aucun' ? 'rgba(0,229,160,0.3)' : 'rgba(255,77,106,0.2)'), color: val === 'aucun' ? '#00e5a0' : '#ff4d6a' }}>
+                                <span key={val} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, background: val === 'aucun' ? 'rgba(0,229,160,0.1)' : 'rgba(255,77,106,0.08)', border: '1px solid ' + (val === 'aucun' ? 'rgba(0,229,160,0.3)' : 'rgba(255,77,106,0.2)'), color: val === 'aucun' ? '#16a34a' : '#dc2626' }}>
                                   {ANTECEDENT_LABELS[val] || val}
                                 </span>
                               ))}
                             </div>
                           )}
                           {commentaire && (
-                            <div style={{ padding: '12px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                              <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Precisions</span>
+                            <div style={{ padding: '12px 14px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px', fontSize: 13, color: '#334155', lineHeight: 1.6 }}>
+                              <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, color: '#64748b', display: 'block', marginBottom: 4 }}>Precisions</span>
                               {commentaire}
                             </div>
                           )}
@@ -452,7 +452,7 @@ export default function PatientDossierPage() {
                     <div>
                       {patient.contacts_urgence?.length > 0 ? (
                         patient.contacts_urgence.map((c, i) => (
-                          <div key={i} style={{ padding: '14px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', marginBottom: 10, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                          <div key={i} style={{ padding: '14px 18px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px', marginBottom: 10, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
                             <InfoRow label="Nom"         value={c.nom + ' ' + c.prenom} />
                             <InfoRow label="Lien"        value={c.lien} />
                             <InfoRow label="Telephone"   value={c.telephone} mono />
@@ -460,7 +460,7 @@ export default function PatientDossierPage() {
                           </div>
                         ))
                       ) : (
-                        <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 13 }}>Aucun contact d'urgence enregistre</div>
+                        <div style={{ textAlign: 'center', padding: 32, color: '#64748b', fontSize: 13 }}>Aucun contact d'urgence enregistre</div>
                       )}
                     </div>
                   )}
@@ -470,7 +470,7 @@ export default function PatientDossierPage() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 28px' }}>
                     {EDIT_FIELDS[activeIdentiteTab].map(field => (
                       <div key={field.key} style={{ marginBottom: 18, gridColumn: field.type === 'textarea' ? '1 / -1' : 'auto' }}>
-                        <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 6, letterSpacing: 0.5, textTransform: 'uppercase' }}>
                           {field.label}
                         </label>
                         <EditField field={field} value={editData[field.key] ?? ''} onChange={val => updateField(field.key, val)} allValues={editData} />
@@ -478,9 +478,9 @@ export default function PatientDossierPage() {
                     ))}
                   </div>
                   {/* Boutons bas de formulaire */}
-                  <div style={{ display: 'flex', gap: 10, marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--border)', justifyContent: 'flex-end' }}>
-                    <button onClick={handleCancel} style={{ padding: '10px 20px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Annuler</button>
-                    <button onClick={handleUpdatePatient} disabled={saving} style={{ padding: '10px 26px', background: saving ? 'var(--border)' : 'linear-gradient(135deg, #00e5a0, #00b38a)', border: 'none', borderRadius: 'var(--radius-md)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(37,99,235,0.12)', justifyContent: 'flex-end' }}>
+                    <button onClick={handleCancel} style={{ padding: '10px 20px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px', color: '#334155', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Annuler</button>
+                    <button onClick={handleUpdatePatient} disabled={saving} style={{ padding: '10px 26px', background: saving ? 'rgba(37,99,235,0.12)' : 'linear-gradient(135deg, #16a34a, #00b38a)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', gap: 8 }}>
                       {saving ? 'Enregistrement en cours...' : 'Enregistrer les modifications'}
                     </button>
                   </div>
@@ -492,7 +492,7 @@ export default function PatientDossierPage() {
           {/* == DOSSIER MeDICAL == */}
           {activeMainTab === 'dossier' && (
              <div>
-               <div style={{ display: 'flex', gap: 10, borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 20 }}>
+               <div style={{ display: 'flex', gap: 10, borderBottom: '1px solid rgba(37,99,235,0.12)', paddingBottom: 10, marginBottom: 20 }}>
                  <button onClick={() => setActiveSubTab('clinique')} style={subTabSt(activeSubTab === 'clinique')}>Infos Cliniques</button>
                  <button onClick={() => setActiveSubTab('diagnostic')} style={subTabSt(activeSubTab === 'diagnostic')}>Diagnostic</button>
                  <button onClick={() => setActiveSubTab('examens')} style={subTabSt(activeSubTab === 'examens')}>Examens & Bilans</button>
@@ -501,7 +501,7 @@ export default function PatientDossierPage() {
                {activeSubTab === 'clinique' && (
                  <div>
                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-                     <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>Constantes & Actes</h3>
+                     <h3 style={{ margin: 0, color: '#0f172a' }}>Constantes & Actes</h3>
                      {!dossierEditMode ? (
                        <button onClick={() => { setDossierForm(dossier || {}); setDossierEditMode(true); }} style={btnSt}>Modifier le dossier</button>
                      ) : (
@@ -541,14 +541,14 @@ export default function PatientDossierPage() {
 
                {activeSubTab === 'diagnostic' && (
                  <div>
-                   <h3 style={{ marginTop: 0, color: 'var(--text-primary)' }}>Diagnostic(s) associe(s)</h3>
+                   <h3 style={{ marginTop: 0, color: '#0f172a' }}>Diagnostic(s) associe(s)</h3>
                    {diagnostics.length === 0 ? (
-                     <div style={{ padding: 20, color: 'var(--text-muted)' }}>Aucun diagnostic recensé.</div>
+                     <div style={{ padding: 20, color: '#64748b' }}>Aucun diagnostic recensé.</div>
                    ) : (
                      diagnostics.map(diag => (
-                       <div key={diag.id} style={{ background: 'var(--bg-elevated)', padding: 16, borderRadius: 8, marginBottom: 12, border: '1px solid var(--border)' }}>
-                         <h4 style={{ margin: '0 0 10px 0', color: 'var(--text-primary)' }}>Topographie: {diag.topographie_code}</h4>
-                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13, color: 'var(--text-secondary)' }}>
+                       <div key={diag.id} style={{ background: '#f1f5f9', padding: 16, borderRadius: 8, marginBottom: 12, border: '1px solid rgba(37,99,235,0.12)' }}>
+                         <h4 style={{ margin: '0 0 10px 0', color: '#0f172a' }}>Topographie: {diag.topographie_code}</h4>
+                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13, color: '#334155' }}>
                            <div><strong>Date:</strong> {new Date(diag.date_diagnostic).toLocaleDateString()}</div>
                            <div><strong>Stade AJCC:</strong> {diag.stade_ajcc}</div>
                            <div><strong>Morphologie:</strong> {diag.morphologie_code}</div>
@@ -563,12 +563,12 @@ export default function PatientDossierPage() {
                {activeSubTab === 'examens' && (
                  <div>
                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-                     <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>Examens & Bilans</h3>
+                     <h3 style={{ margin: 0, color: '#0f172a' }}>Examens & Bilans</h3>
                      <button onClick={() => setShowExamenModal(true)} style={btnSt}>+ Prescrire un examen</button>
                    </div>
                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                      <thead>
-                       <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                       <tr style={{ borderBottom: '1px solid rgba(37,99,235,0.12)', color: '#64748b' }}>
                          <th style={{ padding: '12px 0', textAlign: 'left' }}>Categorie</th>
                          <th style={{ padding: '12px 0', textAlign: 'left' }}>Examen</th>
                          <th style={{ padding: '12px 0', textAlign: 'left' }}>Statut</th>
@@ -577,15 +577,15 @@ export default function PatientDossierPage() {
                      </thead>
                      <tbody>
                        {examens.length === 0 ? (
-                         <tr><td colSpan={4} style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>Aucun examen.</td></tr>
+                         <tr><td colSpan={4} style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>Aucun examen.</td></tr>
                        ) : examens.map(ex => {
                          const st = EXAMEN_STATUT_COLORS[ex.statut] || EXAMEN_STATUT_COLORS.en_attente;
                          return (
-                           <tr key={ex.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                             <td style={{ padding: '12px 0', color: 'var(--text-primary)' }}>{ex.categorie}</td>
-                             <td style={{ padding: '12px 0', color: 'var(--text-secondary)' }}>{ex.nom_examen}</td>
+                           <tr key={ex.id} style={{ borderBottom: '1px solid rgba(37,99,235,0.08)' }}>
+                             <td style={{ padding: '12px 0', color: '#0f172a' }}>{ex.categorie}</td>
+                             <td style={{ padding: '12px 0', color: '#334155' }}>{ex.nom_examen}</td>
                              <td style={{ padding: '12px 0' }}><span style={{ padding: '3px 8px', borderRadius: 4, background: st.bg, color: st.color, fontSize: 11 }}>{ex.statut}</span></td>
-                             <td style={{ padding: '12px 0', textAlign: 'right', color: 'var(--text-secondary)' }}>{new Date(ex.date_prescription).toLocaleDateString()}</td>
+                             <td style={{ padding: '12px 0', textAlign: 'right', color: '#334155' }}>{new Date(ex.date_prescription).toLocaleDateString()}</td>
                            </tr>
                          );
                        })}
@@ -599,28 +599,28 @@ export default function PatientDossierPage() {
           {/* == TRAITEMENTS == */}
           {activeMainTab === 'traitements' && (
             <div>
-              <h3 style={{ marginTop: 0, color: 'var(--text-primary)' }}>Historique des Traitements</h3>
+              <h3 style={{ marginTop: 0, color: '#0f172a' }}>Historique des Traitements</h3>
               {Object.keys(traitements).map(key => traitements[key]?.length > 0 && (
                 <div key={key} style={{ marginBottom: 20 }}>
-                  <h4 style={{ textTransform: 'capitalize', color: 'var(--accent)', borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>{key}</h4>
+                  <h4 style={{ textTransform: 'capitalize', color: '#2563eb', borderBottom: '1px solid rgba(37,99,235,0.12)', paddingBottom: 6 }}>{key}</h4>
                   {traitements[key].map(t => (
-                     <div key={t.id} style={{ background: 'var(--bg-elevated)', padding: 12, borderRadius: 8, margin: '8px 0', fontSize: 13, color: 'var(--text-secondary)' }}>
+                     <div key={t.id} style={{ background: '#f1f5f9', padding: 12, borderRadius: 8, margin: '8px 0', fontSize: 13, color: '#334155' }}>
                        Phase: {t.phase_traitement} - Statut: {t.statut_traitement} {t.date_debut && `- Début: ${new Date(t.date_debut).toLocaleDateString()}`}
                      </div>
                   ))}
                 </div>
               ))}
-              {Object.keys(traitements).every(k => !traitements[k]?.length) && <div style={{ color: 'var(--text-muted)' }}>Aucun traitement trouvé.</div>}
+              {Object.keys(traitements).every(k => !traitements[k]?.length) && <div style={{ color: '#64748b' }}>Aucun traitement trouvé.</div>}
             </div>
           )}
 
           {/* == SUIVI CLINIQUE == */}
           {activeMainTab === 'suivi' && (
             <div>
-               <h3 style={{ marginTop: 0, color: 'var(--text-primary)' }}>Consultations & Suivi</h3>
-               {suivi.length === 0 ? <div style={{ color: 'var(--text-muted)' }}>Aucune consultation enregistrée.</div> : (
+               <h3 style={{ marginTop: 0, color: '#0f172a' }}>Consultations & Suivi</h3>
+               {suivi.length === 0 ? <div style={{ color: '#64748b' }}>Aucune consultation enregistrée.</div> : (
                  suivi.map(c => (
-                   <div key={c.id} style={{ background: 'var(--bg-elevated)', padding: 12, borderRadius: 8, margin: '8px 0', fontSize: 13, color: 'var(--text-secondary)' }}>
+                   <div key={c.id} style={{ background: '#f1f5f9', padding: 12, borderRadius: 8, margin: '8px 0', fontSize: 13, color: '#334155' }}>
                      <strong>Date: {new Date(c.date_consultation).toLocaleDateString()}</strong> - PS ECOG: {c.ps_ecog} - Poids: {c.poids_kg}kg
                    </div>
                  ))
@@ -640,9 +640,9 @@ export default function PatientDossierPage() {
 // Micro-components
 function InfoItem({ label, value, isTextarea }) {
   return (
-    <div style={{ gridColumn: isTextarea ? '1 / -1' : 'auto', background: 'var(--bg-elevated)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border-light)' }}>
+    <div style={{ gridColumn: isTextarea ? '1 / -1' : 'auto', background: '#f1f5f9', padding: '12px 14px', borderRadius: 8, border: '1px solid rgba(37,99,235,0.08)' }}>
       <div className="label-st">{label}</div>
-      <div style={{ fontSize: 14, color: value ? 'var(--text-primary)' : 'var(--text-muted)', whiteSpace: isTextarea ? 'pre-wrap' : 'nowrap' }}>
+      <div style={{ fontSize: 14, color: value ? '#0f172a' : '#64748b', whiteSpace: isTextarea ? 'pre-wrap' : 'nowrap' }}>
         {value || 'Non renseigné'}
       </div>
     </div>
@@ -653,22 +653,22 @@ function EditItem({ label, val, onChange, type="text" }) {
     <div><label className="label-st">{label}</label><input className="input-st" type={type} value={val || ''} onChange={e => onChange(e.target.value)} /></div>
   );
 }
-function Info({ val, mono }) { return <span style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}><span style={{ fontFamily: mono ? 'var(--font-mono)' : 'inherit', color: 'var(--text-primary)' }}>{val}</span></span>; }
+function Info({ val, mono }) { return <span style={{ fontSize: 12.5, color: '#334155' }}><span style={{ fontFamily: mono ? 'var(--font-mono)' : 'inherit', color: '#0f172a' }}>{val}</span></span>; }
 function Grid({ children }) { return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>{children}</div>; }
-function SectionLabel({ children, style: s }) { return <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 12, ...s }}>{children}</div>; }
+function SectionLabel({ children, style: s }) { return <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: '#64748b', marginBottom: 12, ...s }}>{children}</div>; }
 function InfoRow({ label, value, mono, full }) {
   return (
-    <div style={{ padding: '10px 0', borderBottom: '1px solid var(--border)', gridColumn: full ? '1 / -1' : 'auto' }}>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3, letterSpacing: 0.3, textTransform: 'uppercase' }}>{label}</div>
-      <div style={{ fontSize: 13.5, color: 'var(--text-primary)', fontFamily: mono ? 'var(--font-mono)' : 'inherit' }}>{value || '—'}</div>
+    <div style={{ padding: '10px 0', borderBottom: '1px solid rgba(37,99,235,0.12)', gridColumn: full ? '1 / -1' : 'auto' }}>
+      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 3, letterSpacing: 0.3, textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ fontSize: 13.5, color: '#0f172a', fontFamily: mono ? 'var(--font-mono)' : 'inherit' }}>{value || '—'}</div>
     </div>
   );
 }
 function HabitudeRow({ label, value, colorMap, labelMap }) {
   const cv = COLOR_VARS[colorMap[value] || 'muted'];
   return (
-    <div style={{ padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, letterSpacing: 0.3, textTransform: 'uppercase' }}>{label}</div>
+    <div style={{ padding: '12px 0', borderBottom: '1px solid rgba(37,99,235,0.12)' }}>
+      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6, letterSpacing: 0.3, textTransform: 'uppercase' }}>{label}</div>
       <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12.5, fontWeight: 600, background: cv.bg, color: cv.color, border: '1px solid ' + cv.border }}>
         {labelMap[value] || value || '—'}
       </span>
@@ -676,7 +676,7 @@ function HabitudeRow({ label, value, colorMap, labelMap }) {
   );
 }
 
-const subTabSt = (active) => ({ padding: '6px 12px', background: active ? 'var(--accent)' : 'transparent', border: 'none', borderRadius: 20, color: active ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: active ? 600 : 400 });
-const btnSt = { padding: '8px 16px', background: 'var(--accent)', color: 'var(--text-primary)', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500 };
-const btnStSecondary = { padding: '8px 16px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', borderRadius: 6, cursor: 'pointer', fontSize: 13 };
-const btnStSuccess = { padding: '8px 16px', background: 'linear-gradient(135deg, #00e5a0, #00b38a)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500 };
+const subTabSt = (active) => ({ padding: '6px 12px', background: active ? '#2563eb' : 'transparent', border: 'none', borderRadius: 20, color: active ? '#0f172a' : '#334155', cursor: 'pointer', fontSize: 13, fontWeight: active ? 600 : 400 });
+const btnSt = { padding: '8px 16px', background: '#2563eb', color: '#0f172a', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500 };
+const btnStSecondary = { padding: '8px 16px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', color: '#334155', borderRadius: 6, cursor: 'pointer', fontSize: 13 };
+const btnStSuccess = { padding: '8px 16px', background: 'linear-gradient(135deg, #16a34a, #00b38a)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500 };

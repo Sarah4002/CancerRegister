@@ -108,6 +108,41 @@ NORD_WILAYAS = {
     'Chlef','Aïn Defla','Relizane','Tiaret','Sidi Bel Abbès','Tlemcen',
 }
 
+def _apply_common_filters(qs, filters=None, include_annee=True):
+    """Applique les filtres globaux de la page statistiques."""
+    if not filters:
+        return qs
+
+    annee       = filters.get('annee')
+    sexe        = filters.get('sexe')
+    statut      = filters.get('statut')
+    wilaya      = filters.get('wilaya')
+    stade       = filters.get('stade')
+    cancer_type = filters.get('cancerType') or filters.get('type_cancer') or filters.get('cancer_type')
+    date_from   = filters.get('dateFrom') or filters.get('date_from')
+    date_to     = filters.get('dateTo') or filters.get('date_to')
+
+    if include_annee and annee and annee not in ('all', 'Tous', ''):
+        qs = qs.filter(date_diagnostic__year=annee)
+    if date_from:
+        qs = qs.filter(date_diagnostic__gte=date_from)
+    if date_to:
+        qs = qs.filter(date_diagnostic__lte=date_to)
+    if sexe and sexe not in ('all', 'Tous', ''):
+        qs = qs.filter(patient__sexe=sexe)
+    if statut and statut not in ('all', 'Tous', ''):
+        qs = qs.filter(patient__statut_dossier=statut)
+    if wilaya and wilaya not in ('all', 'Tous', ''):
+        qs = qs.filter(patient__wilaya=wilaya)
+    if stade and stade not in ('all', 'Tous', ''):
+        if stade in ('I', 'II', 'III', 'IV'):
+            qs = qs.filter(stade_ajcc__in=[stade, f'{stade}A', f'{stade}B', f'{stade}C'])
+        else:
+            qs = qs.filter(stade_ajcc=stade)
+    if cancer_type and cancer_type not in ('all', 'Tous', ''):
+        qs = qs.filter(topographie__categorie=cancer_type)
+    return qs
+
 def _qs(filters=None):
     """Retourne le queryset Diagnostic filtré par annee et sexe."""
     if Diagnostic is None:
@@ -121,7 +156,7 @@ def _qs(filters=None):
         qs = qs.filter(date_diagnostic__year=annee)
     if sexe and sexe not in ('all', 'Tous', ''):
         qs = qs.filter(patient__sexe=sexe)
-    return qs
+    return _apply_common_filters(qs, filters, include_annee=False)
 
 def _stade_label(ajcc):
     return STADE_MAP.get(str(ajcc or '').upper(), 'Inconnu')
@@ -176,7 +211,7 @@ class KPIView(APIView):
             qs = Diagnostic.objects.filter(date_diagnostic__year=yr)
             if sexe and sexe not in ('all', 'Tous', ''):
                 qs = qs.filter(patient__sexe=sexe)
-            return qs
+            return _apply_common_filters(qs, filters, include_annee=False)
 
         if Diagnostic is None:
             return Response({
@@ -215,11 +250,12 @@ class KPIView(APIView):
         deces_annee = 0
         deces_n1    = 0
         if Patient is not None:
-            dq = Patient.objects.filter(date_deces__isnull=False)
-            if sexe and sexe not in ('all', 'Tous', ''):
-                dq = dq.filter(sexe=sexe)
-            deces_annee = dq.filter(date_deces__year=annee).count()
-            deces_n1    = dq.filter(date_deces__year=annee - 1).count()
+            deces_annee = qs_for(annee).filter(
+                patient__date_deces__year=annee
+            ).values('patient_id').distinct().count()
+            deces_n1 = qs_for(annee - 1).filter(
+                patient__date_deces__year=annee - 1
+            ).values('patient_id').distinct().count()
 
         variation_mort_n1 = None
         if deces_n1 > 0:

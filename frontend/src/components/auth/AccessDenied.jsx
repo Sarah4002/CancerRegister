@@ -18,7 +18,7 @@ export default function AccessDenied({ message }) {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', background: 'var(--bg-deep)',
+      justifyContent: 'center', background: '#f0f4f9',
     }}>
       <div style={{
         maxWidth: 460, textAlign: 'center', padding: '0 24px',
@@ -32,7 +32,7 @@ export default function AccessDenied({ message }) {
           borderRadius: '50%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#ff4d6a" strokeWidth={1.5}>
+          <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#dc2626" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
           </svg>
         </div>
@@ -40,14 +40,14 @@ export default function AccessDenied({ message }) {
         {/* Titre */}
         <h2 style={{
           fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700,
-          color: 'var(--text-primary)', marginBottom: 10,
+          color: '#0f172a', marginBottom: 10,
         }}>
           Accès non autorisé
         </h2>
 
         {/* Message */}
         <p style={{
-          fontSize: 14, color: 'var(--text-secondary)',
+          fontSize: 14, color: '#334155',
           lineHeight: 1.7, marginBottom: 20,
         }}>
           {message || 'Vous n\'avez pas les droits nécessaires pour accéder à cette section.'}
@@ -70,10 +70,10 @@ export default function AccessDenied({ message }) {
             onClick={() => navigate(-1)}
             style={{
               padding: '10px 20px',
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-md)',
-              color: 'var(--text-secondary)',
+              background: '#f1f5f9',
+              border: '1px solid rgba(37,99,235,0.12)',
+              borderRadius: '12px',
+              color: '#334155',
               fontSize: 13, cursor: 'pointer',
               fontFamily: 'var(--font-body)',
             }}
@@ -84,9 +84,9 @@ export default function AccessDenied({ message }) {
             onClick={() => navigate('/dashboard')}
             style={{
               padding: '10px 20px',
-              background: 'var(--accent)',
+              background: '#2563eb',
               border: 'none',
-              borderRadius: 'var(--radius-md)',
+              borderRadius: '12px',
               color: '#fff',
               fontSize: 13, fontWeight: 600, cursor: 'pointer',
               fontFamily: 'var(--font-body)',

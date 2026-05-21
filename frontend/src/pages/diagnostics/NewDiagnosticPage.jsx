@@ -170,7 +170,7 @@ const HEMATOLOGY_OPTIONS = [
 ];
 
 // ── ICD Autocomplete ──────────────────────────────────────────────
-function ICDSearch({ label, onSelect, selectedCode, selectedLabel, searchFn, placeholder, accentColor = '#00a8ff' }) {
+function ICDSearch({ label, onSelect, selectedCode, selectedLabel, searchFn, placeholder, accentColor = '#2563eb' }) {
   const [query, setQuery]     = useState('');
   const [results, setResults] = useState([]);
   const [open, setOpen]       = useState(false);
@@ -201,10 +201,10 @@ function ICDSearch({ label, onSelect, selectedCode, selectedLabel, searchFn, pla
     <div style={{ marginBottom: 18 }} ref={ref}>
       <label style={labelSt}>{label}</label>
       {selectedCode ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: `${accentColor}15`, border: `1px solid ${accentColor}30`, borderRadius: 'var(--radius-md)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: `${accentColor}15`, border: `1px solid ${accentColor}30`, borderRadius: '12px' }}>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: accentColor }}>{selectedCode}</span>
-          <span style={{ fontSize: 13, color: 'var(--text-primary)', flex: 1 }}>{selectedLabel}</span>
-          <button type="button" onClick={() => onSelect(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16, lineHeight: 1 }}>×</button>
+          <span style={{ fontSize: 13, color: '#0f172a', flex: 1 }}>{selectedLabel}</span>
+          <button type="button" onClick={() => onSelect(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: 16, lineHeight: 1 }}>×</button>
         </div>
       ) : (
         <div style={{ position: 'relative' }}>
@@ -215,24 +215,24 @@ function ICDSearch({ label, onSelect, selectedCode, selectedLabel, searchFn, pla
             style={{ ...inputSt, paddingLeft: 36 }}
             onFocus={() => query.length >= 2 && setOpen(true)}
           />
-          <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+          <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }}>
             {loading
-              ? <div style={{ width: 14, height: 14, border: '2px solid var(--border)', borderTopColor: accentColor, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+              ? <div style={{ width: 14, height: 14, border: '2px solid rgba(37,99,235,0.12)', borderTopColor: accentColor, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
               : <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             }
           </div>
           {open && results.length > 0 && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', marginTop: 4, maxHeight: 240, overflow: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', marginTop: 4, maxHeight: 240, overflow: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
               {results.map(r => (
                 <button key={r.id} type="button"
                   onClick={() => { onSelect(r); setQuery(''); setOpen(false); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid var(--border)' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid rgba(37,99,235,0.12)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: accentColor, minWidth: 60 }}>{r.code}</span>
-                  <span style={{ fontSize: 12.5, color: 'var(--text-primary)' }}>{r.libelle}</span>
-                  {r.categorie && <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 'auto' }}>{r.categorie}</span>}
+                  <span style={{ fontSize: 12.5, color: '#0f172a' }}>{r.libelle}</span>
+                  {r.categorie && <span style={{ fontSize: 10, color: '#64748b', marginLeft: 'auto' }}>{r.categorie}</span>}
                 </button>
               ))}
             </div>
@@ -253,10 +253,10 @@ function TNMSelector({ register, watch }) {
   const fullTNM = tnmDisplay ? `${type}${tnmDisplay}` : '—';
 
   return (
-    <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '16px' }}>
+    <div style={{ background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px', padding: '16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>TNM 8e édition</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: '#00a8ff', padding: '3px 10px', background: 'rgba(0,168,255,0.1)', borderRadius: 6, border: '1px solid rgba(0,168,255,0.2)' }}>{fullTNM}</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: '#334155', textTransform: 'uppercase', letterSpacing: 0.5 }}>TNM 8e édition</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: '#2563eb', padding: '3px 10px', background: 'rgba(37,99,235,0.08)', borderRadius: 6, border: '1px solid rgba(37,99,235,0.16)' }}>{fullTNM}</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr 1fr', gap: 10 }}>
         <div>
@@ -302,13 +302,13 @@ function ExamensHematologiques({ hemopathie, register, errors, watch }) {
   return (
     <div style={{ marginTop: 16 }}>
       {/* Bandeau récapitulatif des examens attendus */}
-      <div style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'rgba(0,168,255,0.06)', border: '1px solid rgba(0,168,255,0.18)' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#00a8ff', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+      <div style={{ marginBottom: 14, padding: '10px 14px', borderRadius: '12px', background: 'rgba(37,99,235,0.06)', border: '1px solid rgba(37,99,235,0.16)' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
           Examens requis — {option.label}
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {option.examens.map(ex => (
-            <span key={ex.key} style={{ padding: '4px 10px', borderRadius: 999, background: 'var(--bg-elevated)', border: '1px solid var(--border)', fontSize: 11.5, color: 'var(--text-secondary)' }}>
+            <span key={ex.key} style={{ padding: '4px 10px', borderRadius: 999, background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', fontSize: 11.5, color: '#334155' }}>
               {ex.label}
             </span>
           ))}
@@ -325,7 +325,7 @@ function ExamensHematologiques({ hemopathie, register, errors, watch }) {
           <div key={ex.key} style={{ marginBottom: 14 }}>
             <label style={labelSt}>
               {ex.label}
-              <span style={{ color: 'var(--danger)', marginLeft: 3 }}>*</span>
+              <span style={{ color: '#dc2626', marginLeft: 3 }}>*</span>
             </label>
             <textarea
               {...register(fieldName, {
@@ -338,11 +338,11 @@ function ExamensHematologiques({ hemopathie, register, errors, watch }) {
                 ...inputSt,
                 resize: 'vertical',
                 lineHeight: 1.6,
-                borderColor: hasError ? 'var(--danger)' : currentValue.trim() ? '#22c55e' : undefined,
+                borderColor: hasError ? '#dc2626' : currentValue.trim() ? '#22c55e' : undefined,
               }}
             />
             {hasError && (
-              <p style={{ marginTop: 3, fontSize: 11, color: 'var(--danger)' }}>⚠ {hasError.message}</p>
+              <p style={{ marginTop: 3, fontSize: 11, color: '#dc2626' }}>⚠ {hasError.message}</p>
             )}
           </div>
         );
@@ -350,7 +350,7 @@ function ExamensHematologiques({ hemopathie, register, errors, watch }) {
 
       {/* Champ libre optionnel pour remarques supplémentaires */}
       <div style={{ marginBottom: 14 }}>
-        <label style={labelSt}>Remarques complémentaires <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optionnel)</span></label>
+        <label style={labelSt}>Remarques complémentaires <span style={{ color: '#64748b', fontWeight: 400 }}>(optionnel)</span></label>
         <textarea
           {...register('examens_complementaires')}
           rows={3}
@@ -481,7 +481,7 @@ export default function NewDiagnosticPage() {
   return (
     <AppLayout title="Nouveau Diagnostic">
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '28px 32px' }}>
+        <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '28px 32px' }}>
           <form onSubmit={handleSubmit(onSubmit)}>
 
             {/* Patient & date */}
@@ -546,7 +546,7 @@ export default function NewDiagnosticPage() {
                   selectedLabel={topoSelected?.libelle}
                   searchFn={diagnosticService.searchTopographies}
                   placeholder="Rechercher par code ou libellé (ex: C50, sein...)"
-                  accentColor="#00a8ff"
+                  accentColor="#2563eb"
                 />
                 <Row2>
                   <Field label="Latéralité">
@@ -574,7 +574,7 @@ export default function NewDiagnosticPage() {
                   selectedLabel={morphSelected?.libelle}
                   searchFn={diagnosticService.searchMorphologies}
                   placeholder="Rechercher par code ou type histologique (ex: 8500, carcinome...)"
-                  accentColor="#9b8afb"
+                  accentColor="#2563eb"
                 />
                 <Row2>
                   <Field label="Grade histologique">
@@ -710,13 +710,13 @@ export default function NewDiagnosticPage() {
             />
 
             {/* Boutons */}
-            <div style={{ display: 'flex', gap: 10, marginTop: 8, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 8, paddingTop: 20, borderTop: '1px solid rgba(37,99,235,0.12)' }}>
               <button type="button" onClick={() => navigate('/diagnostics')}
-                style={{ flex: '0 0 110px', padding: '12px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
+                style={{ flex: '0 0 110px', padding: '12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px', color: '#334155', fontSize: 13, cursor: 'pointer' }}>
                 ← Annuler
               </button>
               <button type="submit" disabled={submitting}
-                style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #9b8afb, #7c6fcd)', border: 'none', borderRadius: 'var(--radius-md)', color: '#fff', fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-display)', cursor: submitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: submitting ? 0.7 : 1 }}>
+                style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-display)', cursor: submitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: submitting ? 0.7 : 1 }}>
                 {submitting ? <><Spinner /> Enregistrement...</> : '✓ Enregistrer le diagnostic'}
               </button>
             </div>
@@ -732,7 +732,7 @@ export default function NewDiagnosticPage() {
 function Section({ title, children }) {
   return (
     <div style={{ marginBottom: 28 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid rgba(37,99,235,0.12)' }}>
         {title}
       </div>
       {children}
@@ -746,7 +746,7 @@ function Field({ label, error, children }) {
     <div style={{ marginBottom: 14 }}>
       <label style={labelSt}>{label}</label>
       {children}
-      {error && <p style={{ marginTop: 3, fontSize: 11, color: 'var(--danger)' }}>⚠ {error}</p>}
+      {error && <p style={{ marginTop: 3, fontSize: 11, color: '#dc2626' }}>⚠ {error}</p>}
     </div>
   );
 }
@@ -754,6 +754,6 @@ function Spinner() {
   return <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />;
 }
 
-const labelSt  = { display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6, letterSpacing: 0.3 };
-const inputSt  = { width: '100%', padding: '10px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: 13, outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' };
+const labelSt  = { display: 'block', fontSize: 11.5, fontWeight: 500, color: '#334155', marginBottom: 6, letterSpacing: 0.3 };
+const inputSt  = { width: '100%', padding: '10px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', color: '#0f172a', fontSize: 13, outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' };
 const selectSt = { ...inputSt, cursor: 'pointer' };

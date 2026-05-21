@@ -156,7 +156,7 @@ const btnCancelSt = {
   color: 'var(--text-secondary, #aaa)', cursor: 'pointer', fontSize: 14
 };
 const btnSubmitSt = {
-  padding: '8px 16px', background: 'var(--accent, #00a8ff)',
+  padding: '8px 16px', background: 'var(--accent, #2563eb)',
   border: 'none', borderRadius: 'var(--radius-md, 8px)',
   color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 500
 };

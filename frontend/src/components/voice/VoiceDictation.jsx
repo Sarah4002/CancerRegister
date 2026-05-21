@@ -8,11 +8,11 @@ import useSpeechRecognition from '../../hooks/useSpeechRecognition';
 import useVoiceToForm from '../../hooks/useVoiceToForm';
 
 const STATES = {
-  idle:        { color: '#00a8ff', bg: 'rgba(0,168,255,0.1)',   border: 'rgba(0,168,255,0.25)',   label: 'Dicter'       },
-  listening:   { color: '#ff4d6a', bg: 'rgba(255,77,106,0.1)',  border: 'rgba(255,77,106,0.4)',   label: 'Écoute...'    },
-  extracting:  { color: '#f5a623', bg: 'rgba(245,166,35,0.1)',  border: 'rgba(245,166,35,0.35)',  label: 'Analyse...'   },
-  success:     { color: '#00e5a0', bg: 'rgba(0,229,160,0.1)',   border: 'rgba(0,229,160,0.35)',   label: 'Rempli !'     },
-  error:       { color: '#ff4d6a', bg: 'rgba(255,77,106,0.08)', border: 'rgba(255,77,106,0.3)',   label: 'Erreur'       },
+  idle:        { color: '#2563eb', bg: 'rgba(0,168,255,0.1)',   border: 'rgba(0,168,255,0.25)',   label: 'Dicter'       },
+  listening:   { color: '#dc2626', bg: 'rgba(255,77,106,0.1)',  border: 'rgba(255,77,106,0.4)',   label: 'Écoute...'    },
+  extracting:  { color: '#d97706', bg: 'rgba(245,166,35,0.1)',  border: 'rgba(245,166,35,0.35)',  label: 'Analyse...'   },
+  success:     { color: '#16a34a', bg: 'rgba(0,229,160,0.1)',   border: 'rgba(0,229,160,0.35)',   label: 'Rempli !'     },
+  error:       { color: '#dc2626', bg: 'rgba(255,77,106,0.08)', border: 'rgba(255,77,106,0.3)',   label: 'Erreur'       },
 };
 
 function MicIcon({ size = 18, color = 'currentColor' }) {
@@ -32,7 +32,7 @@ function StopIcon({ size = 18 }) {
   );
 }
 
-function SpinnerIcon({ size = 16, color = '#f5a623' }) {
+function SpinnerIcon({ size = 16, color = '#d97706' }) {
   return (
     <div style={{
       width: size, height: size,
@@ -90,7 +90,7 @@ function TranscriptPanel({ transcript, interimText, fields, color }) {
   return (
     <div style={{
       marginTop: 10,
-      background: 'var(--bg-elevated)',
+      background: '#f1f5f9',
       border: `1px solid ${color}30`,
       borderRadius: 10,
       overflow: 'hidden',
@@ -101,7 +101,7 @@ function TranscriptPanel({ transcript, interimText, fields, color }) {
           <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 5, letterSpacing: 0.8, textTransform: 'uppercase' }}>
             Transcription
           </div>
-          <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+          <p style={{ fontSize: 12.5, color: '#334155', lineHeight: 1.6, margin: 0 }}>
             {transcript}
             {interimText && (
               <span style={{ color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
@@ -114,8 +114,8 @@ function TranscriptPanel({ transcript, interimText, fields, color }) {
 
       {hasFields && (
         <div style={{ padding: '10px 14px' }}>
-          <div style={{ fontSize: 10, color: '#00e5a0', marginBottom: 8, letterSpacing: 0.8, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00e5a0', display: 'inline-block' }} />
+          <div style={{ fontSize: 10, color: '#16a34a', marginBottom: 8, letterSpacing: 0.8, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
             {Object.keys(fields).length} champ{Object.keys(fields).length > 1 ? 's' : ''} détecté{Object.keys(fields).length > 1 ? 's' : ''}
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -129,7 +129,7 @@ function TranscriptPanel({ transcript, interimText, fields, color }) {
                 <span style={{ color: 'rgba(255,255,255,0.35)', marginRight: 4 }}>
                   {FIELD_LABELS[key] || key}
                 </span>
-                <span style={{ color: '#00e5a0', fontWeight: 600 }}>
+                <span style={{ color: '#16a34a', fontWeight: 600 }}>
                   {String(val)}
                 </span>
               </div>
@@ -239,7 +239,7 @@ export default function VoiceDictation({ formType = 'patient', onFieldsExtracted
       <div style={{
         padding: '8px 14px', borderRadius: 8, fontSize: 12,
         background: 'rgba(255,77,106,0.08)', border: '1px solid rgba(255,77,106,0.2)',
-        color: '#ff4d6a',
+        color: '#dc2626',
       }}>
         ⚠️ Saisie vocale non supportée — utilisez Chrome ou Edge
       </div>
@@ -317,7 +317,7 @@ export default function VoiceDictation({ formType = 'patient', onFieldsExtracted
         <div style={{
           marginTop: 8, padding: '7px 12px', borderRadius: 7, fontSize: 12,
           background: 'rgba(255,77,106,0.08)', border: '1px solid rgba(255,77,106,0.2)',
-          color: '#ff4d6a', animation: 'voice-fadein 0.2s ease',
+          color: '#dc2626', animation: 'voice-fadein 0.2s ease',
         }}>
           {error || extractError}
         </div>

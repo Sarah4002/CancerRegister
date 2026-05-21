@@ -1,6 +1,6 @@
 import api from './api';
 
 export const dashboardService = {
-  global:  () => api.get('/registry/dashboard/'),
+  global:  (params = {}) => api.get('/registry/dashboard/', { params }),
   alertes: () => api.get('/registry/alertes/'),
 };

@@ -4,60 +4,60 @@ import { sigService } from '../../services/sigService';
 
 const STYLES = `
   .sig-wrap { display: flex; flex-direction: column; height: calc(100vh - 60px); background: var(--bg); }
-  .sig-header { padding: 16px 20px; border-bottom: 1px solid var(--border-light); background: var(--bg-card); }
-  .sig-title { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin: 0; }
-  .sig-subtitle { font-size: 0.8rem; color: var(--text-secondary); margin: 4px 0 0; }
+  .sig-header { padding: 16px 20px; border-bottom: 1px solid rgba(37,99,235,0.08); background: #ffffff; }
+  .sig-title { font-size: 1.3rem; font-weight: 700; color: #0f172a; margin: 0; }
+  .sig-subtitle { font-size: 0.8rem; color: #334155; margin: 4px 0 0; }
   
   .sig-container { display: grid; grid-template-columns: 1fr 350px; gap: 0; flex: 1; overflow: hidden; }
-  .sig-map-section { display: flex; flex-direction: column; border-right: 1px solid var(--border-light); }
+  .sig-map-section { display: flex; flex-direction: column; border-right: 1px solid rgba(37,99,235,0.08); }
   #sig-map { flex: 1; min-height: 0; }
   
-  .sig-stats-section { display: flex; flex-direction: column; background: var(--bg-card); overflow: hidden; }
-  .ss-tabs { display: flex; border-bottom: 1px solid var(--border-light); }
-  .ss-tab { flex: 1; padding: 10px; background: none; border: none; color: var(--text-secondary); font-size: 0.75rem;
+  .sig-stats-section { display: flex; flex-direction: column; background: #ffffff; overflow: hidden; }
+  .ss-tabs { display: flex; border-bottom: 1px solid rgba(37,99,235,0.08); }
+  .ss-tab { flex: 1; padding: 10px; background: none; border: none; color: #334155; font-size: 0.75rem;
      font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; }
-  .ss-tab.active { color: var(--text-primary); border-bottom-color: #00a8ff; background: rgba(0,168,255,0.05); }
+  .ss-tab.active { color: #0f172a; border-bottom-color: #2563eb; background: rgba(0,168,255,0.05); }
   .ss-body { flex: 1; overflow-y: auto; padding: 12px; }
   .ss-body::-webkit-scrollbar { width: 3px; }
-  .ss-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .ss-body::-webkit-scrollbar-thumb { background: rgba(37,99,235,0.12); border-radius: 2px; }
   
-  .stat-card { background: var(--bg-elevated); border: 1px solid var(--border-light); border-radius: var(--radius-md);
+  .stat-card { background: #f1f5f9; border: 1px solid rgba(37,99,235,0.08); border-radius: 12px;
      padding: 12px; margin-bottom: 10px; }
-  .sc-title { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; }
-  .sc-count { font-size: 1.5rem; font-weight: 700; color: #00a8ff; }
-  .sc-pct { font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px; }
+  .sc-title { font-size: 0.8rem; font-weight: 600; color: #0f172a; margin-bottom: 8px; }
+  .sc-count { font-size: 1.5rem; font-weight: 700; color: #2563eb; }
+  .sc-pct { font-size: 0.7rem; color: #334155; margin-top: 4px; }
   
-  .cancer-item { background: var(--bg-elevated); border: 1px solid var(--border-light); border-radius: var(--radius-md);
+  .cancer-item { background: #f1f5f9; border: 1px solid rgba(37,99,235,0.08); border-radius: 12px;
      padding: 10px; margin-bottom: 8px; }
-  .ci-name { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); }
+  .ci-name { font-size: 0.8rem; font-weight: 600; color: #0f172a; }
   .ci-value { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
-  .ci-count { font-size: 1.2rem; font-weight: 700; color: #00a8ff; }
-  .ci-pct { font-size: 0.75rem; background: rgba(0,168,255,0.15); color: #00a8ff; padding: 2px 6px; border-radius: 10px; }
+  .ci-count { font-size: 1.2rem; font-weight: 700; color: #2563eb; }
+  .ci-pct { font-size: 0.75rem; background: rgba(0,168,255,0.15); color: #2563eb; padding: 2px 6px; border-radius: 10px; }
   
   .communes-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
-  .commune-card { background: var(--bg-elevated); border: 1px solid var(--border-light); border-radius: var(--radius-md);
+  .commune-card { background: #f1f5f9; border: 1px solid rgba(37,99,235,0.08); border-radius: 12px;
      padding: 10px; cursor: pointer; transition: all .15s; }
-  .commune-card:hover { border-color: #00a8ff; background: rgba(0,168,255,0.03); }
-  .cc-name { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
-  .cc-stats { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-secondary); }
+  .commune-card:hover { border-color: #2563eb; background: rgba(0,168,255,0.03); }
+  .cc-name { font-size: 0.8rem; font-weight: 600; color: #0f172a; margin-bottom: 4px; }
+  .cc-stats { display: flex; justify-content: space-between; font-size: 0.7rem; color: #334155; }
   
-  .causes-item { background: var(--bg-elevated); border: 1px solid var(--border-light); border-radius: var(--radius-md);
+  .causes-item { background: #f1f5f9; border: 1px solid rgba(37,99,235,0.08); border-radius: 12px;
      padding: 10px; margin-bottom: 8px; }
-  .ci-header { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
-  .ci-cause { font-size: 0.7rem; color: var(--text-secondary); padding: 4px 0; padding-left: 12px; }
-  .ci-cause:before { content: '• '; color: #00a8ff; font-weight: bold; }
+  .ci-header { font-size: 0.8rem; font-weight: 600; color: #0f172a; margin-bottom: 6px; }
+  .ci-cause { font-size: 0.7rem; color: #334155; padding: 4px 0; padding-left: 12px; }
+  .ci-cause:before { content: '• '; color: #2563eb; font-weight: bold; }
   
-  .loading { display: flex; align-items: center; justify-content: center; height: 100%; gap: 10px; color: var(--text-secondary); }
-  .loader { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: #00a8ff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .loading { display: flex; align-items: center; justify-content: center; height: 100%; gap: 10px; color: #334155; }
+  .loader { width: 20px; height: 20px; border: 2px solid rgba(37,99,235,0.12); border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   
-  .leaflet-popup-content-wrapper { background: var(--bg-card) !important; border: 1px solid var(--border-light) !important; 
-     border-radius: var(--radius-md) !important; box-shadow: 0 8px 24px rgba(0,0,0,0.3) !important; }
-  .leaflet-popup-content { color: var(--text-primary) !important; font-size: 0.75rem !important; }
-  .leaflet-popup-tip { background: var(--bg-card) !important; border: 1px solid var(--border-light) !important; }
-  .leaflet-container a.leaflet-popup-close-button { color: var(--text-secondary) !important; }
+  .leaflet-popup-content-wrapper { background: #ffffff !important; border: 1px solid rgba(37,99,235,0.08) !important; 
+     border-radius: 12px !important; box-shadow: 0 8px 24px rgba(0,0,0,0.3) !important; }
+  .leaflet-popup-content { color: #0f172a !important; font-size: 0.75rem !important; }
+  .leaflet-popup-tip { background: #ffffff !important; border: 1px solid rgba(37,99,235,0.08) !important; }
+  .leaflet-container a.leaflet-popup-close-button { color: #334155 !important; }
   
-  @media(max-width:1100px) { .sig-container { grid-template-columns: 1fr; } .sig-stats-section { max-height: 350px; border-top: 1px solid var(--border-light); border-right: none; } }
+  @media(max-width:1100px) { .sig-container { grid-template-columns: 1fr; } .sig-stats-section { max-height: 350px; border-top: 1px solid rgba(37,99,235,0.08); border-right: none; } }
 `;
 
 const TLEMCEN_COMMUNES = [
@@ -173,7 +173,7 @@ export default function SigPageV2() {
 
       mapDataAll.forEach(wilaya => {
         const cases = wilaya.cases || 0;
-        const color = cases > 20 ? '#d32f2f' : cases > 10 ? '#f57c00' : cases > 5 ? '#fbc02d' : '#00a8ff';
+        const color = cases > 20 ? '#d32f2f' : cases > 10 ? '#f57c00' : cases > 5 ? '#fbc02d' : '#2563eb';
         const radius = (cases / maxCases) * 30 + 5;
 
         const marker = window.L.circleMarker([wilaya.lat, wilaya.lon], {
@@ -299,8 +299,8 @@ export default function SigPageV2() {
                           padding: '8px 12px',
                           background: 'rgba(0,168,255,0.15)',
                           border: '1px solid rgba(0,168,255,0.3)',
-                          color: '#00a8ff',
-                          borderRadius: 'var(--radius-md)',
+                          color: '#2563eb',
+                          borderRadius: '12px',
                           cursor: 'pointer',
                           fontSize: '0.75rem',
                           fontWeight: 600,
@@ -367,7 +367,7 @@ export default function SigPageV2() {
                           <div className="ci-value">
                             <div>
                               <div className="ci-count">{cancer.count}</div>
-                              <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                              <div style={{ fontSize: '0.65rem', color: '#334155' }}>
                                 - patients
                               </div>
                             </div>

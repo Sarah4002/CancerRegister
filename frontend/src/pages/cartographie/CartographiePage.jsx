@@ -7,7 +7,7 @@ import { AppLayout } from '../../components/layout/Sidebar';
 import toast from 'react-hot-toast';
 
 // === CONSTANTES & HELPERS ===
-const COLORS = { LOW: '#00e5a0', MED: '#f5a623', HIGH: '#ff4d6a' };
+const COLORS = { LOW: '#16a34a', MED: '#d97706', HIGH: '#dc2626' };
 const getRadius = (cases) => cases >= 100 ? 40 : cases >= 51 ? 30 : cases >= 11 ? 20 : cases >= 1 ? 10 : 0;
 const getColor = (cases) => cases >= 51 ? COLORS.HIGH : cases >= 11 ? COLORS.MED : COLORS.LOW;
 
@@ -157,7 +157,7 @@ Répondez directement en français (ne mettez pas de balises d'introduction).`;
     return (
       <AppLayout title="Cartographie SIG">
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}>
-          <div style={{ color: 'var(--text-muted)' }}>Chargement des données de cartographie...</div>
+          <div style={{ color: '#64748b' }}>Chargement des données de cartographie...</div>
         </div>
       </AppLayout>
     );
@@ -188,8 +188,8 @@ Répondez directement en français (ne mettez pas de balises d'introduction).`;
   return (
     <AppLayout title="Cartographie SIG">
       <style>{`
-         .sidebar-tab { flex:1; padding: 12px 0; text-align:center; background:none; border:none; border-bottom:2px solid transparent; color:var(--text-muted); cursor:pointer; font-size:13px; font-weight:600; transition:0.2s; }
-         .sidebar-tab.active { border-bottom-color: var(--accent); color: var(--accent); }
+         .sidebar-tab { flex:1; padding: 12px 0; text-align:center; background:none; border:none; border-bottom:2px solid transparent; color:#64748b; cursor:pointer; font-size:13px; font-weight:600; transition:0.2s; }
+         .sidebar-tab.active { border-bottom-color: #2563eb; color: #2563eb; }
          .leaflet-container { background: #0c0d12; border-radius: 12px; }
          .circle-text { font-size: 11px; font-weight: 700; color: #fff; text-shadow: 0 0 4px rgba(0,0,0,0.8); }
       `}</style>
@@ -197,9 +197,9 @@ Répondez directement en français (ne mettez pas de balises d'introduction).`;
       <div style={{ display: 'flex', gap: 20, height: 'calc(100vh - 120px)', minHeight: 600 }}>
 
         {/* LEAFLET MAP - LEFT */}
-        <div style={{ flex: '1 1 65%', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)', position: 'relative' }}>
+        <div style={{ flex: '1 1 65%', borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(37,99,235,0.12)', position: 'relative' }}>
           {selectedWilaya && (
-            <button onClick={handleResetMap} style={{ position: 'absolute', top: 15, right: 15, zIndex: 1000, background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 13, boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+            <button onClick={handleResetMap} style={{ position: 'absolute', top: 15, right: 15, zIndex: 1000, background: '#f1f5f9', color: '#0f172a', border: '1px solid rgba(37,99,235,0.12)', padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 13, boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
               x Retour Algérie
             </button>
           )}
@@ -238,9 +238,9 @@ Répondez directement en français (ne mettez pas de balises d'introduction).`;
         </div>
 
         {/* SIDEBAR - RIGHT */}
-        <div style={{ flex: '0 0 35%', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 12, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: '0 0 35%', background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 12, display: 'flex', flexDirection: 'column' }}>
           {/* Tabs header */}
-          <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)', borderTopLeftRadius: 12, borderTopRightRadius: 12 }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid rgba(37,99,235,0.12)', background: '#f1f5f9', borderTopLeftRadius: 12, borderTopRightRadius: 12 }}>
             <button className={`sidebar-tab ${activeTab === 'apercu' ? 'active' : ''}`} onClick={() => setActiveTab('apercu')}>Aperçu</button>
             <button className={`sidebar-tab ${activeTab === 'cancers' ? 'active' : ''}`} onClick={() => setActiveTab('cancers')}>Cancers</button>
             <button className={`sidebar-tab ${activeTab === 'causes' ? 'active' : ''}`} onClick={() => setActiveTab('causes')}>Causes (IA)</button>
@@ -254,33 +254,33 @@ Répondez directement en français (ne mettez pas de balises d'introduction).`;
               <div>
                 {!selectedWilaya ? (
                   <>
-                    <h3 style={{ marginTop: 0, color: 'var(--text-primary)', marginBottom: 24, fontFamily: 'var(--font-display)', fontSize: 18 }}>Algérie (Global)</h3>
-                    <StatBox label="Total Patients" val={stats.total_patients} color="var(--accent)" />
-                    <StatBox label="Total Diagnostics" val={stats.total_diagnostics} color="var(--accent)" />
-                    <StatBox label="Incidence globale" val={`${incNational} cas / 100k hab`} color="#00e5a0" />
-                    <StatBox label="Wilayas Touchées" val={stats.wilayas.length} color="var(--text-primary)" />
+                    <h3 style={{ marginTop: 0, color: '#0f172a', marginBottom: 24, fontFamily: 'var(--font-display)', fontSize: 18 }}>Algérie (Global)</h3>
+                    <StatBox label="Total Patients" val={stats.total_patients} color="#2563eb" />
+                    <StatBox label="Total Diagnostics" val={stats.total_diagnostics} color="#2563eb" />
+                    <StatBox label="Incidence globale" val={`${incNational} cas / 100k hab`} color="#16a34a" />
+                    <StatBox label="Wilayas Touchées" val={stats.wilayas.length} color="#0f172a" />
 
-                    <div style={{ marginTop: 30, fontSize: 12, color: 'var(--text-muted)' }}>
+                    <div style={{ marginTop: 30, fontSize: 12, color: '#64748b' }}>
                       Cliquez sur une wilaya (cercle) sur la carte pour explorer en détail.
                     </div>
                   </>
                 ) : (
                   <>
-                    <h3 style={{ marginTop: 0, color: 'var(--accent)', marginBottom: 24, fontFamily: 'var(--font-display)', fontSize: 20 }}>{selectedWilaya}</h3>
-                    {!wilayaDetails ? <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Chargement...</div> : (
+                    <h3 style={{ marginTop: 0, color: '#2563eb', marginBottom: 24, fontFamily: 'var(--font-display)', fontSize: 20 }}>{selectedWilaya}</h3>
+                    {!wilayaDetails ? <div style={{ color: '#64748b', fontSize: 13 }}>Chargement...</div> : (
                       <>
-                        <StatBox label="Population" val={wilayaDetails.population.toLocaleString('fr-FR')} color="var(--text-secondary)" />
-                        <StatBox label="Patients enregistrés" val={wilayaDetails.nb_patients} color="var(--text-primary)" />
-                        <StatBox label="Diagnostics positifs" val={wilayaDetails.nb_diagnostics} color="var(--text-primary)" />
+                        <StatBox label="Population" val={wilayaDetails.population.toLocaleString('fr-FR')} color="#334155" />
+                        <StatBox label="Patients enregistrés" val={wilayaDetails.nb_patients} color="#0f172a" />
+                        <StatBox label="Diagnostics positifs" val={wilayaDetails.nb_diagnostics} color="#0f172a" />
                         <StatBox label="Incidence régionale" val={`${((wilayaDetails.nb_patients / wilayaDetails.population) * 100000).toFixed(1)} cas / 100k hab`} color={COLORS.HIGH} />
 
                         <div style={{ marginTop: 24 }}>
-                          <h4 style={{ color: 'var(--text-muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>Communes impactées</h4>
+                          <h4 style={{ color: '#64748b', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>Communes impactées</h4>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
                             {wilayaDetails.communes.map((c, i) => (
-                              <div key={i} style={{ background: 'var(--bg-elevated)', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 12 }}>
-                                <strong style={{ color: 'var(--text-primary)', display: 'block' }}>{c.nom}</strong>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: 11 }}>{c.nb_patients} cas</span>
+                              <div key={i} style={{ background: '#f1f5f9', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(37,99,235,0.12)', fontSize: 12 }}>
+                                <strong style={{ color: '#0f172a', display: 'block' }}>{c.nom}</strong>
+                                <span style={{ color: '#334155', fontSize: 11 }}>{c.nb_patients} cas</span>
                               </div>
                             ))}
                           </div>
@@ -296,7 +296,7 @@ Répondez directement en français (ne mettez pas de balises d'introduction).`;
             {/* ==== TAB: CANCERS ==== */}
             {activeTab === 'cancers' && (
               <div>
-                <h3 style={{ marginTop: 0, color: 'var(--text-primary)', marginBottom: 20, fontSize: 16 }}>
+                <h3 style={{ marginTop: 0, color: '#0f172a', marginBottom: 20, fontSize: 16 }}>
                   Top Cancers ({selectedWilaya || "Toutes Wilayas"})
                 </h3>
 
@@ -316,18 +316,18 @@ Répondez directement en français (ne mettez pas de balises d'introduction).`;
                     total = stats.total_diagnostics;
                   }
 
-                  if (arr.length === 0) return <div style={{ color: 'var(--text-muted)' }}>Aucune donnée tumorale</div>;
+                  if (arr.length === 0) return <div style={{ color: '#64748b' }}>Aucune donnée tumorale</div>;
 
                   return arr.map((c, i) => {
                     const pct = total > 0 ? ((c.count / total) * 100).toFixed(1) : 0;
                     return (
                       <div key={i} style={{ marginBottom: 16 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
-                          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{c.libelle || c.code}</span>
-                          <span style={{ color: 'var(--text-secondary)' }}>{pct}% ({c.count} cas)</span>
+                          <span style={{ color: '#0f172a', fontWeight: 600 }}>{c.libelle || c.code}</span>
+                          <span style={{ color: '#334155' }}>{pct}% ({c.count} cas)</span>
                         </div>
-                        <div style={{ height: 6, background: 'var(--bg-elevated)', borderRadius: 3, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)' }} />
+                        <div style={{ height: 6, background: '#f1f5f9', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${pct}%`, background: '#2563eb' }} />
                         </div>
                       </div>
                     );
@@ -339,26 +339,26 @@ Répondez directement en français (ne mettez pas de balises d'introduction).`;
             {/* ==== TAB: CAUSES (IA) ==== */}
             {activeTab === 'causes' && (
               <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <h3 style={{ marginTop: 0, color: 'var(--text-primary)', marginBottom: 16, fontSize: 16 }}>Analyse Causale Environnementale (IA)</h3>
-                <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.5 }}>
+                <h3 style={{ marginTop: 0, color: '#0f172a', marginBottom: 16, fontSize: 16 }}>Analyse Causale Environnementale (IA)</h3>
+                <p style={{ fontSize: 12, color: '#334155', marginBottom: 20, lineHeight: 1.5 }}>
                   Utilisation des modèles de langage pour analyser les corrélations probables entre la typologie des cancers recensés et l'historique environnemental ou industriel (eau, agriculture, pétrochimie) du périmètre ciblé.
                 </p>
 
                 <button
                   onClick={handleAnalyse}
                   disabled={aiLoading}
-                  style={{ width: '100%', padding: '12px', background: aiLoading ? 'var(--bg-elevated)' : 'var(--accent)', color: aiLoading ? 'var(--text-muted)' : '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: aiLoading ? 'not-allowed' : 'pointer', marginBottom: 20, transition: '0.2s' }}
+                  style={{ width: '100%', padding: '12px', background: aiLoading ? '#f1f5f9' : '#2563eb', color: aiLoading ? '#64748b' : '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: aiLoading ? 'not-allowed' : 'pointer', marginBottom: 20, transition: '0.2s' }}
                 >
                   {aiLoading ? 'Analyse en cours...' : (selectedWilaya ? `Analyser les causes à ${selectedWilaya}` : 'Sélectionnez une wilaya d\'abord')}
                 </button>
 
-                <div style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: 16, overflowY: 'auto' }}>
+                <div style={{ flex: 1, background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 8, padding: 16, overflowY: 'auto' }}>
                   {aiResponse ? (
-                    <div style={{ whiteSpace: 'pre-wrap', fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.6, fontFamily: 'var(--font-body)' }}>
+                    <div style={{ whiteSpace: 'pre-wrap', fontSize: 13, color: '#0f172a', lineHeight: 1.6, fontFamily: 'var(--font-body)' }}>
                       {aiResponse}
                     </div>
                   ) : (
-                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, marginTop: 40 }}>
+                    <div style={{ textAlign: 'center', color: '#64748b', fontSize: 12, marginTop: 40 }}>
                       Les résultats de l'analyse s'afficheront ici.
                     </div>
                   )}
@@ -377,8 +377,8 @@ Répondez directement en français (ne mettez pas de balises d'introduction).`;
 // Composant Box
 function StatBox({ label, val, color }) {
   return (
-    <div style={{ padding: '16px 20px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>{label}</span>
+    <div style={{ padding: '16px 20px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 10, marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <span style={{ fontSize: 13, color: '#334155', fontWeight: 500 }}>{label}</span>
       <span style={{ fontSize: 18, color: color, fontWeight: 700, fontFamily: 'var(--font-display)' }}>{val}</span>
     </div>
   );
