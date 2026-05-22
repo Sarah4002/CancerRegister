@@ -1,3 +1,2 @@
-web: python -c "import decouple; print('decouple OK')" && gunicorn config.wsgi:application --log-file - --bind 0.0.0.0:${PORT:-8000}
-
-
+python manage.py check
+gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
