@@ -16,9 +16,6 @@ export const diagnosticService = {
   // Stats
   stats: () => api.get('/diagnostics/stats/'),
 
-  // Export CSV
-  exportCsv: (params = {}) => api.get('/diagnostics/export_csv/', { params, responseType: 'blob' }),
-
   // Référentiels ICD-O-3
   searchTopographies: (q) =>
     api.get('/diagnostics/topographies/', { params: { search: q } }),

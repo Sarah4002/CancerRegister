@@ -24,9 +24,9 @@ import SuiviPage from './pages/suivi/SuiviPage';
 import NewConsultationPage, { NewEvenementPage } from './pages/suivi/NewConsultationPage';
 import ConsultationDetailPage from './pages/suivi/ConsultationDetailPage';
 
-import RCPPage from './pages/rcp/RCPPage';
+import RCPPage from './pages/rcp/RCPDashboard';
 import NewRCPPage, { NewDossierRCPPage } from './pages/rcp/NewRCPPage';
-import RCPDetailPage from './pages/rcp/RCPDetailPage';
+import RCPDetailPage from './pages/rcp/RCPSallePage';
 
 import CartographiePage from './pages/cartographie/CartographiePage';
 

@@ -821,7 +821,7 @@ function SectionCustomFields() {
                    {topoLoading ? (
                      <div style={{ width: 14, height: 14, border: '2px solid rgba(37,99,235,0.12)', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                    ) : (
-                    '🔍'
+                    ''
                    )}
                  </div>
                  

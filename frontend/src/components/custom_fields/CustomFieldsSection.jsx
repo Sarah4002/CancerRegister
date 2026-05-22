@@ -15,12 +15,12 @@
  */
 
 const TYPE_ICONS = {
-  texte:    '✏️',
-  nombre:   '🔢',
-  date:     '📅',
-  booleen:  '☑️',
-  textarea: '📝',
-  select:   '📋',
+  texte:    '',
+  nombre:   '',
+  date:     '',
+  booleen:  '',
+  textarea: '',
+  select:   '',
 };
 
 const TYPE_LABELS = {

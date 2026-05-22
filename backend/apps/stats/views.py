@@ -17,8 +17,7 @@ des données simulées calculées depuis Diagnostic afin de rester fonctionnelle
 même si ces tables ne sont pas encore migrées.
 """
 
-from datetime import date, timedelta
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from collections import defaultdict
 
 from django.db import models
@@ -907,7 +906,7 @@ class DelaiTraitementView(APIView):
                 {'delai': '>3 mois', 'count':  80, 'delai_moyen': 18},
             ]
             return _response(data)
-        qs = Traitement.all_objects
+        qs = Traitement.objects.select_related('diagnostic')
         rows = []
         for t in qs:
             if t.date_debut and t.diagnostic and t.diagnostic.date_diagnostic:

@@ -118,7 +118,7 @@ class AIReportCreateSerializer(serializers.Serializer):
 class AIReportSerializer(serializers.ModelSerializer):
     class Meta:
         model  = AIReport
-        fields = ['id','titre','payload','contenu_md','recommandations',
+        fields = ['id','titre','filters_json','contenu_md','recommandations',
                   'charts_json','status','created_by','created_at','completed_at']
         read_only_fields = ['id','status','created_at','completed_at']
 

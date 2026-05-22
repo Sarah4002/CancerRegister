@@ -7,7 +7,6 @@ from pathlib import Path
 from datetime import timedelta
 from decouple import config
 import os
-import dj_database_url
 
 # ─────────────────────────────────────────────
 # Base
@@ -21,11 +20,11 @@ GROQ_API_KEY = config('GROQ_API_KEY', default=None)
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production-2024')
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-# Parse ALLOWED_HOSTS from environment (comma-separated)
-ALLOWED_HOSTS = config(
-    'ALLOWED_HOSTS',
-    default='localhost,127.0.0.1,devona-copasetic-chieko.ngrok-free.dev'
-).split(',')
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'devona-copasetic-chieko.ngrok-free.dev',
+]
 
 # ─────────────────────────────────────────────
 # Applications
@@ -72,7 +71,6 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -106,29 +104,16 @@ TEMPLATES = [
 # ─────────────────────────────────────────────
 # Database (PostgreSQL)
 # ─────────────────────────────────────────────
-# Support both DATABASE_URL (Render) and individual DB_ variables (local)
-if config('DATABASE_URL', default=None):
-    # Use DATABASE_URL from environment (Render/Cloud deployment)
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=config('DATABASE_URL'),
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('DB_NAME', default='cancer_registry'),
+        'USER': config('DB_USER', default='registry_user'),
+        'PASSWORD': config('DB_PASSWORD', default='registry_pass_2024'),
+        'HOST': config('DB_HOST', default='localhost'),
+        'PORT': config('DB_PORT', default='5432'),
     }
-else:
-    # Use individual DB variables (local development)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('DB_NAME', default='cancer_registry'),
-            'USER': config('DB_USER', default='registry_user'),
-            'PASSWORD': config('DB_PASSWORD', default='registry_pass_2024'),
-            'HOST': config('DB_HOST', default='localhost'),
-            'PORT': config('DB_PORT', default='5432'),
-            'CONN_MAX_AGE': 600,
-        }
-    }
+}
 
 # ─────────────────────────────────────────────
 # Custom User
@@ -156,11 +141,8 @@ USE_TZ = True
 # ─────────────────────────────────────────────
 # Static & Media
 # ─────────────────────────────────────────────
-STATIC_URL = '/static/'
+STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# WhiteNoise compression
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -202,11 +184,12 @@ SIMPLE_JWT = {
 # ─────────────────────────────────────────────
 # CORS
 # ─────────────────────────────────────────────
-# Parse CORS_ALLOWED_ORIGINS from environment (comma-separated)
-CORS_ALLOWED_ORIGINS = config(
-    'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://localhost:5173,http://127.0.0.1:5173,http://172.24.16.1:5173'
-).split(',')
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "https://patientlifestyleform.vercel.app",
+    " https://devona-copasetic-chieko.ngrok-free.dev",
+]
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -224,18 +207,8 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # ─────────────────────────────────────────────
-# Security Headers (Production)
+# Mobile App URL (QR Code generation)
 # ─────────────────────────────────────────────
-# Secure cookies & HTTPS redirect when DEBUG=False
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-SECURE_SSL_REDIRECT = not DEBUG
-SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
-SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
-SECURE_HSTS_PRELOAD = not DEBUG
-
-# Allow frames from same domain
-X_FRAME_OPTIONS = 'SAMEORIGIN'
 MOBILE_APP_BASE_URL = 'https://patientlifestyleform.vercel.app/patient'
 
 # ─────────────────────────────────────────────

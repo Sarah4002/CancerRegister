@@ -118,27 +118,6 @@ export default function DiagnosticsPage() {
             </button>
           </Link>
         </div>
-        <div>
-          <button onClick={async () => {
-            try {
-              const params = {};
-              if (search) params.search = search;
-              if (stadeFilter) params.stade_ajcc = stadeFilter;
-              const resp = await diagnosticService.exportCsv(params);
-              const blob = resp.data instanceof Blob ? resp.data : new Blob([resp.data], { type: 'text/csv' });
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = 'diagnostics.csv';
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
-              window.URL.revokeObjectURL(url);
-            } catch (err) {
-              toast.error("Échec de l'export CSV");
-            }
-          }} style={{ marginLeft: 8, padding: '9px 14px', background: '#fff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 12, cursor: 'pointer' }}>Exporter CSV</button>
-        </div>
       </div>
 
       {/* Table */}
