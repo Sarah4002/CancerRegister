@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Diagnostic, TopographieICD, MorphologieICD, DiagnosticValidationRule
+from .models import Diagnostic, TopographieICD, MorphologieICD
 
 
 class TopographieSerializer(serializers.ModelSerializer):
@@ -38,13 +38,6 @@ class DiagnosticListSerializer(serializers.ModelSerializer):
             'base_diagnostic', 'base_diag_label',
             'est_principal', 'date_creation',
         ]
-
-
-class DiagnosticValidationRuleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DiagnosticValidationRule
-        fields = '__all__'
-        read_only_fields = ['created_at', 'updated_at'] if hasattr(DiagnosticValidationRule, 'created_at') else []
 
 
 class DiagnosticDetailSerializer(serializers.ModelSerializer):
