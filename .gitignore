@@ -36,6 +36,7 @@ venv/
 .env
 .env.render
 backend/.env.render
+frontend/.env
 
 # Ignore all venvs anywhere
 **/venv/
