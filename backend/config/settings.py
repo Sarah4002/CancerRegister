@@ -191,12 +191,10 @@ SIMPLE_JWT = {
 # ─────────────────────────────────────────────
 # CORS
 # ─────────────────────────────────────────────
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "https://patientlifestyleform.vercel.app",
-    " https://devona-copasetic-chieko.ngrok-free.dev",
-]
+CORS_ALLOWED_ORIGINS = config(
+    'CORS_ALLOWED_ORIGINS',
+    default='http://localhost:3000,http://localhost:5173'
+).split(',')
 
 CORS_ALLOW_CREDENTIALS = True
 
