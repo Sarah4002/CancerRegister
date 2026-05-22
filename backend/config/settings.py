@@ -40,7 +40,7 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    'devona-copasetic-chieko.ngrok-free.dev',
+    "https://devona-copasetic-chieko.ngrok-free.dev",
 ]
 
 # ─────────────────────────────────────────────
@@ -121,16 +121,7 @@ TEMPLATES = [
 # ─────────────────────────────────────────────
 # Database (PostgreSQL)
 # ─────────────────────────────────────────────
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='cancer_registry'),
-        'USER': config('DB_USER', default='registry_user'),
-        'PASSWORD': config('DB_PASSWORD', default='registry_pass_2024'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
-    }
-}
+
 
 # ─────────────────────────────────────────────
 # Custom User
