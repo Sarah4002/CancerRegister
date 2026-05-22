@@ -5,13 +5,14 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count, Q
 
-from .models import Diagnostic, TopographieICD, MorphologieICD
+from .models import Diagnostic, TopographieICD, MorphologieICD, DiagnosticValidationRule
 from .serializers import (
     DiagnosticListSerializer, DiagnosticDetailSerializer,
-    DiagnosticCreateSerializer, TopographieSerializer, MorphologieSerializer
+    DiagnosticCreateSerializer, TopographieSerializer, MorphologieSerializer,
+    DiagnosticValidationRuleSerializer,
 )
 from apps.accounts.models import AccessLog
-from apps.accounts.permissions import CanReadOrWriteDiagnostic, can_write_diagnostic
+from apps.accounts.permissions import CanReadOrWriteDiagnostic, can_write_diagnostic, IsAdmin
 
 
 class TopographieViewSet(viewsets.ReadOnlyModelViewSet):
@@ -33,6 +34,14 @@ class MorphologieViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields   = ['comportement', 'groupe']
     queryset           = MorphologieICD.objects.filter(est_actif=True)
     pagination_class   = None
+
+
+class DiagnosticValidationRuleViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = DiagnosticValidationRuleSerializer
+    queryset = DiagnosticValidationRule.objects.all()
+    filterset_fields = ['active', 'severity', 'code']
+    search_fields = ['code', 'label', 'description']
 
 
 class DiagnosticViewSet(viewsets.ModelViewSet):

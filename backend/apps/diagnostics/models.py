@@ -45,6 +45,31 @@ class MorphologieICD(models.Model):
         return f"{self.code} – {self.libelle}"
 
 
+class DiagnosticValidationRule(models.Model):
+    SEVERITY_CHOICES = [
+        ('error', 'Erreur'),
+        ('warning', 'Avertissement'),
+        ('info', 'Information'),
+    ]
+
+    code = models.CharField(max_length=100, unique=True)
+    label = models.CharField(max_length=200)
+    severity = models.CharField(max_length=10, choices=SEVERITY_CHOICES, default='warning')
+    description = models.TextField(blank=True)
+    conditions = models.JSONField(default=list, blank=True)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'diagnostic_validation_rules'
+        ordering = ['code']
+        verbose_name = 'Règle de validation diagnostique'
+
+    def __str__(self):
+        return f"{self.code} – {self.label}"
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Examens hématologiques (OneToOne → Diagnostic)
 # Chaque champ correspond à un examen recommandé par le Dr. Bendahmane.
