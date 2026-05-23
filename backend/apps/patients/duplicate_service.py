@@ -173,6 +173,7 @@ def _apercu(p: dict) -> dict:
         'nom':                 p['nom'],
         'prenom':              p['prenom'],
         'date_naissance':      str(p['date_naissance']) if p['date_naissance'] else None,
+        'sexe':                p['sexe'],
         'id_national':         p['id_national'],
         'telephone':           p['telephone'],
         'wilaya':              p['wilaya'],
@@ -297,6 +298,15 @@ def fusionner_patients(
         f"[FUSION] Dossier fusionné dans {principal.registration_number} "
         f"le {timezone.now().strftime('%d/%m/%Y %H:%M')}."
     ).strip()
+    CHAMPS_OBLIGATOIRES = {
+    'sexe': 'M',
+    'nom': 'INCONNU',
+    'prenom': 'INCONNU',
+    }
+    for champ, valeur_defaut in CHAMPS_OBLIGATOIRES.items():
+        val = getattr(principal, champ, None)
+        if val in (None, '', 'inconnu'):
+            setattr(principal, champ, valeur_defaut)
 
     principal.save()
     secondaire.save()
