@@ -75,8 +75,7 @@ export default function RCPSallePage() {
   });
   const [submittingDecision, setSubmittingDecision] = useState(false);
   const [votes, setVotes] = useState({});
-  const [medecins, setMedecins] = useState([]);
-  const [loadingMedecins, setLoadingMedecins] = useState(false);
+ 
 
   // Chrono
   useEffect(() => {
@@ -679,7 +678,7 @@ function DossierExpandedDetail({ dossierId, onMarkRealise }) {
 }
 
 // ─── PresencesTab ────────────────────────────────────────────────────────────
-function PresencesTab({ data, medecins, loadingMedecins, onAjouter, quorumOk, specialitesPresentes }) {
+function PresencesTab({ data, onAjouter, quorumOk, specialitesPresentes }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
       {/* Quorum Banner */}
@@ -1163,149 +1162,7 @@ function CompteRenduModal({ data, onClose, onPrint, reload }) {
   );
 }
 
-// ─── AjouterMedecinModal ──────────────────────────────────────────────────────
-function AjouterMedecinModal({ isOpen, onClose, onAjouter, medecins, loading, dejaPresents = [] }) {
-  const [query, setQuery] = useState('');
-  const [selectedMedecin, setSelectedMedecin] = useState('');
 
-  useEffect(() => {
-    if (!isOpen) {
-      setQuery('');
-      setSelectedMedecin('');
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  const presentIds = new Set((dejaPresents || []).map(String));
-  const filtered = (medecins || []).filter(m => !presentIds.has(String(m.id)));
-
-  const normalizedQ = query.trim().toLowerCase();
-  const visible = !normalizedQ
-    ? filtered
-    : filtered.filter(m => {
-        const full = (m.full_name || '').toLowerCase();
-        const role = (m.role || '').toLowerCase();
-        const email = (m.email || '').toLowerCase();
-        const inst = (m.institution || '').toLowerCase();
-        const spec = (m.speciality || '').toLowerCase();
-        return full.includes(normalizedQ) || role.includes(normalizedQ) || email.includes(normalizedQ) || inst.includes(normalizedQ) || spec.includes(normalizedQ);
-      });
-
-  return (
-    <Modal onClose={onClose} maxWidth={520}>
-      <ModalTitle icon="👤">Ajouter un médecin à la présence</ModalTitle>
-
-      <div style={{ display: 'grid', gap: 12, marginBottom: 6 }}>
-        <div>
-          <Label>Recherche</Label>
-          <input
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Nom, email, spécialité, institution…"
-            style={modalInputSt}
-          />
-        </div>
-
-        <div style={{
-          border: '1px solid var(--border)',
-          borderRadius: 10,
-          overflow: 'hidden',
-          background: 'var(--bg-elevated)',
-          maxHeight: 320,
-        }}>
-          {loading ? (
-            <div style={{ padding: 14, color: 'var(--text-muted)', fontSize: 12 }}>Chargement…</div>
-          ) : !visible.length ? (
-            <div style={{ padding: 14, color: 'var(--text-muted)', fontSize: 12 }}>
-              {filtered.length === 0 ? 'Aucun médecin disponible (tous déjà présents).' : 'Aucun résultat pour votre recherche.'}
-            </div>
-          ) : (
-            visible.map(m => {
-              const label = m.full_name || m.email || `${m.first_name || ''} ${m.last_name || ''}`.trim() || '—';
-              const sub = [m.speciality, m.institution].filter(Boolean).join(' · ') || m.role;
-              const isSelected = String(m.id) === String(selectedMedecin);
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setSelectedMedecin(m.id)}
-                  style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '10px 12px',
-                    border: 'none',
-                    borderBottom: '1px solid var(--border)',
-                    background: isSelected ? 'rgba(0,119,204,0.10)' : 'transparent',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    gap: 10,
-                    alignItems: 'center',
-                  }}
-                >
-                  <div style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: '50%',
-                    background: 'rgba(0,119,204,0.12)',
-                    border: '1px solid rgba(0,119,204,0.25)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 12,
-                    fontWeight: 800,
-                    color: '#0077cc',
-                    flexShrink: 0,
-                  }}>
-                    {(label || '?').charAt(0).toUpperCase()}
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 800, fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</div>
-                  </div>
-
-                  {isSelected && <div style={{ fontSize: 12, fontWeight: 900, color: '#0077cc', flexShrink: 0 }}>✓</div>}
-                </button>
-              );
-            })
-          )}
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-        <button
-          onClick={onClose}
-          style={{ flex: 1, padding: '10px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}
-        >
-          Annuler
-        </button>
-        <button
-          onClick={() => {
-            if (!selectedMedecin) return;
-            onAjouter(selectedMedecin);
-            setSelectedMedecin('');
-            onClose();
-          }}
-          disabled={!selectedMedecin || loading}
-          style={{
-            flex: 1,
-            padding: '10px',
-            background: selectedMedecin ? 'linear-gradient(135deg, #0077cc, #005fa3)' : 'var(--bg-elevated)',
-            border: 'none',
-            borderRadius: 8,
-            color: selectedMedecin ? '#fff' : 'var(--text-muted)',
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: selectedMedecin ? 'pointer' : 'not-allowed',
-          }}
-        >
-          Ajouter
-        </button>
-      </div>
-    </Modal>
-  );
-}
 
 // ─── Primitives ──────────────────────────────────────────────────────────────
 function SidePanel({ children, onClose, title, subtitle, color }) {
