@@ -73,9 +73,12 @@ export const authService = {
   login: (credentials) => api.post('/auth/login/', credentials),
   register: (data) => api.post('/auth/register/', data),
   logout: (refresh) => api.post('/auth/logout/', { refresh }),
+  logoutAll: () => api.post('/auth/logout-all/'),
   getProfile: () => api.get('/auth/profile/'),
-  updateProfile: (data) => api.patch('/auth/profile/', data),
+  updateProfile: (data, config = {}) => api.patch('/auth/profile/', data, config),
   changePassword: (data) => api.post('/auth/change-password/', data),
+  getActivity: () => api.get('/auth/me/activity/'),
+  getDevices: () => api.get('/auth/me/devices/'),
 };
 
 

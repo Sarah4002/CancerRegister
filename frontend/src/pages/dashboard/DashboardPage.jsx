@@ -45,7 +45,6 @@ const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: 7 }, (_, i) => String(CURRENT_YEAR - i));
 
 const DEFAULT_FILTERS = {
-  // FIX #2 : annee initialisé comme string vide (cohérent avec les <option value="...">)
   annee: '',
   sexe: '', statut: '', wilaya: '', stade: '',
   dateFrom: '', dateTo: '',
@@ -194,8 +193,7 @@ function FilterDate({ label, value, onChange }) {
 function FilterBar({ filters, draft, setDraft, onApply, onReset, wilayas = [] }) {
   const [open, setOpen] = useState(false);
 
-  // FIX #5 : exclure les valeurs 'all' en plus de '' pour le comptage
-  const totalActive = Object.values(filters).filter(v => v !== '' && v !== 'all').length;
+  const totalActive = Object.values(filters).filter((v) => v !== '').length;
 
   return (
     <div style={{ marginBottom:20 }}>
@@ -370,24 +368,16 @@ export default function DashboardPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Nettoyer les params : ne pas envoyer les clés vides
-      const cleanFilters = Object.fromEntries(
-        Object.entries(filters).filter(([, v]) => v !== '' && v !== 'all')
-      );
       const [{ data: d }, { data: a }] = await Promise.all([
-        dashboardService.global(cleanFilters),
+        dashboardService.global(filters),
         dashboardService.alertes(),
       ]);
-      setData(d);
-      setAlertes(a);
+      setData(d); setAlertes(a);
       setLastUpdate(new Date());
     } catch (err) {
       console.error('Dashboard error:', err);
-    } finally {
-      setLoading(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtersKey]);
+    } finally { setLoading(false); }
+  }, [filters]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
