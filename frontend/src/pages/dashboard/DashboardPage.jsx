@@ -41,7 +41,7 @@ const FILTER_TAG_LABELS = {
 };
 
 const DEFAULT_FILTERS = {
-  annee: String(new Date().getFullYear()),
+  annee: '',
   sexe: '', statut: '', wilaya: '', stade: '',
   dateFrom: '', dateTo: '',
 };
@@ -186,11 +186,7 @@ function FilterDate({ label, value, onChange }) {
 function FilterBar({ filters, draft, setDraft, onApply, onReset }) {
   const [open, setOpen] = useState(false);
 
-  const activeCount = Object.entries(filters)
-    .filter(([, v]) => v && v !== String(new Date().getFullYear()))
-    .length + (filters.annee !== String(new Date().getFullYear()) ? 0 : 0);
-
-  const totalActive = Object.values(filters).filter(v => v !== '').length;
+  const totalActive = Object.values(filters).filter((v) => v !== '').length;
 
   return (
     <div style={{ marginBottom:20 }}>
@@ -350,19 +346,18 @@ export default function DashboardPage() {
   const [draft,   setDraft]   = useState(DEFAULT_FILTERS);
 
   const fetchData = useCallback(async () => {
-  setLoading(true);
-  try {
-    const [{ data: d }, alertesRes] = await Promise.all([
-      dashboardService.global(filters),
-      dashboardService.alertes().catch(() => ({ data: [] })), // ← ne bloque pas
-    ]);
-    setData(d);
-    setAlertes(alertesRes.data || []);
-    setLastUpdate(new Date());
-  } catch (err) {
-    console.error('Dashboard error:', err);
-  } finally { setLoading(false); }
-}, [filters]);
+    setLoading(true);
+    try {
+      const [{ data: d }, { data: a }] = await Promise.all([
+        dashboardService.global(filters),
+        dashboardService.alertes(),
+      ]);
+      setData(d); setAlertes(a);
+      setLastUpdate(new Date());
+    } catch (err) {
+      console.error('Dashboard error:', err);
+    } finally { setLoading(false); }
+  }, [filters]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
