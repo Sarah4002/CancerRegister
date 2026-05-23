@@ -70,6 +70,7 @@ from apps.stats.models import (
     CancerType, Wilaya as WilayaModel,
     IncidenceRecord, SurvivalRate, AIReport, SearchLog
 )
+from apps.stats.ai_engine import AIReportEngine
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1680,15 +1681,22 @@ def _generate_report_async(report_id):
         time.sleep(2)
 
         report = AIReport.objects.get(id=report_id)
+
+        # 2. Génération via moteur de rapport IA
+        engine = AIReportEngine(report, report.payload or {})
+        engine.generate()
+
         contenu = (
             f"# {report.titre}\n\n"
             "## Analyse automatique\n\n"
             "Les données épidémiologiques ont été analysées selon les filtres sélectionnés.\n\n"
-            + MOCK_REPORT_CONTENU
+            + engine.build_markdown()
         )
 
+        recommandations = engine.build_recommendations()
+
         # 3. Sauvegarder le résultat
-        report.mark_done(contenu, MOCK_RECOMMANDATIONS)
+        report.mark_done(contenu, recommandations)
 
     except Exception:
         traceback.print_exc()   # visible dans la console Django pour debug

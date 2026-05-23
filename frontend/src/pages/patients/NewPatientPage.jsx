@@ -18,6 +18,55 @@ const STEPS = [
   { label: 'Antecedents' },
 ];
 
+// ── Règles de validation téléphone algérien ───────────────────
+// Formats acceptés :
+//   - 10 chiffres locaux   : 05XXXXXXXX | 06XXXXXXXX | 07XXXXXXXX
+//   - Avec indicatif (+213): +213 5XXXXXXXX | +2136XXXXXXXX | +2137XXXXXXXX
+//   - Avec 00213           : 00213 5XXXXXXXX …
+const PHONE_REGEX = /^(\+213|00213|0)(5|6|7)\d{8}$/;
+
+const validatePhone = (value) => {
+  if (!value || value.trim() === '') return true; // champ optionnel
+  const cleaned = value.replace(/[\s\-\.]/g, '');
+  if (!PHONE_REGEX.test(cleaned)) {
+    return 'Numéro invalide (ex: 0551234567, +213551234567) — doit commencer par 05, 06 ou 07';
+  }
+  return true;
+};
+
+const validatePhoneRequired = (value) => {
+  if (!value || value.trim() === '') return 'Téléphone requis';
+  return validatePhone(value);
+};
+
+// ── Validation ID national (10 chiffres) ─────────────────────
+const validateIdNational = (value) => {
+  if (!value || value.trim() === '') return true;
+  if (!/^\d{10}$/.test(value.trim())) return 'L\'ID nationale doit contenir exactement 10 chiffres';
+  return true;
+};
+
+// ── Validation numéro sécurité sociale (14 chiffres) ─────────
+const validateSecuriteSociale = (value) => {
+  if (!value || value.trim() === '') return true;
+  if (!/^\d{14}$/.test(value.trim())) return 'Le N° sécurité sociale doit contenir exactement 14 chiffres';
+  return true;
+};
+
+// ── Validation code postal (5 chiffres) ──────────────────────
+const validateCodePostal = (value) => {
+  if (!value || value.trim() === '') return true;
+  if (!/^\d{5}$/.test(value.trim())) return 'Le code postal doit contenir exactement 5 chiffres';
+  return true;
+};
+
+// ── Validation email ──────────────────────────────────────────
+const validateEmail = (value) => {
+  if (!value || value.trim() === '') return true;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return 'Adresse email invalide';
+  return true;
+};
+
 export default function NewPatientPage() {
   const navigate = useNavigate();
   const [step, setStep]             = useState(0);
@@ -91,7 +140,6 @@ export default function NewPatientPage() {
   const creerPatient = async (payload) => {
     try {
       const { data: patient } = await patientService.create(payload);
-      // Sauvegarder les champs personnalisés après création
       if (Object.keys(valeursCustom).length > 0) {
         await sauvegarderCustom(patient.id);
       }
@@ -158,7 +206,6 @@ export default function NewPatientPage() {
               <div style={{ animation: 'fadeUp 0.3s ease' }}>
                 <SectionTitle>Identite du patient</SectionTitle>
 
-                {/* Saisie vocale */}
                 <VoiceDictation
                   formType="patient"
                   onFieldsExtracted={(fields) => {
@@ -178,11 +225,21 @@ export default function NewPatientPage() {
                   </Field>
                 </Row>
                 <Row>
-                  <Field label="N identite nationale">
-                    <input {...register('id_national')} placeholder="Ex: 1234567890" style={inputStyle()} />
+                  <Field label="N° identité nationale" error={errors.id_national?.message}>
+                    <input
+                      {...register('id_national', { validate: validateIdNational })}
+                      placeholder="Ex: 1234567890 (10 chiffres)"
+                      maxLength={10}
+                      style={inputStyle(errors.id_national)}
+                    />
                   </Field>
-                  <Field label="N securite sociale">
-                    <input {...register('num_securite_sociale')} placeholder="Ex: 12345678901234" style={inputStyle()} />
+                  <Field label="N° sécurité sociale" error={errors.num_securite_sociale?.message}>
+                    <input
+                      {...register('num_securite_sociale', { validate: validateSecuriteSociale })}
+                      placeholder="Ex: 12345678901234 (14 chiffres)"
+                      maxLength={14}
+                      style={inputStyle(errors.num_securite_sociale)}
+                    />
                   </Field>
                 </Row>
                 <Row>
@@ -217,7 +274,6 @@ export default function NewPatientPage() {
               <div style={{ animation: 'fadeUp 0.3s ease' }}>
                 <SectionTitle>Coordonnees et Adresse</SectionTitle>
 
-                {/* Saisie vocale */}
                 <VoiceDictation
                   formType="patient"
                   onFieldsExtracted={(fields) => {
@@ -252,13 +308,50 @@ export default function NewPatientPage() {
                   </Field>
                 </Row>
                 <Row>
-                  <Field label="Code postal"><input {...register('code_postal')} placeholder="31000" style={inputStyle()} /></Field>
-                  <Field label="Telephone principal"><input {...register('telephone')} placeholder="+213 5xx xxx xxx" style={inputStyle()} /></Field>
+                  <Field label="Code postal" error={errors.code_postal?.message}>
+                    <input
+                      {...register('code_postal', { validate: validateCodePostal })}
+                      placeholder="31000 (5 chiffres)"
+                      maxLength={5}
+                      style={inputStyle(errors.code_postal)}
+                    />
+                  </Field>
+                  <Field label="Téléphone principal" error={errors.telephone?.message}>
+                    <input
+                      {...register('telephone', { validate: validatePhone })}
+                      placeholder="0551234567 ou +213551234567"
+                      maxLength={17}
+                      style={inputStyle(errors.telephone)}
+                    />
+                  </Field>
                 </Row>
+
+                {/* Hint sous les champs téléphone */}
+                {!errors.telephone && (
+                  <p style={{ marginTop: -10, marginBottom: 12, fontSize: 11, color: '#94a3b8' }}>
+                    Formats acceptés : 05XXXXXXXX · 06XXXXXXXX · 07XXXXXXXX · +213XXXXXXXXX
+                  </p>
+                )}
+
                 <Row>
-                  <Field label="Telephone secondaire"><input {...register('telephone2')} placeholder="+213 5xx xxx xxx" style={inputStyle()} /></Field>
-                  <Field label="Email"><input type="email" {...register('email')} placeholder="patient@email.com" style={inputStyle()} /></Field>
+                  <Field label="Téléphone secondaire" error={errors.telephone2?.message}>
+                    <input
+                      {...register('telephone2', { validate: validatePhone })}
+                      placeholder="0661234567"
+                      maxLength={17}
+                      style={inputStyle(errors.telephone2)}
+                    />
+                  </Field>
+                  <Field label="Email" error={errors.email?.message}>
+                    <input
+                      type="email"
+                      {...register('email', { validate: validateEmail })}
+                      placeholder="patient@email.com"
+                      style={inputStyle(errors.email)}
+                    />
+                  </Field>
                 </Row>
+
                 <SectionTitle style={{ marginTop: 24 }}>Contact d'urgence</SectionTitle>
                 <Row>
                   <Field label="Nom du contact"><input {...register('contact_nom')} placeholder="Benali" style={inputStyle()} /></Field>
@@ -266,7 +359,14 @@ export default function NewPatientPage() {
                 </Row>
                 <Row>
                   <Field label="Lien de parente"><input {...register('contact_lien')} placeholder="Ex: Epoux, Fils, Soeur" style={inputStyle()} /></Field>
-                  <Field label="Telephone"><input {...register('contact_telephone')} placeholder="+213 5xx xxx xxx" style={inputStyle()} /></Field>
+                  <Field label="Téléphone contact" error={errors.contact_telephone?.message}>
+                    <input
+                      {...register('contact_telephone', { validate: validatePhone })}
+                      placeholder="0771234567"
+                      maxLength={17}
+                      style={inputStyle(errors.contact_telephone)}
+                    />
+                  </Field>
                 </Row>
               </div>
             )}

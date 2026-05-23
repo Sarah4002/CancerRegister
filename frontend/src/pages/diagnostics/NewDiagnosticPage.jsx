@@ -505,7 +505,7 @@ export default function NewDiagnosticPage() {
   useEffect(() => {
     const diag    = buildDiagSnapshot();
     const patient = selectedPatient;
-    const v       = runValidation(validationRules, diag, patient);
+    const v       = runValidation(diag, patient, validationRules);
     setViolations(v);
   }, [buildDiagSnapshot, selectedPatient, validationRules]);
 
@@ -552,7 +552,7 @@ export default function NewDiagnosticPage() {
     }
 
     const payload = buildPayload(data);
-    const viols   = runValidation(validationRules, buildDiagSnapshot(), selectedPatient);
+    const viols   = runValidation(buildDiagSnapshot(), selectedPatient);
 
     if (hasBlockingErrors(viols)) {
       setPendingPayload(payload);
@@ -847,7 +847,7 @@ export default function NewDiagnosticPage() {
                 border:`1px solid ${hasBlockingErrors(violations) ? '#fca5a5' : '#fcd34d'}`,
                 borderRadius:10, fontSize:12, lineHeight:1.7,
                 color: hasBlockingErrors(violations) ? '#7f1d1d' : '#78350f' }}>
-                <strong>{hasBlockingErrors(violations) ? '🚫 Validation bloquée' : '⚠️ Alertes actives'} :</strong>
+                <strong>{hasBlockingErrors(violations) ? ' Validation bloquée' : 'Alertes actives'} :</strong>
                 {' '}L'enregistrement {hasBlockingErrors(violations) ? 'nécessite une dérogation motivée' : 'est possible malgré les alertes'}.
                 Vérifiez les alertes affichées en haut du formulaire.
               </div>
@@ -873,8 +873,8 @@ export default function NewDiagnosticPage() {
                 {submitting
                   ? <><Spinner /> Enregistrement...</>
                   : hasBlockingErrors(violations)
-                    ? '🚫 Enregistrer avec dérogation'
-                    : '✓ Enregistrer le diagnostic'}
+                    ? ' Enregistrer avec dérogation'
+                    : ' Enregistrer le diagnostic'}
               </button>
             </div>
 

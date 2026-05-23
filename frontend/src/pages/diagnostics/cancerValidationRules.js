@@ -115,7 +115,52 @@ const isPaired          = (c) => matchesPrefix(c, PAIRED_ORGAN_PREFIXES);
 
 const ADULT_TOPO_PREFIXES = ["C16","C18","C19","C20","C22","C25","C34","C50","C53","C61","C62"];
 
-export function runValidation(diag, patient) {
+function getFieldValue(obj, field) {
+  if (!obj || !field) return undefined;
+  const parts = field.split('.');
+  if (parts[0] === 'patient' || parts[0] === 'diagnostic') {
+    parts.shift();
+  }
+  return parts.reduce((acc, part) => (acc && typeof acc === 'object' ? acc[part] : undefined), obj);
+}
+
+function compareValue(actual, operator, expected) {
+  const value = actual == null ? '' : String(actual);
+  const target = expected == null ? '' : String(expected);
+  switch (operator) {
+    case 'equals': return value === target;
+    case 'not_equals': return value !== target;
+    case 'contains': return value.includes(target);
+    case 'not_contains': return !value.includes(target);
+    case 'present': return value !== '';
+    case 'blank': return value === '';
+    case 'greater_than': return parseFloat(value) > parseFloat(target);
+    case 'less_than': return parseFloat(value) < parseFloat(target);
+    default: return false;
+  }
+}
+
+function evaluateRule(rule, diag, patient) {
+  if (!rule.active || !Array.isArray(rule.conditions) || rule.conditions.length === 0) {
+    return false;
+  }
+  return rule.conditions.every((condition) => {
+    const field = condition.field || rule.field_name;
+    if (!field) return false;
+    const explicitSource = condition.source || (field.startsWith('patient.') ? 'patient' : field.startsWith('diagnostic.') ? 'diagnostic' : null);
+    const source = explicitSource === 'patient'
+      ? patient
+      : explicitSource === 'diagnostic'
+        ? diag
+        : rule.module === 'patient'
+          ? patient
+          : diag;
+    const actual = getFieldValue(source, field);
+    return compareValue(actual, condition.operator || 'equals', condition.value);
+  });
+}
+
+export function runValidation(diag, patient, backendRules = []) {
   const violations = [];
 
   const push = (id, overrideMsg) => {
@@ -212,6 +257,18 @@ export function runValidation(diag, patient) {
       push("ELDERLY_AGGRESSIVE", "Patient de " + age + " ans avec un cancer de stade IV. Pensez a documenter le statut fonctionnel (PS/OMS) dans les observations.");
     }
   }
+
+  backendRules.forEach((rule) => {
+    if (!rule || !rule.active) return;
+    if (evaluateRule(rule, diag, patient)) {
+      violations.push({
+        id:       rule.code,
+        label:    rule.label || rule.code,
+        severity: rule.severity || 'warning',
+        message:  rule.description || `Règle ${rule.code} activée.`,
+      });
+    }
+  });
 
   return violations;
 }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
 import { apiClient } from '../../services/apiClient';
 import { diagnosticService } from '../../services/diagnosticService';
+import { validationRulesService } from '../../services/validationRulesService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import {
  BarChart, Bar, AreaChart, Area, XAxis, YAxis,
@@ -16,6 +17,7 @@ const ROLE_CFG = {
  doctor: { color:'#2563eb', label:'Medecin Oncologue' },
  registrar: { color:'#3b82f6', label:'Enregistreur' },
  epidemiologist: { color:'#60a5fa', label:'Epidemiologist' },
+ pharmacist: { color:'#f59e0b', label:'Pharmacien' },
  analyst: { color:'#93c5fd', label:'Analyste' },
  readonly: { color:'#64748b', label:'Lecture seule' } };
 const ACTION_CFG = {
@@ -24,6 +26,59 @@ const ACTION_CFG = {
  update: { color:'#1d4ed8' }, delete: { color:'#dc2626' },
  export: { color:'#60a5fa' }, report: { color:'#2563eb' },
  import: { color:'#93c5fd' } };
+const VALIDATION_MODULES = [
+ { value:'patient', label:'Dossier patient' },
+ { value:'diagnostic', label:'Diagnostic' },
+ { value:'traitement', label:'Traitement' },
+ { value:'suivi', label:'Suivi / Consultation' },
+];
+const VALIDATION_SOURCES = [
+  { value:'diagnostic', label:'Diagnostic' },
+  { value:'patient', label:'Patient' },
+  { value:'traitement', label:'Traitement' },
+  { value:'suivi', label:'Suivi / Consultation' },
+];
+const VALIDATION_FIELDS = {
+  patient: [
+    { value:'sexe', label:'Sexe' },
+    { value:'date_naissance', label:'Date de naissance' },
+    { value:'age', label:'Âge' },
+    { value:'patient_numero', label:'Numéro patient' },
+  ],
+  diagnostic: [
+    { value:'topographie_code', label:'Topographie ICD-O-3' },
+    { value:'topographie_libelle', label:'Libellé topographie' },
+    { value:'morphologie_code', label:'Morphologie ICD-O-3' },
+    { value:'stade_ajcc', label:'Stade AJCC' },
+    { value:'tnm_m', label:'TNM M' },
+    { value:'lateralite', label:'Latéralité' },
+    { value:'date_diagnostic', label:'Date de diagnostic' },
+    { value:'date_premier_symptome', label:'Date premiers symptômes' },
+    { value:'patient.sexe', label:'Sexe du patient' },
+    { value:'patient.date_naissance', label:'Date de naissance du patient' },
+    { value:'patient.age', label:'Âge du patient' },
+  ],
+  traitement: [
+    { value:'date_debut', label:'Date de début' },
+    { value:'date_fin', label:'Date de fin' },
+    { value:'type_traitement', label:'Type de traitement' },
+  ],
+  suivi: [
+    { value:'date_consultation', label:'Date de consultation' },
+    { value:'motif', label:'Motif' },
+    { value:'poids', label:'Poids' },
+  ],
+};
+const VALIDATION_OPERATORS = [
+  { value:'equals', label:'Égale à' },
+  { value:'not_equals', label:'Différente de' },
+  { value:'contains', label:'Contient' },
+  { value:'not_contains', label:'Ne contient pas' },
+  { value:'present', label:'Est renseigné' },
+  { value:'blank', label:'Est vide' },
+  { value:'greater_than', label:'Supérieur à' },
+  { value:'less_than', label:'Inférieur à' },
+];
 const C = ['#2563eb','#3b82f6','#60a5fa','#93c5fd','#1d4ed8','#2563eb','#60a5fa','#bfdbfe'];
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -740,20 +795,7 @@ function SectionCustomFields() {
        )}
      </div>
 
-     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
-       <div style={{ padding: '12px 14px', background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', borderLeft: '3px solid #2563eb' }}>
-         <div style={{ fontSize: 20, fontWeight: 700, color: '#2563eb' }}>{total}</div>
-         <div style={{ fontSize: 10, color: '#64748b' }}>Total champs</div>
-       </div>
-       <div style={{ padding: '12px 14px', background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', borderLeft: '3px solid #16a34a' }}>
-         <div style={{ fontSize: 20, fontWeight: 700, color: '#16a34a' }}>{actifs}</div>
-         <div style={{ fontSize: 10, color: '#64748b' }}>Actifs</div>
-       </div>
-       <div style={{ padding: '12px 14px', background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', borderLeft: '3px solid #7c3aed' }}>
-         <div style={{ fontSize: 20, fontWeight: 700, color: '#7c3aed' }}>{total - actifs}</div>
-         <div style={{ fontSize: 10, color: '#64748b' }}>Inactifs</div>
-       </div>
-     </div>
+     
 
      {showForm && (
        <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '20px 24px', marginBottom: 20 }}>
@@ -957,6 +999,344 @@ function SectionCustomFields() {
  );
 }
 
+function SectionValidationRules() {
+ const [rules, setRules] = useState([]);
+ const [loading, setLoading] = useState(true);
+ const [showForm, setShowForm] = useState(false);
+ const [editRule, setEditRule] = useState(null);
+ const [saving, setSaving] = useState(false);
+ const [search, setSearch] = useState('');
+ const [moduleFilter, setModuleFilter] = useState('');
+ const [customFields, setCustomFields] = useState([]);
+ const [form, setForm] = useState({
+   code: '', label: '', description: '', severity: 'warning', active: true,
+   module: 'diagnostic',
+   conditions: [
+     { source: 'diagnostic', field: 'topographie_code', operator: 'equals', value: '' },
+   ],
+ });
+
+ const loadRules = useCallback(async () => {
+   setLoading(true);
+   try {
+     const { data } = await validationRulesService.list({ page_size: 200 });
+     setRules(data.results || data);
+   } catch {
+     toast.error('Erreur au chargement des règles.');
+   } finally {
+     setLoading(false);
+   }
+ }, []);
+
+ const loadCustomFields = useCallback(async () => {
+   try {
+     const { data } = await apiClient.get('/custom-fields/champs/', { params: { page_size: 200 } });
+     setCustomFields(data.results || data);
+   } catch {
+     toast.error('Impossible de charger les champs personnalisés.');
+   }
+ }, []);
+
+ useEffect(() => { loadRules(); loadCustomFields(); }, [loadRules, loadCustomFields]);
+
+ const customFieldOptions = customFields
+   .filter((field) => field.module === form.module)
+   .map((field) => ({ value: field.code, label: `${field.nom} (${field.code})` }));
+ const ruleFieldsBySource = (source) => {
+   const baseFields = VALIDATION_FIELDS[source] || [];
+   if (source === 'diagnostic') {
+     return [...baseFields, ...customFieldOptions];
+   }
+   return baseFields;
+ };
+
+ const setFormValue = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+ const setConditionValue = (index, key, value) => {
+   setForm((prev) => {
+     const next = [...prev.conditions];
+     next[index] = { ...next[index], [key]: value };
+     if (key === 'source') {
+       const options = ruleFieldsBySource(value);
+       next[index].field = options.length > 0 ? options[0].value : '';
+     }
+     return { ...prev, conditions: next };
+   });
+ };
+ const addCondition = () => {
+   setForm((prev) => ({
+     ...prev,
+     conditions: [
+       ...prev.conditions,
+       { source: 'patient', field: 'sexe', operator: 'equals', value: '' },
+     ],
+   }));
+ };
+ const removeCondition = (index) => {
+   setForm((prev) => ({
+     ...prev,
+     conditions: prev.conditions.filter((_, idx) => idx !== index),
+   }));
+ };
+
+ const slugify = (text) => text
+   .toString()
+   .normalize('NFKD')
+   .replace(/\p{Diacritic}/gu, '')
+   .replace(/[^a-zA-Z0-9]+/g, '_')
+   .replace(/^_+|_+$/g, '')
+   .toLowerCase();
+
+ const resetForm = () => {
+   setForm({
+     code: '', label: '', description: '', severity: 'warning', active: true,
+     module: 'diagnostic',
+     conditions: [
+       { source: 'diagnostic', field: 'topographie_code', operator: 'equals', value: '' },
+     ],
+   });
+   setEditRule(null);
+ };
+
+ const handleEdit = (rule) => {
+   const conditions = Array.isArray(rule.conditions) && rule.conditions.length
+     ? rule.conditions.map((cond) => ({
+         source: cond.source || (cond.field?.startsWith('patient.') ? 'patient' : 'diagnostic'),
+         field: cond.field || rule.field_name || '',
+         operator: cond.operator || 'equals',
+         value: cond.value || '',
+       }))
+     : [{ source: 'diagnostic', field: 'topographie_code', operator: 'equals', value: '' }];
+
+   setEditRule(rule);
+   setForm({
+     code: rule.code,
+     label: rule.label,
+     description: rule.description,
+     severity: rule.severity || 'warning',
+     active: rule.active,
+     module: rule.module || 'diagnostic',
+     conditions,
+   });
+   setShowForm(true);
+ };
+
+ const handleSave = async () => {
+   if (!form.label.trim()) { toast.error('Le libellé de la règle est requis.'); return; }
+   if (!form.conditions || form.conditions.length === 0 || !form.conditions[0].field.trim()) {
+     toast.error('Au moins une condition doit être définie.'); return;
+   }
+
+   for (const condition of form.conditions) {
+     if (!condition.field.trim()) { toast.error('Chaque condition doit avoir un champ.'); return; }
+     if (['equals', 'not_equals', 'contains', 'not_contains', 'greater_than', 'less_than'].includes(condition.operator) && !String(condition.value).trim()) {
+       toast.error('La valeur est requise pour l’opérateur sélectionné.'); return;
+     }
+   }
+
+   const payload = {
+     code: form.code.trim() || slugify(form.label),
+     label: form.label,
+     description: form.description,
+     severity: form.severity,
+     active: form.active,
+     module: form.module,
+     field_name: form.conditions[0].field,
+     conditions: form.conditions.map((condition) => ({
+       source: condition.source,
+       field: condition.field,
+       operator: condition.operator,
+       value: condition.value,
+     })),
+   };
+   setSaving(true);
+   try {
+     if (editRule && editRule.id) {
+       await validationRulesService.update(editRule.id, payload);
+       toast.success('Règle modifiée avec succès.');
+     } else {
+       await validationRulesService.create(payload);
+       toast.success('Règle créée avec succès.');
+     }
+     resetForm();
+     setShowForm(false);
+     loadRules();
+   } catch (err) {
+     const msg = err.response?.data ? Object.values(err.response.data).flat().join(' ') : 'Erreur lors de l’enregistrement.';
+     toast.error(msg);
+   } finally {
+     setSaving(false);
+   }
+ };
+
+ const handleDelete = async (rule) => {
+   if (!window.confirm(`Supprimer la règle ${rule.label} ?`)) return;
+   try {
+     await validationRulesService.delete(rule.id);
+     toast.success('Règle supprimée.');
+     loadRules();
+   } catch {
+     toast.error('Impossible de supprimer la règle.');
+   }
+ };
+
+ const filteredRules = rules.filter((rule) => {
+   if (moduleFilter && rule.module !== moduleFilter) return false;
+   if (search && ![rule.code, rule.label, rule.description, rule.field_name].some((value) => String(value || '').toLowerCase().includes(search.toLowerCase()))) return false;
+   return true;
+ });
+
+ return (
+   <div>
+     <div style={{ display:'flex', justifyContent:'space-between', gap:12, marginBottom:20, flexWrap:'wrap' }}>
+       <div>
+         <h3 style={{ fontSize:18, fontWeight:700, color:'#0f172a', marginBottom:6 }}>Règles de validation</h3>
+         <p style={{ fontSize:13, color:'#64748b' }}>Créez et éditez des règles par page/module et champ ciblé.</p>
+       </div>
+       <button onClick={() => { resetForm(); setShowForm(true); }} style={{ padding:'10px 16px', background:'linear-gradient(135deg, #16a34a, #22c55e)', border:'none', borderRadius:12, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>+ Nouvelle règle</button>
+     </div>
+
+     {showForm && (
+       <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:16, padding:20, marginBottom:24 }}>
+         <div style={{ display:'grid', gridTemplateColumns:'repeat(2, minmax(0, 1fr))', gap:16, marginBottom:18 }}>
+           <div>
+             <label style={{ display:'block', fontSize:12, color:'#64748b', marginBottom:6 }}>Libellé de la règle *</label>
+             <input value={form.label} onChange={(e) => setFormValue('label', e.target.value)} style={{ width:'100%', padding:10, borderRadius:12, border:'1px solid rgba(37,99,235,0.12)', background:'#f1f5f9', fontSize:13, color:'#0f172a' }} />
+           </div>
+           <div>
+             <label style={{ display:'block', fontSize:12, color:'#64748b', marginBottom:6 }}>Page / module *</label>
+             <select value={form.module} onChange={(e) => setFormValue('module', e.target.value)} style={{ width:'100%', padding:10, borderRadius:12, border:'1px solid rgba(37,99,235,0.12)', background:'#f1f5f9', fontSize:13, color:'#0f172a', cursor:'pointer' }}>
+               {VALIDATION_MODULES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+             </select>
+           </div>
+           <div style={{ gridColumn:'1 / -1' }}>
+             <label style={{ display:'block', fontSize:12, color:'#64748b', marginBottom:6 }}>Conditions *</label>
+             <div style={{ display:'grid', gap:12 }}>
+               {form.conditions.map((condition, index) => {
+                 const conditionFields = ruleFieldsBySource(condition.source);
+                 return (
+                   <div key={index} style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr auto', gap:12, alignItems:'end' }}>
+                     <div>
+                       <label style={{ display:'block', fontSize:12, color:'#64748b', marginBottom:6 }}>Source</label>
+                       <select value={condition.source} onChange={(e) => setConditionValue(index, 'source', e.target.value)} style={{ width:'100%', padding:10, borderRadius:12, border:'1px solid rgba(37,99,235,0.12)', background:'#f1f5f9', fontSize:13, color:'#0f172a', cursor:'pointer' }}>
+                         {VALIDATION_SOURCES.map((source) => <option key={source.value} value={source.value}>{source.label}</option>)}
+                       </select>
+                     </div>
+                     <div>
+                       <label style={{ display:'block', fontSize:12, color:'#64748b', marginBottom:6 }}>Champ</label>
+                       <select value={condition.field} onChange={(e) => setConditionValue(index, 'field', e.target.value)} style={{ width:'100%', padding:10, borderRadius:12, border:'1px solid rgba(37,99,235,0.12)', background:'#f1f5f9', fontSize:13, color:'#0f172a', cursor:'pointer' }}>
+                         <option value="">Sélectionner un champ</option>
+                         {conditionFields.map((field) => <option key={field.value} value={field.value}>{field.label}</option>)}
+                       </select>
+                     </div>
+                     <div>
+                       <label style={{ display:'block', fontSize:12, color:'#64748b', marginBottom:6 }}>Opérateur</label>
+                       <select value={condition.operator} onChange={(e) => setConditionValue(index, 'operator', e.target.value)} style={{ width:'100%', padding:10, borderRadius:12, border:'1px solid rgba(37,99,235,0.12)', background:'#f1f5f9', fontSize:13, color:'#0f172a', cursor:'pointer' }}>
+                         {VALIDATION_OPERATORS.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
+                       </select>
+                     </div>
+                     {['equals', 'not_equals', 'contains', 'not_contains', 'greater_than', 'less_than'].includes(condition.operator) ? (
+                       <div>
+                         <label style={{ display:'block', fontSize:12, color:'#64748b', marginBottom:6 }}>Valeur</label>
+                         <input value={condition.value} onChange={(e) => setConditionValue(index, 'value', e.target.value)} style={{ width:'100%', padding:10, borderRadius:12, border:'1px solid rgba(37,99,235,0.12)', background:'#f1f5f9', fontSize:13, color:'#0f172a' }} />
+                       </div>
+                     ) : (
+                       <div />
+                     )}
+                     <div style={{ display:'flex', justifyContent:'flex-end' }}>
+                       {index > 0 && (
+                         <button type='button' onClick={() => removeCondition(index)} style={{ padding:'10px 14px', border:'1px solid rgba(255,77,106,0.2)', borderRadius:12, background:'#fff3f2', color:'#dc2626', cursor:'pointer', fontSize:13 }}>
+                           Supprimer
+                         </button>
+                       )}
+                     </div>
+                   </div>
+                 );
+               })}
+               {form.conditions.length < 3 && (
+                 <button type='button' onClick={addCondition} style={{ padding:'10px 14px', borderRadius:12, background:'#eff6ff', border:'1px solid rgba(37,99,235,0.12)', color:'#2563eb', cursor:'pointer', fontSize:13, width:'fit-content' }}>
+                   + Ajouter une condition
+                 </button>
+               )}
+             </div>
+           </div>
+           <div>
+             <label style={{ display:'block', fontSize:12, color:'#64748b', marginBottom:6 }}>Niveau *</label>
+             <select value={form.severity} onChange={(e) => setFormValue('severity', e.target.value)} style={{ width:'100%', padding:10, borderRadius:12, border:'1px solid rgba(37,99,235,0.12)', background:'#f1f5f9', fontSize:13, color:'#0f172a', cursor:'pointer' }}>
+               <option value='error'>Erreur</option>
+               <option value='warning'>Avertissement</option>
+               <option value='info'>Information</option>
+             </select>
+           </div>
+           <div style={{ gridColumn:'1 / -1' }}>
+             <label style={{ display:'block', fontSize:12, color:'#64748b', marginBottom:6 }}>Description / message *</label>
+             <textarea value={form.description} onChange={(e) => setFormValue('description', e.target.value)} rows={3} style={{ width:'100%', padding:10, borderRadius:12, border:'1px solid rgba(37,99,235,0.12)', background:'#f1f5f9', fontSize:13, color:'#0f172a' }} />
+           </div>
+           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+             <input type='checkbox' checked={form.active} onChange={(e) => setFormValue('active', e.target.checked)} style={{ width:14, height:14 }} />
+             <span style={{ fontSize:12, color:'#334155' }}>Règle active</span>
+           </div>
+         </div>
+         <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+           <button type='button' onClick={() => { setShowForm(false); resetForm(); }} style={{ padding:'10px 16px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:12, color:'#334155', cursor:'pointer' }}>Annuler</button>
+           <button type='button' onClick={handleSave} disabled={saving} style={{ padding:'10px 16px', background:'linear-gradient(135deg, #16a34a, #22c55e)', border:'none', borderRadius:12, color:'#fff', fontWeight:700, cursor:saving ? 'not-allowed' : 'pointer', opacity:saving ? 0.7 : 1 }}>
+             {saving ? 'Enregistrement...' : editRule ? 'Modifier la règle' : 'Créer la règle'}
+           </button>
+         </div>
+       </div>
+     )}
+
+     <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:16 }}>
+       <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder='Rechercher une règle...' style={{ flex:1, minWidth:200, padding:10, background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:12, color:'#0f172a', fontSize:13 }} />
+       <select value={moduleFilter} onChange={(e) => setModuleFilter(e.target.value)} style={{ padding:10, borderRadius:12, border:'1px solid rgba(37,99,235,0.12)', background:'#f1f5f9', color:'#0f172a', cursor:'pointer' }}>
+         <option value=''>Tous les modules</option>
+         {VALIDATION_MODULES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+       </select>
+     </div>
+
+     <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:16, overflow:'hidden' }}>
+       {loading ? (
+         <div style={{ padding:40, textAlign:'center', color:'#64748b' }}>
+           <div style={{ width:24, height:24, border:'2px solid rgba(37,99,235,0.12)', borderTopColor:'#2563eb', borderRadius:'50%', animation:'spin 0.7s linear infinite', margin:'0 auto 10px' }} />
+           Chargement...
+         </div>
+       ) : filteredRules.length === 0 ? (
+         <div style={{ padding:40, textAlign:'center', color:'#64748b', fontSize:13.5 }}>
+           {search || moduleFilter ? 'Aucune règle ne correspond à votre recherche.' : 'Aucune règle de validation — créez-en une pour démarrer.'}
+         </div>
+       ) : (
+         <table style={{ width:'100%', borderCollapse:'collapse' }}>
+           <thead>
+             <tr style={{ background:'#f1f5f9' }}>
+               {['Code','Libellé','Page','Champ','Niveau','Active','Actions'].map((h) => (
+                 <th key={h} style={{ padding:'12px 14px', textAlign:'left', fontSize:10, fontWeight:700, color:'#64748b', letterSpacing:0.5, textTransform:'uppercase' }}>{h}</th>
+               ))}
+             </tr>
+           </thead>
+           <tbody>
+             {filteredRules.map((rule, index) => (
+               <tr key={rule.id || index} style={{ borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
+                 <td style={{ padding:'12px 14px', fontSize:13, color:'#0f172a' }}>{rule.code}</td>
+                 <td style={{ padding:'12px 14px', fontSize:13, color:'#0f172a' }}>{rule.label}</td>
+                 <td style={{ padding:'12px 14px', fontSize:12, color:'#64748b' }}>{VALIDATION_MODULES.find((m) => m.value === rule.module)?.label || rule.module}</td>
+                 <td style={{ padding:'12px 14px', fontSize:12, color:'#64748b' }}>{rule.field_name || '—'}</td>
+                 <td style={{ padding:'12px 14px', fontSize:12, color:'#0f172a' }}>{rule.severity}</td>
+                 <td style={{ padding:'12px 14px' }}><span style={{ padding:'4px 10px', borderRadius:999, background:rule.active ? 'rgba(22,163,74,0.12)' : 'rgba(220,38,38,0.12)', color:rule.active ? '#16a34a' : '#dc2626', fontSize:11, fontWeight:600 }}>{rule.active ? 'Oui' : 'Non'}</span></td>
+                 <td style={{ padding:'12px 14px' }}>
+                   <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                     <button type='button' onClick={() => handleEdit(rule)} style={{ padding:'6px 10px', border:'1px solid rgba(37,99,235,0.16)', borderRadius:8, color:'#2563eb', background:'#f1f5f9', cursor:'pointer', fontSize:11 }}>Modifier</button>
+                     <button type='button' onClick={() => handleDelete(rule)} style={{ padding:'6px 10px', border:'1px solid rgba(255,77,106,0.2)', borderRadius:8, color:'#dc2626', background:'#fff3f2', cursor:'pointer', fontSize:11 }}>Supprimer</button>
+                   </div>
+                 </td>
+               </tr>
+             ))}
+           </tbody>
+         </table>
+       )}
+     </div>
+   </div>
+ );
+}
+
 // ------------------------------------------------------------
 // PAGE PRINCIPALE
 // ------------------------------------------------------------
@@ -968,6 +1348,7 @@ export default function AdminPage() {
  { key:'users', label:'Utilisateurs', color:'#2563eb' },
  { key:'audit', label:'Audit Logs', color:'#7c3aed' },
  { key:'champs', label:'Champs personnalises', color:'#d97706' },
+ { key:'validation', label:'Règles de validation', color:'#16a34a' },
  ];
 
  return (
@@ -991,6 +1372,7 @@ export default function AdminPage() {
  {tab === 'users'&& <SectionUsers />}
  {tab === 'audit'&& <SectionAudit />}
  {tab === 'champs'&& <SectionCustomFields />}
+ {tab === 'validation'&& <SectionValidationRules />}
  </AppLayout>
  );
 }

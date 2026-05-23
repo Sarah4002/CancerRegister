@@ -498,7 +498,7 @@ function CustomChartBuilder({ onAdd }) {
   const chipStyle = (active, color) => ({
     display: 'flex', alignItems: 'center', gap: 5,
     padding: '5px 11px', borderRadius: 20,
-    border: `1.5px solid ${active ? color + '80' : 'rgba(255,255,255,0.08)'}`,
+    border: `1.5px solid ${active ? color + '80' : T.border}`,
     background: active ? `${color}18` : 'transparent',
     color: active ? color : T.textSec,
     fontSize: 11.5, fontWeight: active ? 700 : 500,
@@ -540,7 +540,7 @@ function CustomChartBuilder({ onAdd }) {
                 onClick={() => setSelDim(selDim?.id === dim.id ? null : dim)}
                 style={chipStyle(selDim?.id === dim.id, T.cyan)}
                 onMouseEnter={e => { if (selDim?.id !== dim.id) { e.currentTarget.style.borderColor = T.cyan+'40'; e.currentTarget.style.color = T.textPri; }}}
-                onMouseLeave={e => { if (selDim?.id !== dim.id) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = T.textSec; }}}
+                onMouseLeave={e => { if (selDim?.id !== dim.id) { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSec; }}}
               >
                 {dim.label}
               </button>
@@ -563,7 +563,7 @@ function CustomChartBuilder({ onAdd }) {
                 onClick={() => toggleMet(met)}
                 style={chipStyle(!!selMets.find(m => m.id === met.id), T.emerald)}
                 onMouseEnter={e => { if (!selMets.find(m => m.id === met.id)) { e.currentTarget.style.borderColor = T.emerald+'40'; e.currentTarget.style.color = T.textPri; }}}
-                onMouseLeave={e => { if (!selMets.find(m => m.id === met.id)) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = T.textSec; }}}
+                onMouseLeave={e => { if (!selMets.find(m => m.id === met.id)) { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSec; }}}
               >
                 {met.label}
               </button>
@@ -654,7 +654,7 @@ function Spinner({ size = 16, color = T.accent }) {
   return (
     <div style={{
       width: size, height: size, flexShrink: 0,
-      border: `2px solid rgba(255,255,255,0.08)`,
+      border: `2px solid rgba(37,99,235,0.10)`,
       borderTop: `2px solid ${color}`,
       borderRadius: '50%',
       animation: 'spin .7s linear infinite',
@@ -802,7 +802,6 @@ function StatsFilterBar({ filters, draft, setDraft, onApply, onReset }) {
               {FILTER_TAG_LABELS[key]}: {key === 'sexe' ? (value === 'M' ? 'Masculin' : 'Feminin') : value}
             </span>
           ))}
-         
         </div>
       </div>
 
@@ -864,15 +863,21 @@ function Input({ value, onChange, placeholder, style: ext }) {
   );
 }
 
+// ── TOOLTIP : fond blanc ──────────────────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      background: '#0a0e18', border: `1px solid ${T.border}`,
-      borderRadius: T.radius, padding: '10px 14px', fontSize: 11,
-      boxShadow: '0 8px 32px rgba(0,0,0,.5)',
+      background: '#ffffff',
+      border: `1px solid ${T.border}`,
+      borderRadius: T.radius,
+      padding: '10px 14px',
+      fontSize: 11,
+      boxShadow: '0 8px 32px rgba(15,23,42,0.12)',
     }}>
-      {label && <div style={{ color: T.textMut, marginBottom: 6, fontWeight: 600 }}>{label}</div>}
+      {label && (
+        <div style={{ color: T.textPri, marginBottom: 6, fontWeight: 600 }}>{label}</div>
+      )}
       {payload.map((p, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
           <div style={{ width: 7, height: 7, borderRadius: 2, background: p.color || T.accent, flexShrink: 0 }} />
@@ -892,7 +897,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 function RenderChart({ chartType, data, xKey, yKeys, colors, height = 220 }) {
   const ax = { fontSize: 10, fill: T.textMut };
-  const gr = { stroke: 'rgba(255,255,255,0.04)', strokeDasharray: '3 3' };
+  const gr = { stroke: 'rgba(37,99,235,0.06)', strokeDasharray: '3 3' };
   const pal = colors || PALETTES.ocean;
 
   if (!data?.length) return (
@@ -963,7 +968,7 @@ function RenderChart({ chartType, data, xKey, yKeys, colors, height = 220 }) {
         <defs>
           {yKeys.map((k, i) => (
             <linearGradient key={k} id={`ag_${k}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor={pal[i % pal.length]} stopOpacity={0.25} />
+              <stop offset="5%"  stopColor={pal[i % pal.length]} stopOpacity={0.15} />
               <stop offset="95%" stopColor={pal[i % pal.length]} stopOpacity={0} />
             </linearGradient>
           ))}
@@ -1001,11 +1006,11 @@ function RenderChart({ chartType, data, xKey, yKeys, colors, height = 220 }) {
   if (chartType === 'radar') return (
     <ResponsiveContainer width="100%" height={height}>
       <RadarChart data={data}>
-        <PolarGrid stroke="rgba(255,255,255,0.06)" />
+        <PolarGrid stroke="rgba(37,99,235,0.08)" />
         <PolarAngleAxis dataKey={xKey} tick={{ fontSize: 9, fill: T.textMut }} />
         {yKeys.map((k, i) => (
           <Radar key={k} dataKey={k} stroke={pal[i % pal.length]}
-            fill={pal[i % pal.length]} fillOpacity={0.15} />
+            fill={pal[i % pal.length]} fillOpacity={0.12} />
         ))}
         <Tooltip content={<CustomTooltip />} />
         {yKeys.length > 1 && <Legend wrapperStyle={{ fontSize: 10, color: T.textMut }} />}
@@ -1024,7 +1029,7 @@ async function captureElement(el) {
   if (!el) return null;
   try {
     if (typeof window.html2canvas !== 'undefined') {
-      const canvas = await window.html2canvas(el, { backgroundColor: '#0d1117', scale: 2 });
+      const canvas = await window.html2canvas(el, { backgroundColor: '#ffffff', scale: 2 });
       return canvas.toDataURL('image/png');
     }
     const svg = el.querySelector('svg');
@@ -1306,9 +1311,11 @@ function DownloadMenu({ report, chartLabel, chartData, chartRef }) {
       {open && (
         <div style={{
           position: 'absolute', right: 0, bottom: '110%', zIndex: 100,
-          background: T.bgElevated, border: `1px solid ${T.border}`,
+          background: '#ffffff',
+          border: `1px solid ${T.border}`,
           borderRadius: T.radius, padding: '6px',
-          minWidth: 220, boxShadow: '0 8px 32px rgba(0,0,0,.6)',
+          minWidth: 220,
+          boxShadow: '0 8px 32px rgba(15,23,42,0.14)',
           animation: 'fadeUp .15s ease',
         }}>
           <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: T.textMut,
@@ -1322,7 +1329,7 @@ function DownloadMenu({ report, chartLabel, chartData, chartRef }) {
               background: 'transparent', cursor: 'pointer', textAlign: 'left',
               transition: 'background .12s',
             }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+            onMouseEnter={e => e.currentTarget.style.background = T.accentGlow}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               <div>
@@ -1337,6 +1344,7 @@ function DownloadMenu({ report, chartLabel, chartData, chartRef }) {
   );
 }
 
+// ── MiniAIReport : fond blanc ─────────────────────────────────────────────────
 function MiniAIReport({ chartId, filters, chartRef, chartData }) {
   const [state, setState] = useState('idle');
   const [report, setReport] = useState(null);
@@ -1435,11 +1443,12 @@ function MiniAIReport({ chartId, filters, chartRef, chartData }) {
       {open && state === 'done' && report && (
         <div style={{
           margin: '0 12px 12px',
-          background: '#060a12',
+          background: '#ffffff',
           border: `1px solid ${T.border}`,
           borderRadius: T.radius,
           overflow: 'hidden',
           animation: 'fadeUp .25s ease',
+          boxShadow: '0 2px 12px rgba(15,23,42,0.06)',
         }}>
           {report.recommandations?.length > 0 && (
             <div style={{ padding: '12px 14px' }}>
@@ -1477,13 +1486,14 @@ function MiniAIReport({ chartId, filters, chartRef, chartData }) {
               borderTop: `1px solid ${T.border}`,
               padding: '10px 14px',
               maxHeight: 180, overflowY: 'auto',
+              background: T.bgElevated,
             }}>
               <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: T.textMut,
                 textTransform: 'uppercase', marginBottom: 8 }}>
                 Synthese
               </div>
               <pre style={{
-                fontSize: 10.5, lineHeight: 1.7, color: T.textSec,
+                fontSize: 10.5, lineHeight: 1.7, color: T.textPri,
                 whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0,
               }}>
                 {report.contenu_md.slice(0, 600)}{report.contenu_md.length > 600 ? '...' : ''}
@@ -1618,7 +1628,8 @@ function ChartCard({ chart, filters, onRemove, title, sub, children, span = 1 })
         ))}
       </div>
 
-      <div ref={chartRef} style={{ padding: '14px 12px 8px' }}>
+      {/* ── Zone graphique : fond blanc ── */}
+      <div ref={chartRef} style={{ padding: '14px 12px 8px', background: '#ffffff' }}>
         {loading && (
           <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
             <Spinner size={18} />
@@ -1989,7 +2000,7 @@ function SourceSelector({ onAdd, filters }) {
                 background: isSelected ? T.accentGlow : 'transparent',
                 cursor: 'pointer', textAlign: 'left', transition: 'all .12s',
               }}
-              onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+              onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = T.bgElevated; }}
               onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}>
                 <div style={{
                   width: 14, height: 14, borderRadius: '50%', flexShrink: 0,
@@ -2422,15 +2433,15 @@ export default function StatistiquesPage({ setPage }) {
           from { opacity: 0; transform: translateY(8px) }
           to   { opacity: 1; transform: translateY(0) }
         }
-        * { scrollbar-width: thin; scrollbar-color: #f1f5f9 transparent; }
+        * { scrollbar-width: thin; scrollbar-color: #e2e8f0 transparent; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-thumb { background: #f1f5f9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
       `}</style>
 
       {/* Filter Bar */}
-      <FilterBar 
-        filters={filters} 
-        draft={draftFilters} 
+      <FilterBar
+        filters={filters}
+        draft={draftFilters}
         setDraft={setDraftFilters}
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
@@ -2615,7 +2626,6 @@ export default function StatistiquesPage({ setPage }) {
                   {charts.length} graphique{charts.length > 1 ? 's' : ''}
                 </span>
                 <span style={{ fontSize: 10, color: T.textMut }}>- donnees en direct depuis la base</span>
-                
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 16 }}>
@@ -2644,7 +2654,6 @@ export default function StatistiquesPage({ setPage }) {
           )
         )}
 
-      
     </AppLayout>
   );
 }
