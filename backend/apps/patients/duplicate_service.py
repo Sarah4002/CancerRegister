@@ -56,6 +56,26 @@ class DuplicatePair:
     fusion_preview: dict          # dossier fusionné prévisualisé
 
 
+# ── Champs qui acceptent NULL en base (date, FK, entier) ──────────
+CHAMPS_NULLABLE = {'date_naissance', 'nombre_enfants', 'medecin_referent'}
+
+# ── Champs texte qui doivent recevoir '' et jamais NULL ───────────
+CHAMPS_TEXTE = {
+    'nom', 'prenom', 'id_national', 'num_securite_sociale',
+    'telephone', 'telephone2', 'email', 'adresse', 'commune',
+    'wilaya', 'code_postal', 'niveau_instruction', 'profession',
+    'situation_familiale', 'lieu_naissance', 'nationalite',
+    'tabagisme', 'alcool', 'activite_physique', 'alimentation',
+    'antecedents_familiaux', 'antecedents_personnels',
+    'etablissement_pec', 'notes',
+}
+
+
+def _valeur_vide_pour_champ(champ: str):
+    """Retourne None pour les champs nullable, '' pour les champs texte."""
+    return None if champ in CHAMPS_NULLABLE else ''
+
+
 # ── Détection ─────────────────────────────────────────────────────
 
 def detecter_doublons(seuil_similarite: float = 0.82) -> List[DuplicatePair]:
@@ -173,6 +193,7 @@ def _apercu(p: dict) -> dict:
         'nom':                 p['nom'],
         'prenom':              p['prenom'],
         'date_naissance':      str(p['date_naissance']) if p['date_naissance'] else None,
+        'sexe':                p['sexe'],
         'id_national':         p['id_national'],
         'telephone':           p['telephone'],
         'wilaya':              p['wilaya'],
@@ -188,7 +209,6 @@ def _previsualiser_fusion(id_principal: int, id_secondaire: int) -> dict:
     Si un champ est vide dans le principal, on prend celui du secondaire.
     """
     from apps.patients.models import Patient
-    from apps.patients.serializers import PatientDetailSerializer
 
     try:
         principal  = Patient.objects.get(id=id_principal)
@@ -218,7 +238,7 @@ def _previsualiser_fusion(id_principal: int, id_secondaire: int) -> dict:
         val_s_vide = val_s in (None, '', 'inconnu')
 
         if not val_p_vide:
-            fusion[champ] = str(val_p) if val_p is not None else None
+            fusion[champ] = str(val_p) if val_p is not None else _valeur_vide_pour_champ(champ)
             if not val_s_vide and str(val_p) != str(val_s):
                 conflits.append({
                     'champ':      champ,
@@ -227,15 +247,17 @@ def _previsualiser_fusion(id_principal: int, id_secondaire: int) -> dict:
                     'retenu':     str(val_p),
                 })
         elif not val_s_vide:
-            fusion[champ] = str(val_s) if val_s is not None else None
+            fusion[champ] = str(val_s) if val_s is not None else _valeur_vide_pour_champ(champ)
         else:
-            fusion[champ] = None
+            # Ni le principal ni le secondaire n'ont de valeur :
+            # on met '' pour les champs texte, None pour les champs nullable
+            fusion[champ] = _valeur_vide_pour_champ(champ)
 
     fusion['_meta'] = {
-        'id_conserve':   id_principal,
-        'id_supprime':   id_secondaire,
-        'nb_conflits':   len(conflits),
-        'conflits':      conflits,
+        'id_conserve':        id_principal,
+        'id_supprime':        id_secondaire,
+        'nb_conflits':        len(conflits),
+        'conflits':           conflits,
         'registration_number': principal.registration_number,
     }
 
@@ -279,8 +301,11 @@ def fusionner_patients(
     if champs_fusion and isinstance(champs_fusion, dict):
         for champ, valeur in champs_fusion.items():
             if champ in CHAMPS_FUSIONNABLES and hasattr(principal, champ):
-                # Conserver la valeur explicitement choisie par l'utilisateur
-                setattr(principal, champ, valeur if valeur not in ('', 'inconnu') else None)
+                if valeur in ('', 'inconnu', None):
+                    # Pour les champs texte : '' ; pour les nullable : None
+                    setattr(principal, champ, _valeur_vide_pour_champ(champ))
+                else:
+                    setattr(principal, champ, valeur)
                 champs_mis_a_jour.append(champ)
     else:
         for champ in CHAMPS_FUSIONNABLES:
@@ -290,6 +315,13 @@ def fusionner_patients(
                 setattr(principal, champ, val_s)
                 champs_mis_a_jour.append(champ)
 
+    # S'assurer que les champs texte obligatoires ne sont jamais NULL
+    for champ in CHAMPS_TEXTE:
+        if hasattr(principal, champ):
+            val = getattr(principal, champ, None)
+            if val is None:
+                setattr(principal, champ, '')
+
     # Archiver le secondaire
     secondaire.est_actif = False
     secondaire.notes = (
@@ -297,6 +329,17 @@ def fusionner_patients(
         f"[FUSION] Dossier fusionné dans {principal.registration_number} "
         f"le {timezone.now().strftime('%d/%m/%Y %H:%M')}."
     ).strip()
+
+    # Champs obligatoires avec valeurs par défaut
+    CHAMPS_OBLIGATOIRES = {
+        'sexe':   'M',
+        'nom':    'INCONNU',
+        'prenom': 'INCONNU',
+    }
+    for champ, valeur_defaut in CHAMPS_OBLIGATOIRES.items():
+        val = getattr(principal, champ, None)
+        if val in (None, '', 'inconnu'):
+            setattr(principal, champ, valeur_defaut)
 
     principal.save()
     secondaire.save()
