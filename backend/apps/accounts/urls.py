@@ -20,6 +20,9 @@ urlpatterns = [
     path('token/refresh/',   TokenRefreshView.as_view(),       name='token_refresh'),
     path('profile/',         views.ProfileView.as_view(),      name='profile'),
     path('change-password/', views.change_password_view,      name='change_password'),
+    path('me/activity/',     views.my_activity_view,          name='my_activity'),
+    path('me/devices/',      views.my_devices_view,           name='my_devices'),
+    path('logout-all/',      views.logout_all_view,           name='logout_all'),
 
     # Admin utilisateurs (réservé role=admin)
     path('admin/users/',               AdminUserListView.as_view(),   name='admin-users'),

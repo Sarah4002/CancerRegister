@@ -30,10 +30,10 @@ export default function NewRCPPage() {
   return (
     <AppLayout title="Nouvelle Réunion RCP">
       <div style={{ maxWidth:700, margin:'0 auto' }}>
-        <div style={{ background:'var(--bg-card)', border:'1px solid rgba(0,168,255,0.2)', borderRadius:'var(--radius-lg)', padding:'28px 32px' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid var(--border)' }}>
-            <span style={{ fontSize:24 }}>🏥</span>
-            <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'var(--text-primary)' }}>Planifier une réunion RCP</h2>
+        <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
+            <span style={{ fontSize:24 }}></span>
+            <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'#0f172a' }}>Planifier une réunion RCP</h2>
           </div>
           <form onSubmit={handleSubmit(onSubmit)}>
             <Section title="Informations générales">
@@ -43,18 +43,18 @@ export default function NewRCPPage() {
               <Row2>
                 <Field label="Type de RCP">
                   <select {...register('type_rcp')} style={selSt}>
-                    <option value="sein">🎀 RCP Sein</option>
-                    <option value="digestif">🫁 RCP Digestif</option>
-                    <option value="poumon">💨 RCP Thoracique / Poumon</option>
-                    <option value="orl">👂 RCP ORL / Tête & Cou</option>
-                    <option value="gyneco">♀️ RCP Gynécologique</option>
-                    <option value="uro">🫘 RCP Urologique</option>
-                    <option value="hemato">🩸 RCP Hématologique</option>
-                    <option value="neuro">🧠 RCP Neurologique</option>
-                    <option value="dermato">🫀 RCP Dermatologique</option>
-                    <option value="pediatrique">👶 RCP Pédiatrique</option>
-                    <option value="palliative">🕊️ RCP Soins palliatifs</option>
-                    <option value="generale">🏥 RCP Générale / Autre</option>
+                    <option value="sein">RCP Sein</option>
+                    <option value="digestif">RCP Digestif</option>
+                    <option value="poumon">RCP Thoracique / Poumon</option>
+                    <option value="orl">RCP ORL / Tête & Cou</option>
+                    <option value="gyneco">RCP Gynécologique</option>
+                    <option value="uro">RCP Urologique</option>
+                    <option value="hemato">RCP Hématologique</option>
+                    <option value="neuro">RCP Neurologique</option>
+                    <option value="dermato">RCP Dermatologique</option>
+                    <option value="pediatrique">RCP Pédiatrique</option>
+                    <option value="palliative">RCP Soins palliatifs</option>
+                    <option value="generale">RCP Générale / Autre</option>
                   </select>
                 </Field>
                 <Field label="Statut initial">
@@ -102,10 +102,10 @@ export default function NewRCPPage() {
               </Field>
             </Section>
 
-            <div style={{ display:'flex', gap:10, paddingTop:20, borderTop:'1px solid var(--border)' }}>
-              <button type="button" onClick={() => navigate('/rcp')} style={{ flex:'0 0 110px', padding:'12px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-md)', color:'var(--text-secondary)', fontSize:13, cursor:'pointer' }}>← Annuler</button>
-              <button type="submit" disabled={submitting} style={{ flex:1, padding:'12px', background:'linear-gradient(135deg,#00a8ff,#0080cc)', border:'none', borderRadius:'var(--radius-md)', color:'#fff', fontSize:13.5, fontWeight:600, cursor:submitting?'not-allowed':'pointer', fontFamily:'var(--font-display)', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:submitting?0.7:1 }}>
-                {submitting ? <><Spin/>Enregistrement...</> : '🏥 Créer la réunion RCP'}
+            <div style={{ display:'flex', gap:10, paddingTop:20, borderTop:'1px solid rgba(37,99,235,0.12)' }}>
+              <button type="button" onClick={() => navigate('/rcp')} style={{ flex:'0 0 110px', padding:'12px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:'12px', color:'#334155', fontSize:13, cursor:'pointer' }}>← Annuler</button>
+              <button type="submit" disabled={submitting} style={{ flex:1, padding:'12px', background:'linear-gradient(135deg, #2563eb, #1d4ed8)', border:'none', borderRadius:'12px', color:'#fff', fontSize:13.5, fontWeight:600, cursor:submitting?'not-allowed':'pointer', fontFamily:'var(--font-display)', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:submitting?0.7:1 }}>
+                {submitting ? <><Spin/>Enregistrement...</> : 'Créer la réunion RCP'}
               </button>
             </div>
           </form>
@@ -147,10 +147,10 @@ export function NewDossierRCPPage() {
   return (
     <AppLayout title="Ajouter un dossier à la RCP">
       <div style={{ maxWidth:660, margin:'0 auto' }}>
-        <div style={{ background:'var(--bg-card)', border:'1px solid rgba(155,138,251,0.2)', borderRadius:'var(--radius-lg)', padding:'28px 32px' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid var(--border)' }}>
-            <span style={{ fontSize:24 }}>📋</span>
-            <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'var(--text-primary)' }}>Nouveau dossier RCP</h2>
+        <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
+            <span style={{ fontSize:24 }}></span>
+            <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'#0f172a' }}>Nouveau dossier RCP</h2>
           </div>
           <form onSubmit={handleSubmit(onSubmit)}>
             <Section title="Patient & Présentation">
@@ -183,10 +183,10 @@ export function NewDossierRCPPage() {
               </Field>
             </Section>
 
-            <div style={{ display:'flex', gap:10, paddingTop:16, borderTop:'1px solid var(--border)' }}>
-              <button type="button" onClick={() => navigate(reunionId ? `/rcp/${reunionId}` : '/rcp')} style={{ flex:'0 0 110px', padding:'11px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-md)', color:'var(--text-secondary)', fontSize:13, cursor:'pointer' }}>← Annuler</button>
-              <button type="submit" disabled={submitting} style={{ flex:1, padding:'11px', background:'linear-gradient(135deg,#9b8afb,#7c6fcd)', border:'none', borderRadius:'var(--radius-md)', color:'#fff', fontSize:13, fontWeight:600, cursor:submitting?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:submitting?0.7:1 }}>
-                {submitting ? <><Spin/>Enregistrement...</> : '📋 Ajouter le dossier'}
+            <div style={{ display:'flex', gap:10, paddingTop:16, borderTop:'1px solid rgba(37,99,235,0.12)' }}>
+              <button type="button" onClick={() => navigate(reunionId ? `/rcp/${reunionId}` : '/rcp')} style={{ flex:'0 0 110px', padding:'11px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:'12px', color:'#334155', fontSize:13, cursor:'pointer' }}>← Annuler</button>
+              <button type="submit" disabled={submitting} style={{ flex:1, padding:'11px', background:'linear-gradient(135deg, #2563eb, #1d4ed8)', border:'none', borderRadius:'12px', color:'#fff', fontSize:13, fontWeight:600, cursor:submitting?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:submitting?0.7:1 }}>
+                {submitting ? <><Spin/>Enregistrement...</> : 'Ajouter le dossier'}
               </button>
             </div>
           </form>
@@ -200,7 +200,7 @@ export function NewDossierRCPPage() {
 function Section({ title, children }) {
   return (
     <div style={{ marginBottom:24 }}>
-      <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.8, marginBottom:12, paddingBottom:8, borderBottom:'1px solid var(--border)' }}>{title}</div>
+      <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:0.8, marginBottom:12, paddingBottom:8, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>{title}</div>
       {children}
     </div>
   );
@@ -210,12 +210,12 @@ function Row3({ children }) { return <div style={{ display:'grid', gridTemplateC
 function Field({ label, error, children }) {
   return (
     <div style={{ marginBottom:14 }}>
-      {label && <label style={{ display:'block', fontSize:11.5, fontWeight:500, color:'var(--text-secondary)', marginBottom:5 }}>{label}</label>}
+      {label && <label style={{ display:'block', fontSize:11.5, fontWeight:500, color:'#334155', marginBottom:5 }}>{label}</label>}
       {children}
-      {error && <p style={{ marginTop:3, fontSize:11, color:'var(--danger)' }}>⚠ {error}</p>}
+      {error && <p style={{ marginTop:3, fontSize:11, color:'#dc2626' }}>⚠ {error}</p>}
     </div>
   );
 }
 function Spin() { return <div style={{ width:13, height:13, border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />; }
-const inputSt = { width:'100%', padding:'9px 12px', background:'var(--bg-elevated)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', color:'var(--text-primary)', fontSize:13, outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' };
+const inputSt = { width:'100%', padding:'9px 12px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', color:'#0f172a', fontSize:13, outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' };
 const selSt   = { ...inputSt, cursor:'pointer' };

@@ -15,12 +15,12 @@
  */
 
 const TYPE_ICONS = {
-  texte:    '✏️',
-  nombre:   '🔢',
-  date:     '📅',
-  booleen:  '☑️',
-  textarea: '📝',
-  select:   '📋',
+  texte:    '',
+  nombre:   '',
+  date:     '',
+  booleen:  '',
+  textarea: '',
+  select:   '',
 };
 
 const TYPE_LABELS = {
@@ -36,10 +36,10 @@ const TYPE_LABELS = {
 function ChampInput({ champ, valeur, onChange }) {
   const base = {
     width: '100%', padding: '10px 12px',
-    background: 'var(--bg-elevated)',
-    border: '1px solid var(--border-light)',
-    borderRadius: 'var(--radius-md)',
-    color: 'var(--text-primary)', fontSize: 13.5,
+    background: '#f1f5f9',
+    border: '1px solid rgba(37,99,235,0.08)',
+    borderRadius: '12px',
+    color: '#0f172a', fontSize: 13.5,
     outline: 'none', fontFamily: 'var(--font-body)',
     boxSizing: 'border-box',
   };
@@ -71,9 +71,9 @@ function ChampInput({ champ, valeur, onChange }) {
           />
           {champ.unite && (
             <span style={{
-              padding: '10px 12px', background: 'var(--bg-card)',
-              border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-              fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap',
+              padding: '10px 12px', background: '#ffffff',
+              border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px',
+              fontSize: 12, color: '#64748b', whiteSpace: 'nowrap',
             }}>
               {champ.unite}
             </span>
@@ -102,10 +102,10 @@ function ChampInput({ champ, valeur, onChange }) {
               <label key={opt} style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 gap: 6, padding: '9px 12px',
-                background: active ? 'var(--accent-dim)' : 'var(--bg-elevated)',
-                border: `1px solid ${active ? 'var(--accent)' : 'var(--border-light)'}`,
-                borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                fontSize: 13, color: active ? 'var(--accent)' : 'var(--text-secondary)',
+                background: active ? 'rgba(37,99,235,0.08)' : '#f1f5f9',
+                border: `1px solid ${active ? '#2563eb' : 'rgba(37,99,235,0.08)'}`,
+                borderRadius: '12px', cursor: 'pointer',
+                fontSize: 13, color: active ? '#2563eb' : '#334155',
                 fontWeight: active ? 600 : 400, transition: 'all 0.15s',
               }}>
                 <input
@@ -169,12 +169,12 @@ export default function CustomFieldsSection({
       <div style={{ padding: '16px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
           width: 16, height: 16,
-          border: '2px solid var(--border)',
-          borderTopColor: 'var(--accent)',
+          border: '2px solid rgba(37,99,235,0.12)',
+          borderTopColor: '#2563eb',
           borderRadius: '50%',
           animation: 'spin 0.7s linear infinite',
         }} />
-        <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
+        <span style={{ fontSize: 12.5, color: '#64748b' }}>
           Chargement des champs personnalisés...
         </span>
       </div>
@@ -211,10 +211,10 @@ export default function CustomFieldsSection({
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18,
       }}>
-        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        <div style={{ flex: 1, height: 1, background: 'rgba(37,99,235,0.12)' }} />
         <span style={{
           fontSize: 11, fontWeight: 600, letterSpacing: 0.8,
-          color: 'var(--text-muted)', textTransform: 'uppercase',
+          color: '#64748b', textTransform: 'uppercase',
           padding: '0 8px', whiteSpace: 'nowrap',
           display: 'flex', alignItems: 'center', gap: 6,
         }}>
@@ -223,7 +223,7 @@ export default function CustomFieldsSection({
           </svg>
           Champs personnalisés
         </span>
-        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        <div style={{ flex: 1, height: 1, background: 'rgba(37,99,235,0.12)' }} />
       </div>
 
       {/* Champs spécifiques cancer */}
@@ -232,10 +232,10 @@ export default function CustomFieldsSection({
           marginBottom: 20, padding: '12px 16px',
           background: 'rgba(0,168,255,0.04)',
           border: '1px solid rgba(0,168,255,0.15)',
-          borderRadius: 'var(--radius-md)',
+          borderRadius: '12px',
         }}>
           <div style={{
-            fontSize: 11, fontWeight: 600, color: 'var(--text-primary)',
+            fontSize: 11, fontWeight: 600, color: '#0f172a',
             marginBottom: 14, letterSpacing: 0.5, textTransform: 'uppercase',
           }}>
             Spécifique — {champsSpecifiques[0]?.topographie_libelle || selectedCodes.join(', ')}
@@ -264,17 +264,17 @@ function ChampsGrid({ champs, valeurs, onChange, erreurs }) {
           <label style={{
             display: 'flex', alignItems: 'center', gap: 5,
             fontSize: 12, fontWeight: 500,
-            color: 'var(--text-secondary)', marginBottom: 6, letterSpacing: 0.3,
+            color: '#334155', marginBottom: 6, letterSpacing: 0.3,
           }}>
             <span style={{ fontSize: 11 }}>{TYPE_ICONS[champ.type_champ]}</span>
             {champ.nom}
             {champ.obligatoire && (
-              <span style={{ color: 'var(--danger)', marginLeft: 2 }}>*</span>
+              <span style={{ color: '#dc2626', marginLeft: 2 }}>*</span>
             )}
             <span style={{
               marginLeft: 'auto', fontSize: 10,
               color: 'rgba(255,255,255,0.2)',
-              background: 'var(--bg-elevated)',
+              background: '#f1f5f9',
               padding: '1px 6px', borderRadius: 10,
             }}>
               {TYPE_LABELS[champ.type_champ]}
@@ -282,7 +282,7 @@ function ChampsGrid({ champs, valeurs, onChange, erreurs }) {
           </label>
 
           {champ.description && (
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, lineHeight: 1.4 }}>
+            <p style={{ fontSize: 11, color: '#64748b', marginBottom: 6, lineHeight: 1.4 }}>
               {champ.description}
             </p>
           )}
@@ -294,7 +294,7 @@ function ChampsGrid({ champs, valeurs, onChange, erreurs }) {
           />
 
           {erreurs[champ.code] && (
-            <p style={{ marginTop: 4, fontSize: 11.5, color: 'var(--danger)' }}>
+            <p style={{ marginTop: 4, fontSize: 11.5, color: '#dc2626' }}>
               {erreurs[champ.code]}
             </p>
           )}

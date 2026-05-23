@@ -1,9 +1,9 @@
 from rest_framework import serializers
-from .models import ReunionRCP, PresenceRCP, DossierRCP, DecisionRCP
+from .models import ReunionRCP, PresenceRCP, DossierRCP, DecisionRCP, MessageRCP, FichierDossierRCP
 
 
 class PresenceRCPSerializer(serializers.ModelSerializer):
-    medecin_nom    = serializers.SerializerMethodField()
+    medecin_nom      = serializers.SerializerMethodField()
     specialite_label = serializers.CharField(source='get_specialite_display', read_only=True)
 
     class Meta:
@@ -14,6 +14,32 @@ class PresenceRCPSerializer(serializers.ModelSerializer):
         if obj.medecin:
             return obj.medecin.get_full_name() or obj.medecin.username
         return obj.nom_externe or '—'
+
+
+class FichierDossierSerializer(serializers.ModelSerializer):
+    uploade_par_nom  = serializers.SerializerMethodField()
+    type_label       = serializers.CharField(source='get_type_fichier_display', read_only=True)
+    url              = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = FichierDossierRCP
+        fields = [
+            'id', 'nom_original', 'type_fichier', 'type_label',
+            'description', 'taille_bytes', 'date_upload',
+            'uploade_par_nom', 'url',
+        ]
+        read_only_fields = ['date_upload', 'nom_original', 'taille_bytes']
+
+    def get_uploade_par_nom(self, obj):
+        if obj.uploade_par:
+            return obj.uploade_par.get_full_name() or obj.uploade_par.username
+        return None
+
+    def get_url(self, obj):
+        request = self.context.get('request')
+        if obj.fichier and request:
+            return request.build_absolute_uri(obj.fichier.url)
+        return None
 
 
 class DecisionRCPSerializer(serializers.ModelSerializer):
@@ -32,6 +58,33 @@ class DecisionRCPSerializer(serializers.ModelSerializer):
         return None
 
 
+class MessageRCPSerializer(serializers.ModelSerializer):
+    auteur_nom   = serializers.SerializerMethodField()
+    auteur_initiales = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = MessageRCP
+        fields = [
+            'id', 'reunion', 'dossier', 'auteur', 'auteur_nom',
+            'auteur_initiales', 'contenu', 'est_important', 'date_envoi',
+        ]
+        read_only_fields = ['date_envoi', 'auteur']
+
+    def get_auteur_nom(self, obj):
+        return obj.auteur.get_full_name() or obj.auteur.username
+
+    def get_auteur_initiales(self, obj):
+        full = obj.auteur.get_full_name()
+        if full:
+            parts = full.split()
+            return ''.join(p[0].upper() for p in parts[:2])
+        return obj.auteur.username[:2].upper()
+
+    def create(self, validated_data):
+        validated_data['auteur'] = self.context['request'].user
+        return super().create(validated_data)
+
+
 class DossierRCPListSerializer(serializers.ModelSerializer):
     patient_nom      = serializers.CharField(source='patient.get_full_name', read_only=True)
     patient_numero   = serializers.CharField(source='patient.registration_number', read_only=True)
@@ -39,6 +92,7 @@ class DossierRCPListSerializer(serializers.ModelSerializer):
     statut_label     = serializers.CharField(source='get_statut_display', read_only=True)
     type_label       = serializers.CharField(source='get_type_presentation_display', read_only=True)
     nb_decisions     = serializers.SerializerMethodField()
+    nb_fichiers      = serializers.SerializerMethodField()
 
     class Meta:
         model  = DossierRCP
@@ -46,7 +100,7 @@ class DossierRCPListSerializer(serializers.ModelSerializer):
             'id', 'reunion', 'patient', 'patient_nom', 'patient_numero',
             'ordre_passage', 'type_presentation', 'type_label',
             'statut', 'statut_label', 'presenteur_nom',
-            'question_posee', 'nb_decisions', 'date_creation',
+            'question_posee', 'nb_decisions', 'nb_fichiers', 'date_creation',
         ]
 
     def get_presenteur_nom(self, obj):
@@ -57,6 +111,9 @@ class DossierRCPListSerializer(serializers.ModelSerializer):
     def get_nb_decisions(self, obj):
         return obj.decisions.count()
 
+    def get_nb_fichiers(self, obj):
+        return obj.fichiers.count()
+
 
 class DossierRCPDetailSerializer(serializers.ModelSerializer):
     patient_nom    = serializers.CharField(source='patient.get_full_name', read_only=True)
@@ -65,6 +122,7 @@ class DossierRCPDetailSerializer(serializers.ModelSerializer):
     statut_label   = serializers.CharField(source='get_statut_display', read_only=True)
     type_label     = serializers.CharField(source='get_type_presentation_display', read_only=True)
     decisions      = DecisionRCPSerializer(many=True, read_only=True)
+    fichiers       = FichierDossierSerializer(many=True, read_only=True)
 
     class Meta:
         model  = DossierRCP

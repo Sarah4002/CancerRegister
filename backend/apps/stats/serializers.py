@@ -112,6 +112,9 @@ class AIReportCreateSerializer(serializers.Serializer):
     cancer_type_ids = serializers.ListField(child=serializers.IntegerField(), required=False, default=list)
     sexe            = serializers.ChoiceField(choices=['M','F','all'], required=False, default='all')
     stades          = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    chart_id        = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
+    chart_label     = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
+    chart_data      = serializers.ListField(child=serializers.JSONField(), required=False, default=list)
     include_charts  = serializers.BooleanField(default=True)
 
 

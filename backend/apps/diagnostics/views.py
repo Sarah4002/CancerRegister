@@ -5,13 +5,14 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count, Q
 
-from .models import Diagnostic, TopographieICD, MorphologieICD
+from .models import Diagnostic, TopographieICD, MorphologieICD, DiagnosticValidationRule
 from .serializers import (
     DiagnosticListSerializer, DiagnosticDetailSerializer,
-    DiagnosticCreateSerializer, TopographieSerializer, MorphologieSerializer
+    DiagnosticCreateSerializer, TopographieSerializer, MorphologieSerializer,
+    DiagnosticValidationRuleSerializer,
 )
 from apps.accounts.models import AccessLog
-from apps.accounts.permissions import CanReadOrWriteDiagnostic, can_write_diagnostic
+from apps.accounts.permissions import CanReadOrWriteDiagnostic, can_write_diagnostic, IsAdmin
 
 
 class TopographieViewSet(viewsets.ModelViewSet):
@@ -64,6 +65,14 @@ class MorphologieViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class   = None
 
 
+class DiagnosticValidationRuleViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = DiagnosticValidationRuleSerializer
+    queryset = DiagnosticValidationRule.objects.all()
+    filterset_fields = ['active', 'severity', 'code']
+    search_fields = ['code', 'label', 'description']
+
+
 class DiagnosticViewSet(viewsets.ModelViewSet):
     # CanReadOrWriteDiagnostic gere automatiquement :
     #   - SAFE_METHODS => can_read_diagnostic (oncologue + anapath + admin)
@@ -71,9 +80,10 @@ class DiagnosticViewSet(viewsets.ModelViewSet):
     #   - epidemio     => acces REFUSE (meme en lecture)
     permission_classes = [IsAuthenticated, CanReadOrWriteDiagnostic]
     filter_backends    = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields   = ['patient', 'stade_ajcc', 'lateralite', 'est_principal', 'tnm_type']
+    filterset_fields   = ['patient', 'stade_ajcc', 'lateralite', 'est_principal', 'tnm_type', 'categorie_cancer', 'hemopathie_maligne']
     search_fields      = ['topographie_code', 'topographie_libelle',
                           'morphologie_code', 'morphologie_libelle',
+                          'hemopathie_maligne', 'examens_complementaires',
                           'patient__nom', 'patient__registration_number']
     ordering_fields    = ['date_diagnostic', 'date_creation']
     ordering           = ['-date_diagnostic']

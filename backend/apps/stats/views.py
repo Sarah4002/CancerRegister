@@ -17,7 +17,7 @@ des données simulées calculées depuis Diagnostic afin de rester fonctionnelle
 même si ces tables ne sont pas encore migrées.
 """
 
-from datetime import date, timedelta
+from datetime import datetime, date, timedelta
 from collections import defaultdict
 
 from django.db import models
@@ -50,20 +50,18 @@ try:
         Chimiotherapie, Radiotherapie, Chirurgie,
         Hormonotherapie, Immunotherapie
     )
-    # Create a combined queryset for backward compatibility
-    class Traitement:
+    class TraitementHelper:
         """Proxy class that combines all treatment types for stats queries."""
         _treatment_models = [
             Chimiotherapie, Radiotherapie, Chirurgie,
             Hormonotherapie, Immunotherapie
         ]
-        
-        @classmethod
-        def objects(cls):
+        @property
+        def all_objects(self):
             from django.db.models import QuerySet
-            # Return a combined queryset from all treatment models
-            querysets = [model.objects.all() for model in cls._treatment_models]
+            querysets = [model.objects.all() for model in self._treatment_models]
             return querysets[0].union(*querysets[1:]) if querysets else QuerySet()
+    Traitement = TraitementHelper()
 except ImportError:
     Traitement = None
 
@@ -72,6 +70,7 @@ from apps.stats.models import (
     CancerType, Wilaya as WilayaModel,
     IncidenceRecord, SurvivalRate, AIReport, SearchLog
 )
+from apps.stats.ai_engine import AIReportEngine
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -108,6 +107,41 @@ NORD_WILAYAS = {
     'Chlef','Aïn Defla','Relizane','Tiaret','Sidi Bel Abbès','Tlemcen',
 }
 
+def _apply_common_filters(qs, filters=None, include_annee=True):
+    """Applique les filtres globaux de la page statistiques."""
+    if not filters:
+        return qs
+
+    annee       = filters.get('annee')
+    sexe        = filters.get('sexe')
+    statut      = filters.get('statut')
+    wilaya      = filters.get('wilaya')
+    stade       = filters.get('stade')
+    cancer_type = filters.get('cancerType') or filters.get('type_cancer') or filters.get('cancer_type')
+    date_from   = filters.get('dateFrom') or filters.get('date_from')
+    date_to     = filters.get('dateTo') or filters.get('date_to')
+
+    if include_annee and annee and annee not in ('all', 'Tous', ''):
+        qs = qs.filter(date_diagnostic__year=annee)
+    if date_from:
+        qs = qs.filter(date_diagnostic__gte=date_from)
+    if date_to:
+        qs = qs.filter(date_diagnostic__lte=date_to)
+    if sexe and sexe not in ('all', 'Tous', ''):
+        qs = qs.filter(patient__sexe=sexe)
+    if statut and statut not in ('all', 'Tous', ''):
+        qs = qs.filter(patient__statut_dossier=statut)
+    if wilaya and wilaya not in ('all', 'Tous', ''):
+        qs = qs.filter(patient__wilaya=wilaya)
+    if stade and stade not in ('all', 'Tous', ''):
+        if stade in ('I', 'II', 'III', 'IV'):
+            qs = qs.filter(stade_ajcc__in=[stade, f'{stade}A', f'{stade}B', f'{stade}C'])
+        else:
+            qs = qs.filter(stade_ajcc=stade)
+    if cancer_type and cancer_type not in ('all', 'Tous', ''):
+        qs = qs.filter(topographie__categorie=cancer_type)
+    return qs
+
 def _qs(filters=None):
     """Retourne le queryset Diagnostic filtré par annee et sexe."""
     if Diagnostic is None:
@@ -121,7 +155,7 @@ def _qs(filters=None):
         qs = qs.filter(date_diagnostic__year=annee)
     if sexe and sexe not in ('all', 'Tous', ''):
         qs = qs.filter(patient__sexe=sexe)
-    return qs
+    return _apply_common_filters(qs, filters, include_annee=False)
 
 def _stade_label(ajcc):
     return STADE_MAP.get(str(ajcc or '').upper(), 'Inconnu')
@@ -176,7 +210,7 @@ class KPIView(APIView):
             qs = Diagnostic.objects.filter(date_diagnostic__year=yr)
             if sexe and sexe not in ('all', 'Tous', ''):
                 qs = qs.filter(patient__sexe=sexe)
-            return qs
+            return _apply_common_filters(qs, filters, include_annee=False)
 
         if Diagnostic is None:
             return Response({
@@ -1647,15 +1681,22 @@ def _generate_report_async(report_id):
         time.sleep(2)
 
         report = AIReport.objects.get(id=report_id)
+
+        # 2. Génération via moteur de rapport IA
+        engine = AIReportEngine(report, report.payload or {})
+        engine.generate()
+
         contenu = (
             f"# {report.titre}\n\n"
             "## Analyse automatique\n\n"
             "Les données épidémiologiques ont été analysées selon les filtres sélectionnés.\n\n"
-            + MOCK_REPORT_CONTENU
+            + engine.build_markdown()
         )
 
+        recommandations = engine.build_recommendations()
+
         # 3. Sauvegarder le résultat
-        report.mark_done(contenu, MOCK_RECOMMANDATIONS)
+        report.mark_done(contenu, recommandations)
 
     except Exception:
         traceback.print_exc()   # visible dans la console Django pour debug

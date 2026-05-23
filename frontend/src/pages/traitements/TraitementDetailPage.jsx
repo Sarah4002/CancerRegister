@@ -5,27 +5,27 @@ import { AppLayout } from '../../components/layout/Sidebar';
 import toast from 'react-hot-toast';
 
 const TYPE_CONFIG = {
-  chimio:    { label: 'Chimiothérapie',    color: '#00a8ff' },
-  radio:     { label: 'Radiothérapie',     color: '#f5a623' },
-  chirurgie: { label: 'Chirurgie',         color: '#ff4d6a' },
-  hormono:   { label: 'Hormonothérapie',   color: '#00e5a0' },
-  immuno:    { label: 'Immunothérapie',    color: '#c084fc' },
+  chimio:    { label: 'Chimiothérapie',    color: '#2563eb' },
+  radio:     { label: 'Radiothérapie',     color: '#d97706' },
+  chirurgie: { label: 'Chirurgie',         color: '#dc2626' },
+  hormono:   { label: 'Hormonothérapie',   color: '#16a34a' },
+  immuno:    { label: 'Immunothérapie',    color: '#9333ea' },
   ciblee:    { label: 'Thérapie ciblée',  color: '#8b5cf6' },
 };
 
 const STATUT_COLORS = {
-  planifie:  { bg:'rgba(155,138,251,0.12)', color:'#9b8afb' },
-  en_cours:  { bg:'rgba(0,168,255,0.12)',   color:'#00a8ff' },
-  termine:   { bg:'rgba(0,229,160,0.12)',   color:'#00e5a0' },
-  suspendu:  { bg:'rgba(245,166,35,0.12)',  color:'#f5a623' },
-  abandonne: { bg:'rgba(255,77,106,0.12)',  color:'#ff4d6a' },
+  planifie:  { bg:'rgba(155,138,251,0.12)', color:'#7c3aed' },
+  en_cours:  { bg:'rgba(0,168,255,0.12)',   color:'#2563eb' },
+  termine:   { bg:'rgba(0,229,160,0.12)',   color:'#16a34a' },
+  suspendu:  { bg:'rgba(245,166,35,0.12)',  color:'#d97706' },
+  abandonne: { bg:'rgba(255,77,106,0.12)',  color:'#dc2626' },
 };
 
 const REPONSE_COLORS = {
-  RC:'#00e5a0', RP:'#00a8ff', SD:'#f5a623', PD:'#ff4d6a', NE:'#9ca3af', NA:'#6b7280',
+  RC:'#16a34a', RP:'#2563eb', SD:'#d97706', PD:'#dc2626', NE:'#9ca3af', NA:'#6b7280',
 };
 
-const MARGES_COLORS = { R0:'#00e5a0', R1:'#f5a623', R2:'#ff4d6a', RX:'#9ca3af' };
+const MARGES_COLORS = { R0:'#16a34a', R1:'#d97706', R2:'#dc2626', RX:'#9ca3af' };
 
 export default function TraitementDetailPage() {
   const { type, id } = useParams();
@@ -51,14 +51,14 @@ export default function TraitementDetailPage() {
   return (
     <AppLayout title={`${cfg.icon} ${cfg.label}`}>
       {/* Header */}
-      <div style={{ background:'var(--bg-card)', border:`1px solid ${cfg.color}20`, borderRadius:'var(--radius-lg)', padding:'20px 24px', marginBottom:20, display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:16 }}>
+      <div style={{ background:'#ffffff', border:`1px solid ${cfg.color}20`, borderRadius:'16px', padding:'20px 24px', marginBottom:20, display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:16 }}>
         <div style={{ display:'flex', gap:14, alignItems:'flex-start' }}>
           <div style={{ width:46, height:46, borderRadius:12, background:`${cfg.color}18`, border:`1px solid ${cfg.color}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>{cfg.icon}</div>
           <div>
             <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
-              <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'var(--text-primary)' }}>{cfg.label}</h2>
+              <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'#0f172a' }}>{cfg.label}</h2>
               <span style={{ padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:500, ...sc, border:`1px solid ${sc.color}30` }}>{data.statut_label}</span>
-              <span style={{ padding:'2px 8px', borderRadius:6, fontSize:11, color:'var(--text-muted)', background:'var(--bg-elevated)', border:'1px solid var(--border)' }}>{data.intention_label}</span>
+              <span style={{ padding:'2px 8px', borderRadius:6, fontSize:11, color:'#64748b', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)' }}>{data.intention_label}</span>
             </div>
             <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
               <Chip  val={data.patient_nom} sub={data.patient_numero} />
@@ -72,7 +72,7 @@ export default function TraitementDetailPage() {
             <button style={{ padding:'8px 14px', background:`${cfg.color}12`, border:`1px solid ${cfg.color}25`, borderRadius:8, color:cfg.color, fontSize:12, cursor:'pointer' }}>👤 Patient</button>
           </Link>
           <Link to="/traitements" style={{ textDecoration:'none' }}>
-            <button style={{ padding:'8px 14px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:8, color:'var(--text-muted)', fontSize:12, cursor:'pointer' }}>← Retour</button>
+            <button style={{ padding:'8px 14px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:8, color:'#64748b', fontSize:12, cursor:'pointer' }}>← Retour</button>
           </Link>
         </div>
       </div>
@@ -103,7 +103,7 @@ export default function TraitementDetailPage() {
               <InfoRow label="Réponse" value={<span style={{ fontFamily:'var(--font-mono)', fontWeight:700, color: REPONSE_COLORS[data.reponse_tumorale] || '#9ca3af' }}>{data.reponse_label}</span>} />
             )}
             {data.toxicite_grade !== null && data.toxicite_grade !== undefined && (
-              <InfoRow label="Toxicité grade" value={<span style={{ color: data.toxicite_grade >= 3 ? '#ff4d6a' : data.toxicite_grade >= 2 ? '#f5a623' : '#00e5a0' }}>Grade {data.toxicite_grade}</span>} />
+              <InfoRow label="Toxicité grade" value={<span style={{ color: data.toxicite_grade >= 3 ? '#dc2626' : data.toxicite_grade >= 2 ? '#d97706' : '#16a34a' }}>Grade {data.toxicite_grade}</span>} />
             )}
           </Card>
         )}
@@ -171,17 +171,17 @@ export default function TraitementDetailPage() {
                 <thead>
                   <tr>
                     {['DCI', 'Dose', 'Unité', 'Jours admin.'].map(h => (
-                      <th key={h} style={{ padding:'8px 10px', textAlign:'left', fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5, borderBottom:'1px solid var(--border)' }}>{h}</th>
+                      <th key={h} style={{ padding:'8px 10px', textAlign:'left', fontSize:10, color:'#64748b', textTransform:'uppercase', letterSpacing:0.5, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {data.medicaments.map(m => (
-                    <tr key={m.id} style={{ borderBottom:'1px solid var(--border)' }}>
-                      <td style={{ padding:'10px 10px', fontWeight:600, color:'var(--text-primary)', fontFamily:'var(--font-mono)' }}>{m.dci}</td>
-                      <td style={{ padding:'10px 10px', color:'var(--text-secondary)' }}>{m.dose ?? '—'}</td>
-                      <td style={{ padding:'10px 10px', color:'var(--text-secondary)' }}>{m.unite_dose || '—'}</td>
-                      <td style={{ padding:'10px 10px', color:'var(--text-secondary)' }}>{m.jour_administration || '—'}</td>
+                    <tr key={m.id} style={{ borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
+                      <td style={{ padding:'10px 10px', fontWeight:600, color:'#0f172a', fontFamily:'var(--font-mono)' }}>{m.dci}</td>
+                      <td style={{ padding:'10px 10px', color:'#334155' }}>{m.dose ?? '—'}</td>
+                      <td style={{ padding:'10px 10px', color:'#334155' }}>{m.unite_dose || '—'}</td>
+                      <td style={{ padding:'10px 10px', color:'#334155' }}>{m.jour_administration || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -207,8 +207,8 @@ export default function TraitementDetailPage() {
 // ── Sub-components ────────────────────────────────────────────────
 function Card({ title, color, children }) {
   return (
-    <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', overflow:'hidden' }}>
-      <div style={{ padding:'10px 16px', background:'var(--bg-elevated)', borderBottom:'1px solid var(--border)', fontSize:11, fontWeight:600, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5, borderLeft:`3px solid ${color}` }}>
+    <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', overflow:'hidden' }}>
+      <div style={{ padding:'10px 16px', background:'#f1f5f9', borderBottom:'1px solid rgba(37,99,235,0.12)', fontSize:11, fontWeight:600, color:'#64748b', textTransform:'uppercase', letterSpacing:0.5, borderLeft:`3px solid ${color}` }}>
         {title}
       </div>
       <div style={{ padding:'4px 16px 12px' }}>{children}</div>
@@ -220,25 +220,25 @@ function Chip({ icon, val, sub }) {
     <div style={{ display:'flex', alignItems:'center', gap:5 }}>
       <span style={{ fontSize:12 }}>{icon}</span>
       <div>
-        <div style={{ fontSize:12.5, color:'var(--text-primary)', fontWeight:500 }}>{val}</div>
-        {sub && <div style={{ fontSize:10, color:'var(--text-muted)' }}>{sub}</div>}
+        <div style={{ fontSize:12.5, color:'#0f172a', fontWeight:500 }}>{val}</div>
+        {sub && <div style={{ fontSize:10, color:'#64748b' }}>{sub}</div>}
       </div>
     </div>
   );
 }
 function InfoRow({ label, value }) {
   return (
-    <div style={{ padding:'9px 0', borderBottom:'1px solid var(--border)', display:'grid', gridTemplateColumns:'120px 1fr', gap:12, alignItems:'start' }}>
-      <span style={{ fontSize:11, color:'var(--text-muted)', paddingTop:2 }}>{label}</span>
-      <span style={{ fontSize:13, color:'var(--text-primary)' }}>{value}</span>
+    <div style={{ padding:'9px 0', borderBottom:'1px solid rgba(37,99,235,0.12)', display:'grid', gridTemplateColumns:'120px 1fr', gap:12, alignItems:'start' }}>
+      <span style={{ fontSize:11, color:'#64748b', paddingTop:2 }}>{label}</span>
+      <span style={{ fontSize:13, color:'#0f172a' }}>{value}</span>
     </div>
   );
 }
 function Loader({ color }) {
   return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:300, color:'var(--text-muted)' }}>
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:300, color:'#64748b' }}>
       <div style={{ textAlign:'center' }}>
-        <div style={{ width:36, height:36, border:'3px solid var(--border)', borderTopColor:color, borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 12px' }} />
+        <div style={{ width:36, height:36, border:'3px solid rgba(37,99,235,0.12)', borderTopColor:color, borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 12px' }} />
         Chargement...
       </div>
     </div>

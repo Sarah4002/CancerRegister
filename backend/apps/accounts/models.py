@@ -26,11 +26,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     Roles match CanReg5 user levels.
     """
     class Role(models.TextChoices):
-        ADMIN        = 'admin',       'Administrateur'
-        DOCTOR       = 'doctor',      'Médecin Oncologue'
-        ANAPATH      = 'anapath',   'Médecin Anapath'
+        ADMIN          = 'admin',       'Administrateur'
+        DOCTOR         = 'doctor',      'Médecin Oncologue'
+        ANAPATH        = 'anapath',     'Médecin Anapath'
         EPIDEMIOLOGIST = 'epidemiologist', 'Épidémiologiste'
-        READONLY     = 'readonly',    'Lecture seule'
+        PHARMACIST     = 'pharmacist',  'Pharmacien'
+        READONLY       = 'readonly',    'Lecture seule'
 
     class Speciality(models.TextChoices):
         ONCOLOGY          = 'oncology',          'Oncologie'

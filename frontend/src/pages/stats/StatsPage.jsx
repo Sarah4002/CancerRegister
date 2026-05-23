@@ -6,38 +6,101 @@ import {
 } from 'recharts';
 import { AppLayout } from '../../components/layout/Sidebar';
 import { statsApi } from '../../services/statsApi';
+import AlgeriaHeatmap from '../../components/dashboard/AlgeriaHeatmap';
+import { WILAYAS } from '../statistiques/wilayasData';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DESIGN TOKENS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const T = {
-  bg:        '#07090f',
-  bgCard:    '#0d1117',
-  bgElevated:'#111827',
-  bgInput:   '#0a0e18',
-  border:    'rgba(255,255,255,0.06)',
-  borderHov: 'rgba(255,255,255,0.12)',
-  accent:    '#3b82f6',
-  accentGlow:'rgba(59,130,246,0.18)',
+  bg:        '#ffffff',
+  bgCard:    '#ffffff',
+  bgElevated:'#f8fbff',
+  bgInput:   '#ffffff',
+  border:    'rgba(37,99,235,0.10)',
+  borderHov: 'rgba(37,99,235,0.18)',
+  accent:    '#2563eb',
+  accentGlow:'rgba(37,99,235,0.14)',
   emerald:   '#10b981',
   amber:     '#f59e0b',
   rose:      '#f43f5e',
   violet:    '#8b5cf6',
   cyan:      '#06b6d4',
-  textPri:   '#f0f4ff',
-  textSec:   '#8b95a8',
-  textMut:   '#4a5568',
-  radius:    '10px',
-  radiusSm:  '6px',
+  textPri:   '#0f172a',
+  textSec:   '#334155',
+  textMut:   '#64748b',
+  radius:    '12px',
+  radiusSm:  '8px',
 };
 
 const PALETTES = {
   ocean:   ['#3b82f6','#06b6d4','#8b5cf6','#10b981','#f59e0b'],
-  ember:   ['#f43f5e','#f97316','#f59e0b','#84cc16','#06b6d4'],
+  ember:   ['#f43f5e','#ea580c','#f59e0b','#84cc16','#06b6d4'],
   forest:  ['#10b981','#3b82f6','#06b6d4','#8b5cf6','#f59e0b'],
   aurora:  ['#8b5cf6','#3b82f6','#06b6d4','#10b981','#f43f5e'],
   solar:   ['#f59e0b','#f43f5e','#8b5cf6','#3b82f6','#10b981'],
+};
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: 7 }, (_, i) => String(CURRENT_YEAR - i));
+const DEFAULT_STATS_FILTERS = {
+  annee: String(CURRENT_YEAR),
+  sexe: '',
+  statut: '',
+  wilaya: '',
+  stade: '',
+  cancerType: '',
+  dateFrom: '',
+  dateTo: '',
+};
+
+const STATUT_OPTIONS = [
+  ['nouveau', 'Nouveau'],
+  ['traitement', 'Traitement'],
+  ['remission', 'Rémission'],
+  ['perdu', 'Perdu de vue'],
+  ['decede', 'Décédé'],
+  ['archive', 'Archivé'],
+];
+
+const STADE_OPTIONS = [
+  ['0', 'Stade 0'],
+  ['I', 'Stade I'],
+  ['II', 'Stade II'],
+  ['III', 'Stade III'],
+  ['IV', 'Stade IV'],
+  ['U', 'Inconnu'],
+];
+
+const CANCER_TYPE_OPTIONS = [
+  'Sein',
+  'Côlon-Rectum',
+  'Poumon',
+  'Utérus',
+  'Thyroïde',
+  'Prostate',
+  'Estomac',
+  'Foie',
+  'Ovaire',
+  'Lymphome',
+  'Hématologie',
+  'Peau',
+  'Voies urinaires',
+  'Pancréas',
+  'SNC',
+  'Os',
+];
+
+const FILTER_TAG_LABELS = {
+  annee: 'Annee',
+  sexe: 'Sexe',
+  statut: 'Statut',
+  wilaya: 'Wilaya',
+  stade: 'Stade',
+  cancerType: 'Type cancer',
+  dateFrom: 'Depuis',
+  dateTo: "Jusqu'a",
 };
 
 const CHART_TYPES = [
@@ -435,7 +498,7 @@ function CustomChartBuilder({ onAdd }) {
   const chipStyle = (active, color) => ({
     display: 'flex', alignItems: 'center', gap: 5,
     padding: '5px 11px', borderRadius: 20,
-    border: `1.5px solid ${active ? color + '80' : 'rgba(255,255,255,0.08)'}`,
+    border: `1.5px solid ${active ? color + '80' : T.border}`,
     background: active ? `${color}18` : 'transparent',
     color: active ? color : T.textSec,
     fontSize: 11.5, fontWeight: active ? 700 : 500,
@@ -477,7 +540,7 @@ function CustomChartBuilder({ onAdd }) {
                 onClick={() => setSelDim(selDim?.id === dim.id ? null : dim)}
                 style={chipStyle(selDim?.id === dim.id, T.cyan)}
                 onMouseEnter={e => { if (selDim?.id !== dim.id) { e.currentTarget.style.borderColor = T.cyan+'40'; e.currentTarget.style.color = T.textPri; }}}
-                onMouseLeave={e => { if (selDim?.id !== dim.id) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = T.textSec; }}}
+                onMouseLeave={e => { if (selDim?.id !== dim.id) { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSec; }}}
               >
                 {dim.label}
               </button>
@@ -500,7 +563,7 @@ function CustomChartBuilder({ onAdd }) {
                 onClick={() => toggleMet(met)}
                 style={chipStyle(!!selMets.find(m => m.id === met.id), T.emerald)}
                 onMouseEnter={e => { if (!selMets.find(m => m.id === met.id)) { e.currentTarget.style.borderColor = T.emerald+'40'; e.currentTarget.style.color = T.textPri; }}}
-                onMouseLeave={e => { if (!selMets.find(m => m.id === met.id)) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = T.textSec; }}}
+                onMouseLeave={e => { if (!selMets.find(m => m.id === met.id)) { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSec; }}}
               >
                 {met.label}
               </button>
@@ -591,7 +654,7 @@ function Spinner({ size = 16, color = T.accent }) {
   return (
     <div style={{
       width: size, height: size, flexShrink: 0,
-      border: `2px solid rgba(255,255,255,0.08)`,
+      border: `2px solid rgba(37,99,235,0.10)`,
       borderTop: `2px solid ${color}`,
       borderRadius: '50%',
       animation: 'spin .7s linear infinite',
@@ -650,6 +713,132 @@ function Btn({ children, onClick, active, color, disabled, small, full, style: e
   );
 }
 
+function FilterControl({ label, children }) {
+  return (
+    <label style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 150 }}>
+      <span style={{ fontSize: 11, fontWeight: 700, color: T.textMut }}>{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function FilterSelect({ label, value, onChange, children }) {
+  return (
+    <FilterControl label={label}>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{
+          height: 38,
+          padding: '0 12px',
+          background: T.bgInput,
+          border: `1px solid ${T.borderHov}`,
+          borderRadius: T.radiusSm,
+          color: T.textSec,
+          fontSize: 12,
+          outline: 'none',
+          cursor: 'pointer',
+        }}
+      >
+        {children}
+      </select>
+    </FilterControl>
+  );
+}
+
+function FilterDate({ label, value, onChange }) {
+  return (
+    <FilterControl label={label}>
+      <input
+        type="date"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{
+          height: 38,
+          padding: '0 12px',
+          background: T.bgInput,
+          border: `1px solid ${T.borderHov}`,
+          borderRadius: T.radiusSm,
+          color: T.textSec,
+          fontSize: 12,
+          outline: 'none',
+        }}
+      />
+    </FilterControl>
+  );
+}
+
+function StatsFilterBar({ filters, draft, setDraft, onApply, onReset }) {
+  const activeTags = Object.entries(filters).filter(([key, value]) => {
+    if (!value || value === 'all') return false;
+    if (key === 'annee' && value === DEFAULT_STATS_FILTERS.annee) return true;
+    return true;
+  });
+
+  return (
+    <div style={{
+      background: T.bgCard,
+      border: `1px solid ${T.border}`,
+      borderRadius: T.radius,
+      padding: 16,
+      boxShadow: '0 10px 28px rgba(15,23,42,0.04)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: T.textPri }}>Filtres globaux</div>
+          <div style={{ fontSize: 11, color: T.textMut }}>Les filtres appliques impactent les KPI et tous les graphes.</div>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          {activeTags.map(([key, value]) => (
+            <span key={key} style={{
+              padding: '5px 9px',
+              borderRadius: 999,
+              background: T.accentGlow,
+              border: `1px solid ${T.accent}24`,
+              color: T.accent,
+              fontSize: 11,
+              fontWeight: 700,
+            }}>
+              {FILTER_TAG_LABELS[key]}: {key === 'sexe' ? (value === 'M' ? 'Masculin' : 'Feminin') : value}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+        <FilterSelect label="Annee" value={draft.annee} onChange={v => setDraft(p => ({ ...p, annee: v }))}>
+          <option value="">Toutes les annees</option>
+          {YEAR_OPTIONS.map(year => <option key={year} value={year}>{year}</option>)}
+        </FilterSelect>
+        <FilterSelect label="Sexe" value={draft.sexe} onChange={v => setDraft(p => ({ ...p, sexe: v }))}>
+          <option value="all">Tous sexes</option>
+          <option value="M">Masculin</option>
+          <option value="F">Feminin</option>
+        </FilterSelect>
+        <FilterSelect label="Statut" value={draft.statut} onChange={v => setDraft(p => ({ ...p, statut: v }))}>
+          <option value="">Tous statuts</option>
+          {STATUT_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </FilterSelect>
+        <FilterSelect label="Wilaya" value={draft.wilaya} onChange={v => setDraft(p => ({ ...p, wilaya: v }))}>
+          <option value="">Toutes wilayas</option>
+          {WILAYAS.map(w => <option key={w.code} value={w.nom}>{w.nom}</option>)}
+        </FilterSelect>
+        <FilterSelect label="Stade" value={draft.stade} onChange={v => setDraft(p => ({ ...p, stade: v }))}>
+          <option value="">Tous stades</option>
+          {STADE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </FilterSelect>
+        <FilterDate label="Date debut" value={draft.dateFrom} onChange={v => setDraft(p => ({ ...p, dateFrom: v }))} />
+        <FilterDate label="Date fin" value={draft.dateTo} onChange={v => setDraft(p => ({ ...p, dateTo: v }))} />
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
+        <Btn small onClick={onReset} color={T.textMut}>Reinitialiser</Btn>
+        <Btn small active onClick={onApply} color={T.accent}>Appliquer</Btn>
+      </div>
+    </div>
+  );
+}
+
 function Input({ value, onChange, placeholder, style: ext }) {
   return (
     <div style={{ position: 'relative', ...ext }}>
@@ -674,15 +863,21 @@ function Input({ value, onChange, placeholder, style: ext }) {
   );
 }
 
+// ── TOOLTIP : fond blanc ──────────────────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      background: '#0a0e18', border: `1px solid ${T.border}`,
-      borderRadius: T.radius, padding: '10px 14px', fontSize: 11,
-      boxShadow: '0 8px 32px rgba(0,0,0,.5)',
+      background: '#ffffff',
+      border: `1px solid ${T.border}`,
+      borderRadius: T.radius,
+      padding: '10px 14px',
+      fontSize: 11,
+      boxShadow: '0 8px 32px rgba(15,23,42,0.12)',
     }}>
-      {label && <div style={{ color: T.textMut, marginBottom: 6, fontWeight: 600 }}>{label}</div>}
+      {label && (
+        <div style={{ color: T.textPri, marginBottom: 6, fontWeight: 600 }}>{label}</div>
+      )}
       {payload.map((p, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
           <div style={{ width: 7, height: 7, borderRadius: 2, background: p.color || T.accent, flexShrink: 0 }} />
@@ -702,7 +897,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 function RenderChart({ chartType, data, xKey, yKeys, colors, height = 220 }) {
   const ax = { fontSize: 10, fill: T.textMut };
-  const gr = { stroke: 'rgba(255,255,255,0.04)', strokeDasharray: '3 3' };
+  const gr = { stroke: 'rgba(37,99,235,0.06)', strokeDasharray: '3 3' };
   const pal = colors || PALETTES.ocean;
 
   if (!data?.length) return (
@@ -773,7 +968,7 @@ function RenderChart({ chartType, data, xKey, yKeys, colors, height = 220 }) {
         <defs>
           {yKeys.map((k, i) => (
             <linearGradient key={k} id={`ag_${k}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor={pal[i % pal.length]} stopOpacity={0.25} />
+              <stop offset="5%"  stopColor={pal[i % pal.length]} stopOpacity={0.15} />
               <stop offset="95%" stopColor={pal[i % pal.length]} stopOpacity={0} />
             </linearGradient>
           ))}
@@ -811,11 +1006,11 @@ function RenderChart({ chartType, data, xKey, yKeys, colors, height = 220 }) {
   if (chartType === 'radar') return (
     <ResponsiveContainer width="100%" height={height}>
       <RadarChart data={data}>
-        <PolarGrid stroke="rgba(255,255,255,0.06)" />
+        <PolarGrid stroke="rgba(37,99,235,0.08)" />
         <PolarAngleAxis dataKey={xKey} tick={{ fontSize: 9, fill: T.textMut }} />
         {yKeys.map((k, i) => (
           <Radar key={k} dataKey={k} stroke={pal[i % pal.length]}
-            fill={pal[i % pal.length]} fillOpacity={0.15} />
+            fill={pal[i % pal.length]} fillOpacity={0.12} />
         ))}
         <Tooltip content={<CustomTooltip />} />
         {yKeys.length > 1 && <Legend wrapperStyle={{ fontSize: 10, color: T.textMut }} />}
@@ -834,7 +1029,7 @@ async function captureElement(el) {
   if (!el) return null;
   try {
     if (typeof window.html2canvas !== 'undefined') {
-      const canvas = await window.html2canvas(el, { backgroundColor: '#0d1117', scale: 2 });
+      const canvas = await window.html2canvas(el, { backgroundColor: '#ffffff', scale: 2 });
       return canvas.toDataURL('image/png');
     }
     const svg = el.querySelector('svg');
@@ -1116,9 +1311,11 @@ function DownloadMenu({ report, chartLabel, chartData, chartRef }) {
       {open && (
         <div style={{
           position: 'absolute', right: 0, bottom: '110%', zIndex: 100,
-          background: T.bgElevated, border: `1px solid ${T.border}`,
+          background: '#ffffff',
+          border: `1px solid ${T.border}`,
           borderRadius: T.radius, padding: '6px',
-          minWidth: 220, boxShadow: '0 8px 32px rgba(0,0,0,.6)',
+          minWidth: 220,
+          boxShadow: '0 8px 32px rgba(15,23,42,0.14)',
           animation: 'fadeUp .15s ease',
         }}>
           <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: T.textMut,
@@ -1132,7 +1329,7 @@ function DownloadMenu({ report, chartLabel, chartData, chartRef }) {
               background: 'transparent', cursor: 'pointer', textAlign: 'left',
               transition: 'background .12s',
             }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+            onMouseEnter={e => e.currentTarget.style.background = T.accentGlow}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               <div>
@@ -1147,7 +1344,8 @@ function DownloadMenu({ report, chartLabel, chartData, chartRef }) {
   );
 }
 
-function MiniAIReport({ chartId, filters, chartRef, chartData }) {
+// ── MiniAIReport : fond blanc ─────────────────────────────────────────────────
+function MiniAIReport({ chartId, chartLabel, filters, chartRef, chartData }) {
   const [state, setState] = useState('idle');
   const [report, setReport] = useState(null);
   const [open,   setOpen]   = useState(false);
@@ -1159,6 +1357,9 @@ function MiniAIReport({ chartId, filters, chartRef, chartData }) {
     try {
       const created = await statsApi.generateReport({
         titre: `Analyse automatique — ${new Date().toLocaleDateString('fr-FR')}`,
+        chart_id: chartId,
+        chart_label: chartLabel,
+        chart_data: Array.isArray(chartData) ? chartData.slice(0, 40) : [],
         ...filters,
       });
 
@@ -1245,11 +1446,12 @@ function MiniAIReport({ chartId, filters, chartRef, chartData }) {
       {open && state === 'done' && report && (
         <div style={{
           margin: '0 12px 12px',
-          background: '#060a12',
+          background: '#ffffff',
           border: `1px solid ${T.border}`,
           borderRadius: T.radius,
           overflow: 'hidden',
           animation: 'fadeUp .25s ease',
+          boxShadow: '0 2px 12px rgba(15,23,42,0.06)',
         }}>
           {report.recommandations?.length > 0 && (
             <div style={{ padding: '12px 14px' }}>
@@ -1287,13 +1489,14 @@ function MiniAIReport({ chartId, filters, chartRef, chartData }) {
               borderTop: `1px solid ${T.border}`,
               padding: '10px 14px',
               maxHeight: 180, overflowY: 'auto',
+              background: T.bgElevated,
             }}>
               <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: T.textMut,
                 textTransform: 'uppercase', marginBottom: 8 }}>
                 Synthese
               </div>
               <pre style={{
-                fontSize: 10.5, lineHeight: 1.7, color: T.textSec,
+                fontSize: 10.5, lineHeight: 1.7, color: T.textPri,
                 whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0,
               }}>
                 {report.contenu_md.slice(0, 600)}{report.contenu_md.length > 600 ? '...' : ''}
@@ -1310,13 +1513,42 @@ function MiniAIReport({ chartId, filters, chartRef, chartData }) {
 // CHART CARD
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function ChartCard({ chart, filters, onRemove }) {
+function ChartCard({ chart, filters, onRemove, title, sub, children, span = 1 }) {
+  const isCustom = children !== undefined;
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
-  const [cType,   setCType]   = useState(chart.chartType);
-  const [palette, setPalette] = useState(chart.palette || 'ocean');
+  const [cType,   setCType]   = useState(chart?.chartType);
+  const [palette, setPalette] = useState(chart?.palette || 'ocean');
   const chartRef = useRef(null);
+
+  if (isCustom) {
+    return (
+      <div style={{
+        background: T.bgCard,
+        border: `1px solid ${T.border}`,
+        borderRadius: T.radius,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'border-color .2s',
+        gridColumn: span === 2 ? '1 / -1' : 'auto',
+      }}
+      >
+        <div style={{ padding: '12px 14px', borderBottom: `1px solid ${T.border}` }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.textPri, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {title}
+          </div>
+          {sub && (
+            <div style={{ fontSize: 9, color: T.textMut, marginTop: 2 }}>{sub}</div>
+          )}
+        </div>
+        <div style={{ padding: 14 }}>
+          {children}
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     setLoading(true);
@@ -1399,7 +1631,8 @@ function ChartCard({ chart, filters, onRemove }) {
         ))}
       </div>
 
-      <div ref={chartRef} style={{ padding: '14px 12px 8px' }}>
+      {/* ── Zone graphique : fond blanc ── */}
+      <div ref={chartRef} style={{ padding: '14px 12px 8px', background: '#ffffff' }}>
         {loading && (
           <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
             <Spinner size={18} />
@@ -1425,7 +1658,13 @@ function ChartCard({ chart, filters, onRemove }) {
         )}
       </div>
 
-      <MiniAIReport chartId={chart.id} filters={filters} chartRef={chartRef} chartData={data} />
+      <MiniAIReport
+        chartId={chart.id}
+        chartLabel={chart.label}
+        filters={filters}
+        chartRef={chartRef}
+        chartData={data}
+      />
     </div>
   );
 }
@@ -1435,32 +1674,34 @@ function ChartCard({ chart, filters, onRemove }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function KPICard({ label, value, sub, color, trend }) {
+  const showTrend = trend !== undefined && trend !== null;
   return (
     <div style={{
-      background: T.bgCard,
-      border: `1px solid ${color}22`,
-      borderRadius: T.radius,
-      padding: '16px 18px',
+      background: '#fff',
+      border: '1px solid rgba(37,99,235,0.1)',
+      borderRadius: 14,
+      padding: '18px 20px',
       position: 'relative',
       overflow: 'hidden',
-      transition: 'transform .2s, border-color .2s',
+      transition: 'all 0.2s ease',
+      boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
     }}
-    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.borderColor = color + '44'; }}
-    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = color + '22'; }}
+    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(37,99,235,0.12)'; }}
+    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(15,23,42,0.06)'; }}
     >
       <div style={{
-        position: 'absolute', top: -20, right: -20, width: 80, height: 80,
-        background: `radial-gradient(circle, ${color}15 0%, transparent 70%)`,
-        borderRadius: '50%',
+        position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+        background: `linear-gradient(90deg, ${color}, ${color}88)`,
+        borderRadius: '14px 14px 0 0',
       }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
-        {trend !== undefined && (
+      <div style={{ display: 'flex', justifyContent: 'flex-end', minHeight: 22, marginBottom: 6 }}>
+        {showTrend && (
           <span style={{
-            fontSize: 9, padding: '2px 7px', borderRadius: 20, fontWeight: 700,
-            background: trend >= 0 ? T.emerald + '15' : T.rose + '15',
-            color: trend >= 0 ? T.emerald : T.rose,
-            border: `1px solid ${trend >= 0 ? T.emerald : T.rose}30`,
+            fontSize: 10, padding: '3px 8px', borderRadius: 20,
+            background: trend >= 0 ? 'rgba(22,163,74,0.1)' : 'rgba(220,38,38,0.1)',
+            color: trend >= 0 ? '#16a34a' : '#dc2626',
+            fontWeight: 700,
+            border: `1px solid ${trend >= 0 ? 'rgba(22,163,74,0.2)' : 'rgba(220,38,38,0.2)'}`,
           }}>
             {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
           </span>
@@ -1473,6 +1714,56 @@ function KPICard({ label, value, sub, color, trend }) {
   );
 }
 
+
+function DashboardStatCard({ label, value, sub, color, trend }) {
+  const showTrend = trend !== undefined && trend !== null;
+  return (
+    <div
+      style={{
+        background: '#fff',
+        border: '1px solid rgba(37,99,235,0.1)',
+        borderRadius: 14,
+        padding: '18px 20px',
+        position: 'relative',
+        overflow: 'hidden',
+        transition: 'all 0.2s ease',
+        boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = '0 8px 24px rgba(37,99,235,0.12)';
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = 'none';
+        e.currentTarget.style.boxShadow = '0 2px 8px rgba(15,23,42,0.06)';
+      }}
+    >
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+        background: `linear-gradient(90deg, ${color}, ${color}88)`,
+        borderRadius: '14px 14px 0 0',
+      }} />
+      <div style={{ display: 'flex', justifyContent: 'flex-end', minHeight: 22, marginBottom: 6 }}>
+        {showTrend && (
+          <span style={{
+            fontSize: 10, padding: '3px 8px', borderRadius: 20,
+            background: trend >= 0 ? 'rgba(22,163,74,0.1)' : 'rgba(220,38,38,0.1)',
+            color: trend >= 0 ? '#16a34a' : '#dc2626',
+            fontWeight: 700,
+            border: `1px solid ${trend >= 0 ? 'rgba(22,163,74,0.2)' : 'rgba(220,38,38,0.2)'}`,
+          }}>
+            {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
+          </span>
+        )}
+      </div>
+      <div style={{ fontSize: 30, fontWeight: 800, fontFamily: 'var(--font-display)', color, lineHeight: 1, marginBottom: 4 }}>
+        {value ?? '—'}
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: '#334155', marginBottom: sub ? 2 : 0 }}>{label}</div>
+      {sub && <div style={{ fontSize: 10, color: '#94a3b8' }}>{sub}</div>}
+    </div>
+  );
+}
 
 
 function SourceAxisConfig({ src, axisOverride, onChange, onRemove, color }) {
@@ -1718,7 +2009,7 @@ function SourceSelector({ onAdd, filters }) {
                 background: isSelected ? T.accentGlow : 'transparent',
                 cursor: 'pointer', textAlign: 'left', transition: 'all .12s',
               }}
-              onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+              onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = T.bgElevated; }}
               onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}>
                 <div style={{
                   width: 14, height: 14, borderRadius: '50%', flexShrink: 0,
@@ -1817,6 +2108,209 @@ function SourceSelector({ onAdd, filters }) {
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// FILTER COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function DashboardFilterSelect({ label, id, value, onChange, children }) {
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+      <span style={{ fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1 }}>{label}</span>
+      <select
+        id={id}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{
+          fontSize:12, padding:'7px 10px',
+          border:'1px solid rgba(37,99,235,0.18)', borderRadius:9,
+          background:'#fff', color:'#334155', cursor:'pointer',
+          minWidth:130, outline:'none',
+          boxShadow:'0 1px 4px rgba(15,23,42,0.05)',
+        }}
+      >
+        {children}
+      </select>
+    </div>
+  );
+}
+
+function DashboardFilterDate({ label, value, onChange }) {
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+      <span style={{ fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1 }}>{label}</span>
+      <input
+        type="date"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{
+          fontSize:12, padding:'7px 10px',
+          border:'1px solid rgba(37,99,235,0.18)', borderRadius:9,
+          background:'#fff', color:'#334155',
+          minWidth:130, outline:'none',
+          boxShadow:'0 1px 4px rgba(15,23,42,0.05)',
+        }}
+      />
+    </div>
+  );
+}
+
+const DASHBOARD_FILTER_TAG_LABELS = {
+  annee: v => `Année : ${v}`,
+  sexe: v => ({ F: 'Sexe : Femme', M: 'Sexe : Homme' }[v] || v),
+  statut: v => `Statut : ${STATUT_OPTIONS.find(([k]) => k === v)?.[1] || v}`,
+  wilaya: v => `Wilaya : ${v}`,
+  stade: v => `Stade : ${v === 'U' ? 'Inconnu' : v}`,
+  cancerType: v => `Type de cancer : ${v}`,
+  dateFrom: v => `Du : ${v}`,
+  dateTo: v => `Au : ${v}`,
+};
+
+function FilterBar({ filters, draft, setDraft, onApply, onReset }) {
+  const [open, setOpen] = useState(false);
+  const totalActive = Object.values(filters).filter(v => v && v !== 'all' && v !== '').length;
+
+  return (
+    <div style={{ marginBottom:20 }}>
+      {/* Toggle Row */}
+      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom: open ? 12 : 0 }}>
+        <button
+          onClick={() => setOpen(o => !o)}
+          style={{
+            display:'flex', alignItems:'center', gap:8,
+            padding:'9px 16px',
+            background: open ? '#eff6ff' : '#fff',
+            border:'1px solid rgba(37,99,235,0.2)',
+            borderRadius:10, color:'#2563eb',
+            fontSize:12, fontWeight:600,
+            cursor:'pointer', transition:'all 0.15s',
+            boxShadow:'0 2px 6px rgba(15,23,42,0.06)',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+            <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/>
+          </svg>
+          Filtres
+          {totalActive > 0 && (
+            <span style={{
+              background:'#2563eb', color:'#fff', borderRadius:99,
+              fontSize:10, fontWeight:700, padding:'1px 7px', lineHeight:'16px',
+            }}>{totalActive}</span>
+          )}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+            style={{ transform: open ? 'rotate(180deg)' : 'none', transition:'transform 0.2s' }}>
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+
+        {/* Active tags */}
+        {!open && totalActive > 0 && (
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            {Object.entries(filters).filter(([,v]) => v && v !== 'all').map(([k, v]) => (
+              <span key={k} style={{
+                display:'inline-flex', alignItems:'center', gap:4,
+                fontSize:11, padding:'3px 10px',
+                background:'rgba(37,99,235,0.07)',
+                color:'#2563eb', borderRadius:99,
+                border:'1px solid rgba(37,99,235,0.18)',
+                fontWeight:500,
+              }}>
+                {DASHBOARD_FILTER_TAG_LABELS[k]?.(v) ?? v}
+              </span>
+            ))}
+            <button
+              onClick={onReset}
+              style={{
+                fontSize:11, padding:'3px 10px',
+                background:'transparent', color:'#94a3b8',
+                border:'1px solid rgba(148,163,184,0.3)', borderRadius:99,
+                cursor:'pointer',
+              }}
+            >
+              Effacer tout
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Expanded Panel */}
+      {open && (
+        <div style={{
+          background:'#fff', border:'1px solid rgba(37,99,235,0.1)',
+          borderRadius:14, padding:'18px 20px',
+          boxShadow:'0 4px 20px rgba(15,23,42,0.08)',
+        }}>
+          {/* Filter Row */}
+          <div style={{ display:'flex', flexWrap:'wrap', gap:12, marginBottom:16 }}>
+            <DashboardFilterSelect label="Année" value={draft.annee} onChange={v => setDraft(d => ({ ...d, annee:v }))}>
+              <option value="">Toutes les années</option>
+              {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
+            </DashboardFilterSelect>
+
+            <DashboardFilterDate label="Du" value={draft.dateFrom} onChange={v => setDraft(d => ({ ...d, dateFrom:v }))} />
+            <DashboardFilterDate label="Au"  value={draft.dateTo}   onChange={v => setDraft(d => ({ ...d, dateTo:v }))} />
+
+            <div style={{ width:'0.5px', background:'rgba(37,99,235,0.1)', margin:'0 4px', alignSelf:'stretch' }} />
+
+            <DashboardFilterSelect label="Sexe" value={draft.sexe} onChange={v => setDraft(d => ({ ...d, sexe:v }))}>
+              <option value="">Tous</option>
+              <option value="F">Femme</option>
+              <option value="M">Homme</option>
+            </DashboardFilterSelect>
+
+            <DashboardFilterSelect label="Statut" value={draft.statut} onChange={v => setDraft(d => ({ ...d, statut:v }))}>
+              <option value="">Tous les statuts</option>
+              {STATUT_OPTIONS.map(([k,l]) => <option key={k} value={k}>{l}</option>)}
+            </DashboardFilterSelect>
+
+            <DashboardFilterSelect label="Wilaya" value={draft.wilaya} onChange={v => setDraft(d => ({ ...d, wilaya:v }))}>
+              <option value="">Toutes</option>
+              {WILAYAS.map(w => <option key={w.nom} value={w.nom}>{w.nom}</option>)}
+            </DashboardFilterSelect>
+
+            <DashboardFilterSelect label="Stade" value={draft.stade} onChange={v => setDraft(d => ({ ...d, stade:v }))}>
+              <option value="">Tous les stades</option>
+              {STADE_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </DashboardFilterSelect>
+
+            <DashboardFilterSelect label="Type de cancer" value={draft.cancerType} onChange={v => setDraft(d => ({ ...d, cancerType:v }))}>
+              <option value="">Tous les types</option>
+              {CANCER_TYPE_OPTIONS.map(type => <option key={type} value={type}>{type}</option>)}
+            </DashboardFilterSelect>
+          </div>
+
+          {/* Actions */}
+          <div style={{ display:'flex', gap:8, alignItems:'center', borderTop:'1px solid rgba(37,99,235,0.08)', paddingTop:14 }}>
+            <button
+              onClick={() => { onApply(); setOpen(false); }}
+              style={{
+                padding:'9px 22px', background:'linear-gradient(135deg,#3b82f6,#2563eb)',
+                border:'none', borderRadius:10, color:'#fff',
+                fontSize:13, fontWeight:600, cursor:'pointer',
+                boxShadow:'0 2px 8px rgba(37,99,235,0.25)',
+              }}
+            >
+              Appliquer les filtres
+            </button>
+            <button
+              onClick={() => { onReset(); setOpen(false); }}
+              style={{
+                padding:'9px 18px', background:'transparent',
+                border:'1px solid rgba(37,99,235,0.2)', borderRadius:10,
+                color:'#64748b', fontSize:13, fontWeight:500, cursor:'pointer',
+              }}
+            >
+              Réinitialiser
+            </button>
+            <span style={{ fontSize:11, color:'#94a3b8', marginLeft:4 }}>
+              {Object.values(draft).filter(v => v && v !== 'all').length} filtre(s) sélectionné(s)
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // PAGE PRINCIPALE
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1847,7 +2341,9 @@ export default function StatistiquesPage({ setPage }) {
   const [kpi,     setKpi]     = useState(null);
   const [kpiLoad, setKpiLoad] = useState(true);
   const [charts,  setCharts]  = useState(() => loadChartsFromStorage() || []);
-  const [filters, setFilters] = useState({ annee: 2024, sexe: 'all' });
+  const [filters, setFilters] = useState(DEFAULT_STATS_FILTERS);
+  const [draftFilters, setDraftFilters] = useState(DEFAULT_STATS_FILTERS);
+  const [topWilayas, setTopWilayas] = useState([]);
   const [tab,     setTab]     = useState('galerie');
 
   // Persist charts to localStorage whenever they change
@@ -1861,7 +2357,36 @@ export default function StatistiquesPage({ setPage }) {
       .then(r => setKpi(r))
       .catch(() => setKpi(null))
       .finally(() => setKpiLoad(false));
-  }, [filters.annee, filters.sexe]);
+  }, [JSON.stringify(filters)]);
+
+  const handleApplyFilters = useCallback(() => {
+    setFilters({ ...draftFilters });
+  }, [draftFilters]);
+
+  const handleResetFilters = useCallback(() => {
+    setDraftFilters(DEFAULT_STATS_FILTERS);
+    setFilters(DEFAULT_STATS_FILTERS);
+  }, []);
+
+  const handleSelectWilaya = useCallback((wilaya) => {
+    const nextWilaya = filters.wilaya === wilaya ? '' : wilaya;
+    setDraftFilters(prev => ({ ...prev, wilaya: nextWilaya }));
+    setFilters(prev => ({ ...prev, wilaya: nextWilaya }));
+  }, [filters.wilaya]);
+
+  useEffect(() => {
+    let active = true;
+    statsApi.getChartData('wilaya_cas', filters)
+      .then(res => {
+        if (!active) return;
+        setTopWilayas(Array.isArray(res) ? res : (res?.data || []));
+      })
+      .catch(() => {
+        if (!active) return;
+        setTopWilayas([]);
+      });
+    return () => { active = false; };
+  }, [JSON.stringify(filters)]);
 
   const addChart = useCallback((chart) => {
     markUserSession();
@@ -1903,7 +2428,7 @@ export default function StatistiquesPage({ setPage }) {
   }, []);
 
   const KPI_FIELDS = kpi ? [
-    { label: 'Total cas enregistres', value: kpi.total_cas_annee?.toLocaleString('fr-FR'),   sub: `Annee ${filters.annee}`,     color: T.accent,  trend: kpi.variation_vs_n1  },
+    { label: 'Total cas enregistres', value: kpi.total_cas_annee?.toLocaleString('fr-FR'),   sub: filters.annee ? `Annee ${filters.annee}` : 'Toutes les annees', color: T.accent,  trend: kpi.variation_vs_n1  },
     { label: 'Taux de survie 5 ans',  value: `${kpi.taux_survie_5ans ?? '—'}%`,              sub: 'Moyenne tous cancers',        color: T.emerald, trend: null                 },
     { label: 'Age median diagnostic', value: kpi.age_median ? `${kpi.age_median} ans` : '—', sub: 'Au moment du diagnostic',     color: T.amber,   trend: null                 },
     { label: 'Taux de mortalite',     value: kpi.taux_mortalite?.toLocaleString('fr-FR'),    sub: 'Deces recenses',              color: T.rose,    trend: kpi.variation_mort_n1 },
@@ -1917,41 +2442,22 @@ export default function StatistiquesPage({ setPage }) {
           from { opacity: 0; transform: translateY(8px) }
           to   { opacity: 1; transform: translateY(0) }
         }
-        * { scrollbar-width: thin; scrollbar-color: #1e2a3a transparent; }
+        * { scrollbar-width: thin; scrollbar-color: #e2e8f0 transparent; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-thumb { background: #1e2a3a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
       `}</style>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, animation: 'fadeUp .4s ease' }}>
+      {/* Filter Bar */}
+      <FilterBar
+        filters={filters}
+        draft={draftFilters}
+        setDraft={setDraftFilters}
+        onApply={handleApplyFilters}
+        onReset={handleResetFilters}
+      />
 
-        <div style={{
-          display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap',
-          padding: '12px 16px',
-          background: T.bgCard,
-          border: `1px solid ${T.border}`,
-          borderRadius: T.radius,
-        }}>
-          <div style={{ fontSize: 11, color: T.textMut, marginRight: 4 }}>Filtres globaux :</div>
-          {[2024, 2023, 2022, 2021].map(y => (
-            <Btn key={y} small active={filters.annee === y} onClick={() => setFilters(p => ({ ...p, annee: y }))}>
-              {y}
-            </Btn>
-          ))}
-          <div style={{ width: 1, height: 20, background: T.border }} />
-          {[['all','Tous sexes'],['M','Masculin'],['F','Feminin']].map(([v, l]) => (
-            <Btn key={v} small active={filters.sexe === v} onClick={() => setFilters(p => ({ ...p, sexe: v }))}>
-              {l}
-            </Btn>
-          ))}
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.emerald }} />
-            <span style={{ fontSize: 10, color: T.textMut, fontFamily: 'monospace' }}>
-              API Django connectee
-            </span>
-          </div>
-        </div>
-
-        {kpiLoad ? (
+      {/* KPI Cards */}
+      {kpiLoad ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
             {[...Array(4)].map((_, i) => (
               <div key={i} style={{
@@ -1964,7 +2470,7 @@ export default function StatistiquesPage({ setPage }) {
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
-            {KPI_FIELDS.map((k, i) => <KPICard key={i} {...k} />)}
+            {KPI_FIELDS.map((k, i) => <DashboardStatCard key={i} {...k} />)}
           </div>
         )}
 
@@ -1975,7 +2481,7 @@ export default function StatistiquesPage({ setPage }) {
         }}>
           {[
             ['galerie',  `Galerie (${charts.length})`],
-            ['sources',  'Ajouter des graphiques'],
+            ['sources',  'Ajouter un graphe'],
           ].map(([id, label]) => (
             <button key={id} onClick={() => setTab(id)} style={{
               padding: '10px 22px', background: 'none', border: 'none', cursor: 'pointer',
@@ -2115,7 +2621,7 @@ export default function StatistiquesPage({ setPage }) {
               <div style={{ fontSize: 12 }}>Ajoutez des graphiques depuis l'onglet Sources</div>
               <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                 <Btn onClick={() => setTab('sources')} color={T.accent}>
-                  Ajouter des graphiques
+                  Ajouter un graphe
                 </Btn>
               </div>
             </div>
@@ -2129,14 +2635,21 @@ export default function StatistiquesPage({ setPage }) {
                   {charts.length} graphique{charts.length > 1 ? 's' : ''}
                 </span>
                 <span style={{ fontSize: 10, color: T.textMut }}>- donnees en direct depuis la base</span>
-                <div style={{ marginLeft: 'auto' }}>
-                  <Btn small onClick={() => setTab('sources')} color={T.accent}>
-                    Nouveau graphique
-                  </Btn>
-                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 16 }}>
+                <ChartCard
+                  title="Carte d'Algerie par wilaya"
+                  sub="Degrade bleu selon le nombre de cas. Gris si aucun cas. Cliquez sur une wilaya pour filtrer le dashboard."
+                  span={2}
+                >
+                  <AlgeriaHeatmap
+                    data={topWilayas}
+                    selectedWilaya={filters.wilaya}
+                    onSelectWilaya={handleSelectWilaya}
+                  />
+                </ChartCard>
+
                 {charts.map(ch => (
                   <ChartCard
                     key={ch.id}
@@ -2150,7 +2663,6 @@ export default function StatistiquesPage({ setPage }) {
           )
         )}
 
-      </div>
     </AppLayout>
   );
 }

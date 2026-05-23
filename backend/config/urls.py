@@ -5,6 +5,7 @@ from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 urlpatterns = [
+    
     path('admin/', admin.site.urls),
 
     # ==============================
@@ -22,6 +23,7 @@ urlpatterns = [
     path('api/v1/sig/',            include('apps.sig.urls')),
     path('api/v1/exports/', include('apps.exports.urls')),
     path('api/v1/examens/', include('apps.examens.urls')),
+    path('api/v1/notifications/', include('apps.notifications.urls')),
 
 
     # ==============================

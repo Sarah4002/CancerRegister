@@ -45,6 +45,180 @@ class MorphologieICD(models.Model):
         return f"{self.code} – {self.libelle}"
 
 
+class DiagnosticValidationRule(models.Model):
+    SEVERITY_CHOICES = [
+        ('error', 'Erreur'),
+        ('warning', 'Avertissement'),
+        ('info', 'Information'),
+    ]
+
+    MODULE_CHOICES = [
+        ('patient', 'Dossier patient'),
+        ('diagnostic', 'Diagnostic'),
+        ('traitement', 'Traitement'),
+        ('suivi', 'Suivi / Consultation'),
+    ]
+
+    code = models.CharField(max_length=100, unique=True)
+    label = models.CharField(max_length=200)
+    module = models.CharField(max_length=20, choices=MODULE_CHOICES, default='diagnostic')
+    field_name = models.CharField(max_length=100, blank=True)
+    severity = models.CharField(max_length=10, choices=SEVERITY_CHOICES, default='warning')
+    description = models.TextField(blank=True)
+    conditions = models.JSONField(default=list, blank=True)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'diagnostic_validation_rules'
+        ordering = ['code']
+        verbose_name = 'Règle de validation diagnostique'
+
+    def __str__(self):
+        return f"{self.code} – {self.label}"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Examens hématologiques (OneToOne → Diagnostic)
+# Chaque champ correspond à un examen recommandé par le Dr. Bendahmane.
+# Les champs sont NULL quand non applicable à l'hémopathie sélectionnée.
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ExamensHematologiques(models.Model):
+    """
+    Stocke les résultats des examens complémentaires pour les cancers liquides.
+    Un enregistrement par diagnostic hématologique.
+
+    Hémopathies et examens associés (source : Dr. Bendahmane) :
+    ┌─────────────────────────────────────┬──────────────────────────────────────────────────────────┐
+    │ Hémopathie                          │ Examens                                                  │
+    ├─────────────────────────────────────┼──────────────────────────────────────────────────────────┤
+    │ Lymphome NH / Hodgkin               │ siege_biopsie, anapath, immunohistochimie                 │
+    │ Myélome / Kahler                    │ biopsie_osteomedulaire, myelogramme,                      │
+    │                                     │ caryotype_fish_medullaire, electrophorese_proteines,      │
+    │                                     │ immunofixation_sanguine, free_light_chain, calcemie,      │
+    │                                     │ hemoglobine, clairance_renale, radiologie_standard,       │
+    │                                     │ irm, tdm_low_dose                                        │
+    │ LLC                                 │ taux_lymphocytes, frottis_sang, cytometrie_flux           │
+    │ LMC                                 │ taux_globules_blancs, frottis_sang,                       │
+    │                                     │ cytogenetique_medullaire, fish_medullaire,                │
+    │                                     │ biologie_moleculaire                                     │
+    │ LAM / LAL                           │ nfs, frottis_sang, myelogramme, cytochimie_medullaire,    │
+    │                                     │ cytometrie_flux, caryotype_medullaire, fish_medullaire,   │
+    │                                     │ biologie_moleculaire                                     │
+    │ Polyglobulie Vaquez                 │ nfs, biopsie_osteomedulaire, biologie_moleculaire,        │
+    │                                     │ dosage_epo                                               │
+    │ Thrombocytémie / Myélofibrose / SMP │ nfs, biopsie_osteomedulaire, biologie_moleculaire         │
+    │ SMD                                 │ nfs, myelogramme, coloration_perls, caryotype_medullaire  │
+    │ Waldenström                         │ nfs, myelogramme, biopsie_osteomedulaire,                 │
+    │                                     │ electrophorese_proteines, immunofixation_sanguine         │
+    │ Tricholeucocytes                    │ nfs, frottis_sang, cytometrie_flux,                       │
+    │                                     │ biopsie_osteomedulaire, biologie_moleculaire              │
+    └─────────────────────────────────────┴──────────────────────────────────────────────────────────┘
+    """
+
+    diagnostic = models.OneToOneField(
+        'Diagnostic',
+        on_delete=models.CASCADE,
+        related_name='examens_hemato',
+    )
+
+    # ── Biopsie & Anatomopathologie ───────────────────────────────
+    siege_biopsie     = models.TextField(blank=True, verbose_name='Siège Biopsie')
+    anapath           = models.TextField(blank=True, verbose_name='Anapath')
+    immunohistochimie = models.TextField(blank=True, verbose_name='Immunohistochimie')
+
+    # ── Médullaire ────────────────────────────────────────────────
+    biopsie_osteomedulaire    = models.TextField(blank=True, verbose_name='Biopsie ostéomédullaire')
+    myelogramme               = models.TextField(blank=True, verbose_name='Myélogramme')
+    caryotype_medullaire      = models.TextField(blank=True, verbose_name='Caryotype médullaire')
+    caryotype_fish_medullaire = models.TextField(blank=True, verbose_name='Caryotype / FISH médullaire')
+    fish_medullaire           = models.TextField(blank=True, verbose_name='FISH médullaire')
+    cytochimie_medullaire     = models.TextField(blank=True, verbose_name='Cytochimie médullaire')
+    cytogenetique_medullaire  = models.TextField(blank=True, verbose_name='Cytogénétique médullaire')
+    coloration_perls          = models.TextField(blank=True, verbose_name='Coloration de Perls')
+
+    # ── Hémogramme & cytologie périphérique ──────────────────────
+    nfs                  = models.TextField(blank=True, verbose_name='NFS')
+    frottis_sang         = models.TextField(blank=True, verbose_name='Frottis de sang')
+    taux_lymphocytes     = models.TextField(blank=True, verbose_name='Taux de lymphocytes')
+    taux_globules_blancs = models.TextField(blank=True, verbose_name='Taux de globules blancs')
+    cytometrie_flux      = models.TextField(blank=True, verbose_name='Cytométrie en flux')
+    hemoglobine          = models.TextField(blank=True, verbose_name='Hémoglobine')
+
+    # ── Biochimie & biologie moléculaire ─────────────────────────
+    biologie_moleculaire     = models.TextField(blank=True, verbose_name='Biologie moléculaire')
+    electrophorese_proteines = models.TextField(blank=True, verbose_name='Électrophorèse des protéines')
+    immunofixation_sanguine  = models.TextField(blank=True, verbose_name='Immunofixation sanguine')
+    free_light_chain         = models.TextField(blank=True, verbose_name='Free Light Chain')
+    calcemie                 = models.TextField(blank=True, verbose_name='Calcémie')
+    clairance_renale         = models.TextField(blank=True, verbose_name='Clairance rénale')
+    dosage_epo               = models.TextField(blank=True, verbose_name="Dosage d'EPO")
+
+    # ── Imagerie ─────────────────────────────────────────────────
+    radiologie_standard = models.TextField(blank=True, verbose_name='Radiologie standard')
+    irm                 = models.TextField(blank=True, verbose_name='IRM')
+    tdm_low_dose        = models.TextField(blank=True, verbose_name='TDM low dose')
+
+    # ── Remarques complémentaires (champ libre optionnel) ─────────
+    remarques = models.TextField(blank=True, verbose_name='Remarques complémentaires')
+
+    # ── Métadonnées ───────────────────────────────────────────────
+    date_creation     = models.DateTimeField(auto_now_add=True)
+    date_modification = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table     = 'examens_hematologiques'
+        verbose_name = 'Examens hématologiques'
+
+    def __str__(self):
+        return f"Examens hémato – Diag#{self.diagnostic_id}"
+
+    # Champs obligatoires par hémopathie (miroir du front)
+    EXAMENS_PAR_HEMOPATHIE = {
+        'lymphome_non_hodgkinien':      ['siege_biopsie', 'anapath', 'immunohistochimie'],
+        'lymphome_hodgkin':             ['siege_biopsie', 'anapath', 'immunohistochimie'],
+        'myelome':                      ['biopsie_osteomedulaire', 'myelogramme', 'caryotype_fish_medullaire',
+                                         'electrophorese_proteines', 'immunofixation_sanguine', 'free_light_chain',
+                                         'calcemie', 'hemoglobine', 'clairance_renale', 'radiologie_standard',
+                                         'irm', 'tdm_low_dose'],
+        'llc':                          ['taux_lymphocytes', 'frottis_sang', 'cytometrie_flux'],
+        'lmc':                          ['taux_globules_blancs', 'frottis_sang', 'cytogenetique_medullaire',
+                                         'fish_medullaire', 'biologie_moleculaire'],
+        'lam':                          ['nfs', 'frottis_sang', 'myelogramme', 'cytochimie_medullaire',
+                                         'cytometrie_flux', 'caryotype_medullaire', 'fish_medullaire',
+                                         'biologie_moleculaire'],
+        'lal':                          ['nfs', 'frottis_sang', 'myelogramme', 'cytochimie_medullaire',
+                                         'cytometrie_flux', 'caryotype_medullaire', 'fish_medullaire',
+                                         'biologie_moleculaire'],
+        'polyglobulie_vaquez':          ['nfs', 'biopsie_osteomedulaire', 'biologie_moleculaire', 'dosage_epo'],
+        'thrombocytemie_essentielle':   ['nfs', 'biopsie_osteomedulaire', 'biologie_moleculaire'],
+        'myelofibrose_primitive':       ['nfs', 'biopsie_osteomedulaire', 'biologie_moleculaire'],
+        'smp_inclassable':              ['nfs', 'biopsie_osteomedulaire', 'biologie_moleculaire'],
+        'smd':                          ['nfs', 'myelogramme', 'coloration_perls', 'caryotype_medullaire'],
+        'waldenstrom':                  ['nfs', 'myelogramme', 'biopsie_osteomedulaire',
+                                         'electrophorese_proteines', 'immunofixation_sanguine'],
+        'tricholeucocytes':             ['nfs', 'frottis_sang', 'cytometrie_flux',
+                                         'biopsie_osteomedulaire', 'biologie_moleculaire'],
+    }
+
+    def champs_requis(self):
+        """Retourne la liste des champs obligatoires pour l'hémopathie du diagnostic lié."""
+        hemopathie = getattr(self.diagnostic, 'hemopathie_maligne', None)
+        return self.EXAMENS_PAR_HEMOPATHIE.get(hemopathie, [])
+
+    def valider_exhaustivite(self):
+        """Vérifie que tous les champs obligatoires sont renseignés. Retourne une liste d'erreurs."""
+        erreurs = []
+        for champ in self.champs_requis():
+            val = getattr(self, champ, '')
+            if not (val and str(val).strip()):
+                label = self._meta.get_field(champ).verbose_name
+                erreurs.append(f'Le champ "{label}" est obligatoire pour ce diagnostic.')
+        return erreurs
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Diagnostic principal
 # ─────────────────────────────────────────────────────────────────────────────
@@ -100,6 +274,22 @@ class Diagnostic(models.Model):
     class CategorieCancer(models.TextChoices):
         SOLIDE  = 'solide',  'Tumeur solide'
         LIQUIDE = 'liquide', 'Tumeur liquide (hématologique)'
+
+    class HemopathieMaligne(models.TextChoices):
+        LYMPHOME_NON_HODGKINIEN    = 'lymphome_non_hodgkinien',    'Lymphome non Hodgkinien'
+        LYMPHOME_HODGKIN           = 'lymphome_hodgkin',           'Lymphome de Hodgkin'
+        MYELOME                    = 'myelome',                    'Myélome ou Maladie de Kahler'
+        LLC                        = 'llc',                        'Leucémie Lymphoïde Chronique'
+        LMC                        = 'lmc',                        'Leucémie Myéloïde Chronique'
+        LAM                        = 'lam',                        'Leucémie Aiguë Myéloïde'
+        LAL                        = 'lal',                        'Leucémie Aiguë Lymphoïde'
+        POLYGLOBULIE_VAQUEZ        = 'polyglobulie_vaquez',        'Polyglobulie de Vaquez'
+        THROMBOCYTEMIE_ESSENTIELLE = 'thrombocytemie_essentielle', 'Thrombocytémie essentielle'
+        MYELOFIBROSE_PRIMITIVE     = 'myelofibrose_primitive',     'Myélofibrose primitive'
+        SMP_INCLASSABLE            = 'smp_inclassable',            'Syndrome myéloprolifératif inclassable'
+        SMD                        = 'smd',                        'Syndromes myélodysplasiques'
+        WALDENSTROM                = 'waldenstrom',                'Maladie de Waldenström'
+        TRICHOLEUCOCYTES           = 'tricholeucocytes',           'Leucémie à Tricholeucocytes'
 
     class EtatCancer(models.TextChoices):
         LOCALISE            = 'localise',            'Localisé'
@@ -182,7 +372,13 @@ class Diagnostic(models.Model):
     differentiation       = models.TextField(blank=True)
     variante_histologique = models.CharField(max_length=100, blank=True)
 
-    # 5. TNM 8e édition
+    # 5. Hémopathie maligne (cancer liquide)
+    hemopathie_maligne      = models.CharField(max_length=40, choices=HemopathieMaligne.choices, blank=True)
+    # Champ texte libre conservé pour compatibilité et remarques générales.
+    # Les résultats structurés sont dans ExamensHematologiques (related_name='examens_hemato').
+    examens_complementaires = models.TextField(blank=True)
+
+    # 6. TNM 8e édition
     tnm_t = models.CharField(max_length=5, blank=True, choices=[
         ('TX','TX – Non évaluable'),('T0','T0 – Pas de tumeur'),('Tis','Tis – In situ'),
         ('T1','T1'),('T1a','T1a'),('T1b','T1b'),('T1c','T1c'),
@@ -207,13 +403,13 @@ class Diagnostic(models.Model):
     tnm_date_evaluation = models.DateField(null=True, blank=True)
     tnm_commentaire     = models.TextField(blank=True)
 
-    # 6. Stade & État
+    # 7. Stade & État
     stade_ajcc           = models.CharField(max_length=5, choices=StadeAJCC.choices, default='U')
     etat_cancer          = models.CharField(max_length=25, choices=EtatCancer.choices, default='non_determine')
     performance_status   = models.CharField(max_length=1, choices=PerformanceStatus.choices, blank=True)
     pronostic_evaluation = models.CharField(max_length=20, choices=PronosticEvaluation.choices, blank=True)
 
-    # 7. Méthodes de confirmation
+    # 8. Méthodes de confirmation
     methodes_confirmation_text  = models.CharField(max_length=300, blank=True)
     conf_histologie_tumeur      = models.BooleanField(default=False)
     conf_cytologie              = models.BooleanField(default=False)
@@ -222,7 +418,7 @@ class Diagnostic(models.Model):
     conf_imagerie               = models.BooleanField(default=False)
     conf_biopsie_medullaire     = models.BooleanField(default=False)
 
-    # 8. Marqueurs biologiques
+    # 9. Marqueurs biologiques (tumeurs solides)
     recepteur_re             = models.CharField(max_length=10, blank=True, choices=[('positif','Positif'),('negatif','Négatif'),('inconnu','Inconnu')])
     recepteur_re_pourcentage = models.PositiveSmallIntegerField(null=True, blank=True)
     recepteur_rp             = models.CharField(max_length=10, blank=True, choices=[('positif','Positif'),('negatif','Négatif'),('inconnu','Inconnu')])
@@ -239,7 +435,7 @@ class Diagnostic(models.Model):
     mmr_status = models.CharField(max_length=15, blank=True, choices=MmrStatus.choices)
     autres_marqueurs = models.TextField(blank=True)
 
-    # 9. Imagerie & Mesures
+    # 10. Imagerie & Mesures
     taille_tumeur             = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True)
     taille_tumeur_axe_max     = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True)
     taille_tumeur_3d          = models.CharField(max_length=50, blank=True)
@@ -257,7 +453,7 @@ class Diagnostic(models.Model):
     img_radiographie          = models.BooleanField(default=False)
     img_scintigraphie         = models.BooleanField(default=False)
 
-    # 10. Rapport anatomopathologique
+    # 11. Rapport anatomopathologique
     numero_bloc_anapath         = models.CharField(max_length=50, blank=True)
     medecin_anatomopathologiste = models.CharField(max_length=150, blank=True)
     laboratoire_anapath         = models.CharField(max_length=200, blank=True)
@@ -271,12 +467,12 @@ class Diagnostic(models.Model):
     emboles_lymphatiques        = models.BooleanField(null=True, blank=True)
     emboles_vasculaires         = models.BooleanField(null=True, blank=True)
 
-    # 11. Établissement & CIM-10
+    # 12. Établissement & CIM-10
     etablissement_diagnostic = models.CharField(max_length=200, blank=True)
     cim10_code               = models.CharField(max_length=10, blank=True)
     cim10_libelle            = models.CharField(max_length=200, blank=True)
 
-    # 12. Statut & Métadonnées
+    # 13. Statut & Métadonnées
     est_principal     = models.BooleanField(default=True)
     observations      = models.TextField(blank=True)
     date_creation     = models.DateTimeField(auto_now_add=True)
@@ -291,6 +487,8 @@ class Diagnostic(models.Model):
         verbose_name_plural = 'Diagnostics'
 
     def __str__(self):
+        if self.categorie_cancer == self.CategorieCancer.LIQUIDE:
+            return f"[{self.patient.registration_number}] {self.get_hemopathie_maligne_display()} – {self.date_diagnostic}"
         return f"[{self.patient.registration_number}] {self.topographie_code} – {self.date_diagnostic}"
 
     def get_tnm_display_full(self):
@@ -348,7 +546,6 @@ class StyleVie(models.Model):
 
     diagnostic = models.OneToOneField(Diagnostic, on_delete=models.CASCADE, related_name='style_vie')
 
-    # Tabagisme
     statut_tabagique       = models.CharField(max_length=20, choices=StatutTabagique.choices, blank=True)
     paquets_annees         = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True)
     age_debut_tabac        = models.PositiveSmallIntegerField(null=True, blank=True)
@@ -356,19 +553,16 @@ class StyleVie(models.Model):
     type_tabac             = models.CharField(max_length=100, blank=True)
     nombre_cigarettes_jour = models.PositiveSmallIntegerField(null=True, blank=True)
 
-    # Alcool
     consommation_alcool       = models.CharField(max_length=20, choices=ConsommationAlcool.choices, blank=True)
     unites_par_semaine        = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
     type_alcool               = models.CharField(max_length=100, blank=True)
     duree_consommation_annees = models.PositiveSmallIntegerField(null=True, blank=True)
 
-    # Activité physique
     niveau_activite    = models.CharField(max_length=15, choices=NiveauActivite.choices, blank=True)
     heures_par_semaine = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
     type_activite      = models.CharField(max_length=200, blank=True)
     frequence_activite = models.CharField(max_length=50, blank=True)
 
-    # Alimentation & IMC
     poids                    = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     taille                   = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     imc                      = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
@@ -376,19 +570,16 @@ class StyleVie(models.Model):
     alimentation_desc        = models.TextField(blank=True)
     regime_particulier       = models.CharField(max_length=100, blank=True)
 
-    # Expositions
     exposition_professionnelle = models.TextField(blank=True)
     duree_exposition_annees    = models.PositiveSmallIntegerField(null=True, blank=True)
     profession                 = models.CharField(max_length=150, blank=True)
 
-    # Autres facteurs
     stress_chronique        = models.BooleanField(null=True, blank=True)
     qualite_sommeil         = models.CharField(max_length=15, choices=QualiteSommeil.choices, blank=True)
     heures_sommeil          = models.DecimalField(max_digits=3, decimal_places=1, null=True, blank=True)
     contraception_hormonale = models.CharField(max_length=100, blank=True)
     allaitement_duree_mois  = models.PositiveSmallIntegerField(null=True, blank=True)
 
-    # Score calculé
     score_risque_global = models.PositiveSmallIntegerField(null=True, blank=True)
 
     class Meta:
@@ -400,7 +591,7 @@ class StyleVie(models.Model):
 
     def calculer_score_risque(self):
         score = 0
-        if self.statut_tabagique == 'fumeur_actif':   score += 3
+        if self.statut_tabagique == 'fumeur_actif':    score += 3
         elif self.statut_tabagique == 'ancien_fumeur': score += 1
         if self.consommation_alcool == 'eleve':   score += 2
         elif self.consommation_alcool == 'modere': score += 1

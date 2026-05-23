@@ -24,9 +24,9 @@ import SuiviPage from './pages/suivi/SuiviPage';
 import NewConsultationPage, { NewEvenementPage } from './pages/suivi/NewConsultationPage';
 import ConsultationDetailPage from './pages/suivi/ConsultationDetailPage';
 
-import RCPPage from './pages/rcp/RCPPage';
+import RCPPage from './pages/rcp/RCPDashboard';
 import NewRCPPage, { NewDossierRCPPage } from './pages/rcp/NewRCPPage';
-import RCPDetailPage from './pages/rcp/RCPDetailPage';
+import RCPDetailPage from './pages/rcp/RCPSallePage';
 
 import { SigPageV2 } from './pages/sig/SigPagev2.jsx';
 
@@ -34,6 +34,11 @@ import StatistiquesPage from './pages/statistiques/StatistiquesPage';
 import StatsPage from './pages/stats/StatsPage';
 import AdminPage from './pages/admin/AdminPage';
 import AdminCustomFieldsPage from './pages/admin/AdminCustomFieldsPage';
+
+
+import SettingsPage from './pages/settings/SettingsPage';
+import HelpCenterPage from './pages/help/HelpCenterPage';
+import DoctorSettingsPage from './pages/settings/DoctorSettingsPage';
 
 import { AppLayout } from './components/layout/Sidebar';
 import AccessDenied, { RequirePermission } from './components/auth/AccessDenied';
@@ -272,6 +277,22 @@ function App() {
           <PermRoute permission="manageUsers">
             <AdminCustomFieldsPage />
           </PermRoute>
+        } />
+
+         <Route path="/parametres" element={
+          <PermRoute permission="manageUsers">
+            <SettingsPage />
+          </PermRoute>
+        } />
+        <Route path="/aide" element={
+          <ProtectedRoute>
+            <HelpCenterPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/parametres-medecin" element={
+          <ProtectedRoute>
+            <DoctorSettingsPage />
+          </ProtectedRoute>
         } />
 
         {/* ───────── Accès refusé ───────── */}

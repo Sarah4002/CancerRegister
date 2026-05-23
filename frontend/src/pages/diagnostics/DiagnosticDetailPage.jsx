@@ -7,10 +7,10 @@ import useCustomFields from '../../hooks/useCustomFields';
 import CustomFieldsSection from '../../components/custom_fields/CustomFieldsSection';
 
 const STADE_COLORS = {
-  '0':'#00e5a0','I':'#00e5a0','IA':'#00e5a0','IB':'#00e5a0',
-  'II':'#f5a623','IIA':'#f5a623','IIB':'#f5a623','IIC':'#f5a623',
+  '0':'#16a34a','I':'#16a34a','IA':'#16a34a','IB':'#16a34a',
+  'II':'#d97706','IIA':'#d97706','IIB':'#d97706','IIC':'#d97706',
   'III':'#ff7832','IIIA':'#ff7832','IIIB':'#ff7832','IIIC':'#ff7832',
-  'IV':'#ff4d6a','U':'#9ca3af',
+  'IV':'#dc2626','U':'#9ca3af',
 };
 
 // Définition des champs éditables par onglet (les mêmes que l’affichage)
@@ -142,18 +142,18 @@ export default function DiagnosticDetailPage() {
   return (
     <AppLayout title="Fiche Diagnostic">
       {/* Header */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+      <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
             <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(155,138,251,0.15)', border: '1px solid rgba(155,138,251,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}></div>
             <div>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>
-                {diag.topographie_libelle || 'Diagnostic'}
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>
+                {diag.diagnostic_resume || diag.topographie_libelle || 'Diagnostic'}
               </h2>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                <Code val={diag.topographie_code} color="#00a8ff" />
-                {diag.morphologie_code && <Code val={diag.morphologie_code} color="#9b8afb" />}
-                {diag.tnm_complet && diag.tnm_complet !== '—' && <Code val={diag.tnm_complet} color="#00e5a0" />}
+                <Code val={diag.categorie_cancer === 'liquide' ? 'HEMATO' : diag.topographie_code} color="#2563eb" />
+                {diag.morphologie_code && <Code val={diag.morphologie_code} color="#7c3aed" />}
+                {diag.tnm_complet && diag.tnm_complet !== '—' && <Code val={diag.tnm_complet} color="#16a34a" />}
                 <span style={{ padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: `${stadeColor}18`, color: stadeColor, border: `1px solid ${stadeColor}30`, fontFamily: 'var(--font-mono)' }}>
                   Stade {diag.stade_ajcc === 'U' ? 'Inconnu' : diag.stade_ajcc}
                 </span>
@@ -168,38 +168,38 @@ export default function DiagnosticDetailPage() {
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           {!editMode ? (
-            <button onClick={handleEditMode} style={{ padding: '8px 16px', background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 8, color: 'var(--text-primary)', fontSize: 12.5, cursor: 'pointer' }}>Modifier</button>
+            <button onClick={handleEditMode} style={{ padding: '8px 16px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 8, color: '#0f172a', fontSize: 12.5, cursor: 'pointer' }}>Modifier</button>
           ) : (
             <>
-              <button onClick={handleCancel} style={{ padding: '8px 16px', background: 'var(--bg-elevated)', border: '1px solid var(--border-light)', borderRadius: 8, color: 'var(--text-primary)', fontSize: 12.5, cursor: 'pointer' }}>Annuler</button>
-              <button onClick={handleSave} disabled={saving} style={{ padding: '8px 16px', background: '#9b8afb', border: '1px solid #9b8afb', borderRadius: 8, color: '#fff', fontSize: 12.5, cursor: 'pointer' }}>{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
+              <button onClick={handleCancel} style={{ padding: '8px 16px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 8, color: '#0f172a', fontSize: 12.5, cursor: 'pointer' }}>Annuler</button>
+              <button onClick={handleSave} disabled={saving} style={{ padding: '8px 16px', background: '#7c3aed', border: '1px solid #7c3aed', borderRadius: 8, color: '#fff', fontSize: 12.5, cursor: 'pointer' }}>{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
             </>
           )}
           <Link to={`/patients/${diag.patient}`} style={{ textDecoration: 'none' }}>
-            <button style={{ padding: '8px 16px', background: 'rgba(0,168,255,0.1)', border: '1px solid rgba(0,168,255,0.2)', borderRadius: 8, color: '#00a8ff', fontSize: 12.5, cursor: 'pointer' }}>Voir patient</button>
+            <button style={{ padding: '8px 16px', background: 'rgba(0,168,255,0.1)', border: '1px solid rgba(0,168,255,0.2)', borderRadius: 8, color: '#2563eb', fontSize: 12.5, cursor: 'pointer' }}>Voir patient</button>
           </Link>
           <Link to="/diagnostics" style={{ textDecoration: 'none' }}>
-            <button style={{ padding: '8px 16px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-muted)', fontSize: 12.5, cursor: 'pointer' }}>← Retour</button>
+            <button style={{ padding: '8px 16px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 8, color: '#64748b', fontSize: 12.5, cursor: 'pointer' }}>← Retour</button>
           </Link>
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 0, marginBottom: 16, background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', gap: 0, marginBottom: 16, background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
         {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{ flex: 1, padding: '12px 8px', background: 'none', border: 'none', borderBottom: `2px solid ${tab === t.key ? '#9b8afb' : 'transparent'}`, color: tab === t.key ? '#9b8afb' : 'var(--text-muted)', fontSize: 12.5, fontWeight: tab === t.key ? 600 : 400, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+          <button key={t.key} onClick={() => setTab(t.key)} style={{ flex: 1, padding: '12px 8px', background: 'none', border: 'none', borderBottom: `2px solid ${tab === t.key ? '#7c3aed' : 'transparent'}`, color: tab === t.key ? '#7c3aed' : '#64748b', fontSize: 12.5, fontWeight: tab === t.key ? 600 : 400, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
             {t.label}
           </button>
         ))}
       </div>
 
       {/* Content */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '24px' }}>
+      <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '24px' }}>
         {editMode && EDIT_FIELDS[tab] ? (
           <Grid>
             {EDIT_FIELDS[tab].map(f => (
               <div key={f.key}>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>{f.label}</div>
+                <div style={{ fontSize: 10, color: '#64748b', marginBottom: 3 }}>{f.label}</div>
                 <EditField field={f} value={editData[f.key]} onChange={v => updateField(f.key, v)} />
               </div>
             ))}
@@ -209,11 +209,14 @@ export default function DiagnosticDetailPage() {
             {/* Ici on garde exactement ton rendu existant */}
             {tab === 'icd' && (
               <Grid>
-                <InfoRow label="Code Topographie ICD-O-3" value={diag.topographie_code} mono />
-                <InfoRow label="Localisation" value={diag.topographie_libelle || '—'} />
+                <InfoRow label="Catégorie" value={diag.categorie_cancer_label || '—'} />
+                <InfoRow label="Code Topographie ICD-O-3" value={diag.categorie_cancer === 'liquide' ? 'HEMATO' : diag.topographie_code} mono />
+                <InfoRow label="Localisation / Diagnostic" value={diag.diagnostic_resume || diag.topographie_libelle || '—'} />
                 <InfoRow label="Latéralité" value={diag.lateralite_label} />
                 <InfoRow label="Code Morphologie ICD-O-3" value={diag.morphologie_code || '—'} mono />
                 <InfoRow label="Type histologique" value={diag.morphologie_libelle || '—'} />
+                <InfoRow label="Hémopathie maligne" value={diag.hemopathie_maligne_label || '—'} />
+                <InfoRow label="Examens complémentaires" value={diag.examens_complementaires || '—'} full />
                 <InfoRow label="Grade histologique" value={diag.grade_label} />
                 <InfoRow label="Base du diagnostic" value={diag.base_diag_label} />
                 <InfoRow label="N° bloc anatomopath." value={diag.numero_bloc_anapath || '—'} mono />
@@ -231,14 +234,14 @@ export default function DiagnosticDetailPage() {
 
 // ── Sub-components existants ──
 function Code({ val, color }) { return <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color, padding: '2px 8px', background: `${color}15`, borderRadius: 5, border: `1px solid ${color}25` }}>{val}</span>; }
-function InfoChip({ icon, label, sub }) { return (<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ fontSize: 13 }}>{icon}</span><div><div style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{label}</div>{sub && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{sub}</div>}</div></div>); }
+function InfoChip({ icon, label, sub }) { return (<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ fontSize: 13 }}>{icon}</span><div><div style={{ fontSize: 12.5, color: '#0f172a', fontWeight: 500 }}>{label}</div>{sub && <div style={{ fontSize: 10, color: '#64748b' }}>{sub}</div>}</div></div>); }
 function Grid({ children }) { return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>{children}</div>; }
-function InfoRow({ label, value, mono, full }) { return (<div style={{ padding: '10px 0', borderBottom: '1px solid var(--border)', gridColumn: full ? '1 / -1' : 'auto' }}><div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3, letterSpacing: 0.3, textTransform: 'uppercase' }}>{label}</div><div style={{ fontSize: 13.5, color: 'var(--text-primary)', fontFamily: mono ? 'var(--font-mono)' : 'inherit' }}>{value || '—'}</div></div>); }
-function Loader() { return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: 'var(--text-muted)' }}><div style={{ textAlign: 'center' }}><div style={{ width: 36, height: 36, border: '3px solid var(--border)', borderTopColor: '#9b8afb', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />Chargement...</div></div>; }
+function InfoRow({ label, value, mono, full }) { return (<div style={{ padding: '10px 0', borderBottom: '1px solid rgba(37,99,235,0.12)', gridColumn: full ? '1 / -1' : 'auto' }}><div style={{ fontSize: 10, color: '#64748b', marginBottom: 3, letterSpacing: 0.3, textTransform: 'uppercase' }}>{label}</div><div style={{ fontSize: 13.5, color: '#0f172a', fontFamily: mono ? 'var(--font-mono)' : 'inherit' }}>{value || '—'}</div></div>); }
+function Loader() { return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: '#64748b' }}><div style={{ textAlign: 'center' }}><div style={{ width: 36, height: 36, border: '3px solid rgba(37,99,235,0.12)', borderTopColor: '#7c3aed', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />Chargement...</div></div>; }
 
 // ── Composant champ éditable ──
 function EditField({ field, value, onChange }) {
-  const base = { width: '100%', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 13 };
+  const base = { width: '100%', padding: '6px 10px', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, fontSize: 13 };
   if (field.type === 'select') return <select style={base} value={value || ''} onChange={e => onChange(e.target.value)}>{field.options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}</select>;
   if (field.type === 'textarea') return <textarea style={base} rows={2} value={value || ''} onChange={e => onChange(e.target.value)} />;
   return <input style={base} type={field.type || 'text'} value={value || ''} onChange={e => onChange(e.target.value)} />;

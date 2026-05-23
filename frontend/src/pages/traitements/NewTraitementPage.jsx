@@ -8,12 +8,12 @@ import { diagnosticService } from '../../services/diagnosticService';
 import { AppLayout } from '../../components/layout/Sidebar';
 
 const TYPE_CONFIG = {
-  chimio:    { label: 'Chimiothérapie',    color: '#00a8ff' },
-  radio:     { label: 'Radiothérapie',     color: '#f5a623' },
-  chirurgie: { label: 'Chirurgie',         color: '#ff4d6a' },
-  hormono:   { label: 'Hormonothérapie',   color: '#00e5a0' },
-  immuno:    { label: 'Immunothérapie',    color: '#c084fc' },
-  ciblee:    { label: 'Thérapie ciblée',  color: '#8b5cf6' },
+  chimio:    { label: 'Chimiothérapie',    color: '#2563eb' },
+  radio:     { label: 'Radiothérapie',     color: '#2563eb' },
+  chirurgie: { label: 'Chirurgie',         color: '#2563eb' },
+  hormono:   { label: 'Hormonothérapie',   color: '#2563eb' },
+  immuno:    { label: 'Immunothérapie',    color: '#2563eb' },
+  ciblee:    { label: 'Thérapie ciblée',  color: '#2563eb' },
 };
 
 export default function NewTraitementPage() {
@@ -79,17 +79,28 @@ export default function NewTraitementPage() {
         <div style={{ display:'flex', gap:8, marginBottom:20 }}>
           {Object.entries(TYPE_CONFIG).map(([k, v]) => (
             <a key={k} href={`/traitements/nouveau?type=${k}`} style={{ textDecoration:'none' }}>
+<<<<<<< HEAD
               <div style={{ padding:'8px 14px', background: k===type ? `${v.color}18` : '#ffffff', border:`1px solid ${k===type ? v.color+'40' : 'var(--border-light)'}`, borderRadius:'var(--radius-md)', color: k===type ? v.color : 'var(--text-muted)', fontSize:12, fontWeight: k===type ? 600 : 400, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
+=======
+              <div style={{ padding:'8px 14px', background: k===type ? `${v.color}18` : '#ffffff', border:`1px solid ${k===type ? v.color+'40' : 'rgba(37,99,235,0.08)'}`, borderRadius:'12px', color: k===type ? v.color : '#64748b', fontSize:12, fontWeight: k===type ? 600 : 400, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
                 {v.icon} {v.label}
               </div>
             </a>
           ))}
         </div>
 
+<<<<<<< HEAD
         <div style={{ background:'#ffffff', border:`1px solid ${cfg.color}20`, borderRadius:'var(--radius-lg)', padding:'28px 32px' }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid var(--border)' }}>
             <span style={{ fontSize:24 }}>{cfg.icon}</span>
             <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'#1e293b' }}>
+=======
+        <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
+            <span style={{ fontSize:24 }}>{cfg.icon}</span>
+            <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'#0f172a' }}>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
               Nouveau – {cfg.label}
             </h2>
           </div>
@@ -212,12 +223,12 @@ export default function NewTraitementPage() {
                       <input {...register(`medicaments.${idx}.jour_administration`)} placeholder="J1" style={inputSt} />
                     </Field>
                     <div style={{ paddingBottom:2 }}>
-                      <button type="button" onClick={() => removeMed(idx)} style={{ width:32, height:36, background:'rgba(255,77,106,0.1)', border:'1px solid rgba(255,77,106,0.2)', borderRadius:6, color:'#ff4d6a', cursor:'pointer', fontSize:16 }}>×</button>
+                      <button type="button" onClick={() => removeMed(idx)} style={{ width:32, height:36, background:'rgba(255,77,106,0.1)', border:'1px solid rgba(255,77,106,0.2)', borderRadius:6, color:'#dc2626', cursor:'pointer', fontSize:16 }}>×</button>
                     </div>
                   </div>
                 ))}
                 <button type="button" onClick={() => addMed({ dci:'', dose:'', unite_dose:'mg/m2', jour_administration:'J1' })}
-                  style={{ padding:'7px 14px', background:'rgba(0,168,255,0.08)', border:'1px dashed rgba(0,168,255,0.3)', borderRadius:8, color:'#00a8ff', fontSize:12, cursor:'pointer' }}>
+                  style={{ padding:'7px 14px', background:'rgba(37,99,235,0.08)', border:'1px dashed rgba(37,99,235,0.24)', borderRadius:8, color:'#2563eb', fontSize:12, cursor:'pointer' }}>
                   + Ajouter un médicament
                 </button>
               </Section>
@@ -292,7 +303,7 @@ export default function NewTraitementPage() {
                   </Field>
                 </Row2>
                 <Field label="">
-                  <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:13, color:'var(--text-secondary)' }}>
+                  <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:13, color:'#334155' }}>
                     <input type="checkbox" {...register('association_chimio')} style={{ width:14, height:14 }} />
                     Radiochimiothérapie concomitante
                   </label>
@@ -355,7 +366,7 @@ export default function NewTraitementPage() {
                 </Row2>
                 <Row3>
                   <Field label="">
-                    <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:13, color:'var(--text-secondary)', marginTop:20 }}>
+                    <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:13, color:'#334155', marginTop:20 }}>
                       <input type="checkbox" {...register('curage_ganglionnaire')} style={{ width:14, height:14 }} />
                       Curage ganglionnaire
                     </label>
@@ -463,11 +474,11 @@ export default function NewTraitementPage() {
             </Section>
 
             {/* Boutons */}
-            <div style={{ display:'flex', gap:10, paddingTop:20, borderTop:'1px solid var(--border)' }}>
-              <button type="button" onClick={() => navigate('/traitements')} style={{ flex:'0 0 110px', padding:'12px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-md)', color:'var(--text-secondary)', fontSize:13, cursor:'pointer' }}>
+            <div style={{ display:'flex', gap:10, paddingTop:20, borderTop:'1px solid rgba(37,99,235,0.12)' }}>
+              <button type="button" onClick={() => navigate('/traitements')} style={{ flex:'0 0 110px', padding:'12px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:'12px', color:'#334155', fontSize:13, cursor:'pointer' }}>
                 ← Annuler
               </button>
-              <button type="submit" disabled={submitting} style={{ flex:1, padding:'12px', background:`linear-gradient(135deg, ${cfg.color}, ${cfg.color}cc)`, border:'none', borderRadius:'var(--radius-md)', color:'#fff', fontSize:13.5, fontWeight:600, fontFamily:'var(--font-display)', cursor:submitting?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:submitting?0.7:1 }}>
+              <button type="submit" disabled={submitting} style={{ flex:1, padding:'12px', background:'linear-gradient(135deg, #2563eb, #1d4ed8)', border:'none', borderRadius:'12px', color:'#fff', fontSize:13.5, fontWeight:600, fontFamily:'var(--font-display)', cursor:submitting?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:submitting?0.7:1 }}>
                 {submitting ? <><Spinner /> Enregistrement...</> : ` Enregistrer ${cfg.label.toLowerCase()}`}
               </button>
             </div>
@@ -482,7 +493,7 @@ export default function NewTraitementPage() {
 function Section({ title, children }) {
   return (
     <div style={{ marginBottom:28 }}>
-      <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.8, marginBottom:14, paddingBottom:8, borderBottom:'1px solid var(--border)' }}>{title}</div>
+      <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:0.8, marginBottom:14, paddingBottom:8, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>{title}</div>
       {children}
     </div>
   );
@@ -492,13 +503,13 @@ function Row3({ children }) { return <div style={{ display:'grid', gridTemplateC
 function Field({ label, error, children }) {
   return (
     <div style={{ marginBottom:14 }}>
-      {label && <label style={{ display:'block', fontSize:11.5, fontWeight:500, color:'var(--text-secondary)', marginBottom:5, letterSpacing:0.3 }}>{label}</label>}
+      {label && <label style={{ display:'block', fontSize:11.5, fontWeight:500, color:'#334155', marginBottom:5, letterSpacing:0.3 }}>{label}</label>}
       {children}
-      {error && <p style={{ marginTop:3, fontSize:11, color:'var(--danger)' }}>⚠ {error}</p>}
+      {error && <p style={{ marginTop:3, fontSize:11, color:'#dc2626' }}>⚠ {error}</p>}
     </div>
   );
 }
 function Spinner() { return <div style={{ width:14, height:14, border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />; }
 
-const inputSt  = { width:'100%', padding:'9px 12px', background:'var(--bg-elevated)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', color:'var(--text-primary)', fontSize:13, outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' };
+const inputSt  = { width:'100%', padding:'9px 12px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', color:'#0f172a', fontSize:13, outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' };
 const selectSt = { ...inputSt, cursor:'pointer' };

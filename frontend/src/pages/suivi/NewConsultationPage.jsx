@@ -53,10 +53,10 @@ export default function NewConsultationPage() {
  return (
  <AppLayout title="Nouvelle Consultation de Suivi">
  <div style={{ maxWidth:860, margin:'0 auto' }}>
- <div style={{ background:'var(--bg-card)', border:'1px solid rgba(155,138,251,0.2)', borderRadius:'var(--radius-lg)', padding:'28px 32px' }}>
- <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid var(--border)' }}>
+ <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>
+ <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
  <span style={{ fontSize:24 }}></span>
- <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'var(--text-primary)' }}>Consultation de suivi</h2>
+ <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'#0f172a' }}>Consultation de suivi</h2>
  </div>
 
  <form onSubmit={handleSubmit(onSubmit)}>
@@ -116,7 +116,7 @@ export default function NewConsultationPage() {
  <input type="number" {...register('taille_cm')} placeholder="170" style={inputSt} />
  </Field>
  <Field label="IMC (calculé)">
- <div style={{ padding:'9px 12px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-md)', fontFamily:'var(--font-mono)', fontSize:13, color: imc ? (imc < 18.5 || imc > 30 ? '#f5a623' : '#00e5a0') : 'var(--text-muted)' }}>
+ <div style={{ padding:'9px 12px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:'12px', fontFamily:'var(--font-mono)', fontSize:13, color: imc ? '#2563eb' : '#64748b' }}>
  {imc ? `${imc} kg/m²` : '—'}
  </div>
  </Field>
@@ -153,9 +153,9 @@ export default function NewConsultationPage() {
  <Section title="Rechute & Antécédents">
  <Row2>
  <Field label="">
- <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:13, color:'var(--text-secondary)', marginTop:8 }}>
- <input type="checkbox" {...register('rechute')} style={{ width:14, height:14, accentColor:'#ff4d6a' }} />
- <span style={{ color: rechute ? '#ff4d6a' : 'var(--text-secondary)' }}>
+ <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:13, color:'#334155', marginTop:8 }}>
+ <input type="checkbox" {...register('rechute')} style={{ width:14, height:14, accentColor:'#dc2626' }} />
+ <span style={{ color: rechute ? '#dc2626' : '#334155' }}>
  Patient en rechute
  </span>
  </label>
@@ -221,8 +221,8 @@ export default function NewConsultationPage() {
  </select>
  </Field>
  <Field label="">
- <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:13, color:'var(--text-secondary)', marginTop:22 }}>
- <input type="checkbox" {...register('exposition_toxique')} style={{ width:14, height:14, accentColor:'#f5a623' }} />
+ <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:13, color:'#334155', marginTop:22 }}>
+ <input type="checkbox" {...register('exposition_toxique')} style={{ width:14, height:14, accentColor:'#2563eb' }} />
  Exposition toxique
  </label>
  </Field>
@@ -272,9 +272,9 @@ export default function NewConsultationPage() {
  </Field>
  </Section>
 
- <div style={{ display:'flex', gap:10, paddingTop:20, borderTop:'1px solid var(--border)' }}>
- <button type="button" onClick={() => navigate('/suivi')} style={{ flex:'0 0 110px', padding:'12px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-md)', color:'var(--text-secondary)', fontSize:13, cursor:'pointer' }}>← Annuler</button>
- <button type="submit" disabled={submitting} style={{ flex:1, padding:'12px', background:'linear-gradient(135deg, #9b8afb, #7c6fcd)', border:'none', borderRadius:'var(--radius-md)', color:'#fff', fontSize:13.5, fontWeight:600, fontFamily:'var(--font-display)', cursor:submitting?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:submitting?0.7:1 }}>
+ <div style={{ display:'flex', gap:10, paddingTop:20, borderTop:'1px solid rgba(37,99,235,0.12)' }}>
+ <button type="button" onClick={() => navigate('/suivi')} style={{ flex:'0 0 110px', padding:'12px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:'12px', color:'#334155', fontSize:13, cursor:'pointer' }}>← Annuler</button>
+ <button type="submit" disabled={submitting} style={{ flex:1, padding:'12px', background:'linear-gradient(135deg, #2563eb, #1d4ed8)', border:'none', borderRadius:'12px', color:'#fff', fontSize:13.5, fontWeight:600, fontFamily:'var(--font-display)', cursor:submitting?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:submitting?0.7:1 }}>
  {submitting ? <><Spin/> Enregistrement...</> : ' Enregistrer la consultation'}
  </button>
  </div>
@@ -316,10 +316,10 @@ export function NewEvenementPage() {
  return (
  <AppLayout title="Nouvel Effet Indésirable">
  <div style={{ maxWidth:700, margin:'0 auto' }}>
- <div style={{ background:'var(--bg-card)', border:'1px solid rgba(155,138,251,0.2)', borderRadius:'var(--radius-lg)', padding:'28px 32px' }}>
- <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid var(--border)' }}>
+ <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>
+ <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
  <span style={{ fontSize:24 }}></span>
- <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'var(--text-primary)' }}>Effet indésirable</h2>
+ <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'#0f172a' }}>Effet indésirable</h2>
  </div>
  <form onSubmit={handleSubmit(onSubmit)}>
  <Section title="Patient & Médicament">
@@ -391,16 +391,16 @@ export function NewEvenementPage() {
  <textarea {...register('traitement_symptomatique')} rows={2} placeholder="Ex: Antiémétiques, G-CSF, corticoïdes..." style={{ ...inputSt, resize:'vertical' }} />
  </Field>
  <Field label="">
- <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:13, color:'var(--text-secondary)', marginTop:8 }}>
- <input type="checkbox" {...register('resolu')} style={{ width:14, height:14, accentColor:'#00e5a0' }} />
+ <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:13, color:'#334155', marginTop:8 }}>
+ <input type="checkbox" {...register('resolu')} style={{ width:14, height:14, accentColor:'#2563eb' }} />
  Effet résolu
  </label>
  </Field>
  </Section>
 
- <div style={{ display:'flex', gap:10, paddingTop:16, borderTop:'1px solid var(--border)' }}>
- <button type="button" onClick={() => navigate('/suivi')} style={{ flex:'0 0 110px', padding:'11px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-md)', color:'var(--text-secondary)', fontSize:13, cursor:'pointer' }}>← Annuler</button>
- <button type="submit" disabled={submitting} style={{ flex:1, padding:'11px', background:'linear-gradient(135deg, #9b8afb, #7c6fcd)', border:'none', borderRadius:'var(--radius-md)', color:'#fff', fontSize:13, fontWeight:600, cursor:submitting?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:submitting?0.7:1 }}>
+ <div style={{ display:'flex', gap:10, paddingTop:16, borderTop:'1px solid rgba(37,99,235,0.12)' }}>
+ <button type="button" onClick={() => navigate('/suivi')} style={{ flex:'0 0 110px', padding:'11px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:'12px', color:'#334155', fontSize:13, cursor:'pointer' }}>← Annuler</button>
+ <button type="submit" disabled={submitting} style={{ flex:1, padding:'11px', background:'linear-gradient(135deg, #2563eb, #1d4ed8)', border:'none', borderRadius:'12px', color:'#fff', fontSize:13, fontWeight:600, cursor:submitting?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:submitting?0.7:1 }}>
  {submitting ? <><Spin/> Enregistrement...</> : ' Enregistrer l\'effet indésirable'}
  </button>
  </div>
@@ -415,7 +415,7 @@ export function NewEvenementPage() {
 function Section({ title, children }) {
  return (
  <div style={{ marginBottom:24 }}>
- <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.8, marginBottom:12, paddingBottom:8, borderBottom:'1px solid var(--border)' }}>{title}</div>
+ <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:0.8, marginBottom:12, paddingBottom:8, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>{title}</div>
  {children}
  </div>
  );
@@ -425,12 +425,12 @@ function Row3({ children }) { return <div style={{ display:'grid', gridTemplateC
 function Field({ label, error, children }) {
  return (
  <div style={{ marginBottom:14 }}>
- {label && <label style={{ display:'block', fontSize:11.5, fontWeight:500, color:'var(--text-secondary)', marginBottom:5 }}>{label}</label>}
+ {label && <label style={{ display:'block', fontSize:11.5, fontWeight:500, color:'#334155', marginBottom:5 }}>{label}</label>}
  {children}
- {error && <p style={{ marginTop:3, fontSize:11, color:'var(--danger)' }}> {error}</p>}
+ {error && <p style={{ marginTop:3, fontSize:11, color:'#dc2626' }}> {error}</p>}
  </div>
  );
 }
 function Spin() { return <div style={{ width:13, height:13, border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />; }
-const inputSt = { width:'100%', padding:'9px 12px', background:'var(--bg-elevated)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', color:'var(--text-primary)', fontSize:13, outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' };
+const inputSt = { width:'100%', padding:'9px 12px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', color:'#0f172a', fontSize:13, outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' };
 const selSt = { ...inputSt, cursor:'pointer' };

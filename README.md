@@ -194,6 +194,46 @@ curl -X POST http://localhost:8000/api/v1/auth/login/ \
 
 ---
 
+## 🔗 Intégration des fichiers fournis
+
+Les fichiers partagés ont été intégrés dans le projet :
+
+- `backend/data/references/dictionnaire_canreg.txt`
+- `backend/data/references/CEPD_toxicite.pdf`
+
+### 1) Charger le dictionnaire CanReg dans les référentiels ICD
+
+```bash
+cd backend
+python manage.py seed_icd --dictionary "backend/data/references/dictionnaire_canreg.txt"
+```
+
+Cela met à jour automatiquement :
+- `TopographieICD` (section `#3 Localisation`)
+- `MorphologieICD` (section `#4 Morphologie`)
+
+### 2) Importer une base Access hématologie (.accdb)
+
+Commande d’aperçu (sans écriture) :
+
+```bash
+cd backend
+python manage.py import_hemato_access --path "C:\Users\Testing\Downloads\BDD Hemato TLM (1) (1).accdb" --preview
+```
+
+Import réel :
+
+```bash
+cd backend
+python manage.py import_hemato_access --path "C:\Users\Testing\Downloads\BDD Hemato TLM (1) (1).accdb"
+```
+
+Notes :
+- Cette commande nécessite `pyodbc` + driver ODBC Access (`.mdb/.accdb`) sur Windows.
+- Le PDF `CEPD_toxicite.pdf` est stocké comme référence clinique dans le repo.
+
+---
+
 ## 🔒 Sécurité
 
 - JWT avec auto-refresh et blacklisting

@@ -1,8 +1,15 @@
 from rest_framework import serializers
-from .models import Diagnostic, TopographieICD, MorphologieICD, StyleVie
+from .models import (
+    Diagnostic,
+    TopographieICD,
+    MorphologieICD,
+    StyleVie,
+    DiagnosticValidationRule,
+)
 
 
 class TopographieSerializer(serializers.ModelSerializer):
+
     class Meta:
         model  = TopographieICD
         fields = ['id', 'code', 'libelle', 'categorie']
@@ -113,3 +120,23 @@ class DiagnosticCreateSerializer(serializers.ModelSerializer):
         if style_vie_data is not None:
             StyleVie.objects.update_or_create(diagnostic=instance, defaults=style_vie_data)
         return instance
+
+
+class DiagnosticValidationRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DiagnosticValidationRule
+        fields = [
+            'id',
+            'code',
+            'label',
+            'module',
+            'field_name',
+            'severity',
+            'description',
+            'conditions',
+            'active',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+

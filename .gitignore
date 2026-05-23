@@ -32,6 +32,11 @@ venv/
 .ENV
 .env.local
 .env.*.local
+.env.render
+.env
+.env.render
+backend/.env.render
+frontend/.env
 
 # Ignore all venvs anywhere
 **/venv/

@@ -18,6 +18,55 @@ const STEPS = [
   { label: 'Antecedents' },
 ];
 
+// ── Règles de validation téléphone algérien ───────────────────
+// Formats acceptés :
+//   - 10 chiffres locaux   : 05XXXXXXXX | 06XXXXXXXX | 07XXXXXXXX
+//   - Avec indicatif (+213): +213 5XXXXXXXX | +2136XXXXXXXX | +2137XXXXXXXX
+//   - Avec 00213           : 00213 5XXXXXXXX …
+const PHONE_REGEX = /^(\+213|00213|0)(5|6|7)\d{8}$/;
+
+const validatePhone = (value) => {
+  if (!value || value.trim() === '') return true; // champ optionnel
+  const cleaned = value.replace(/[\s\-\.]/g, '');
+  if (!PHONE_REGEX.test(cleaned)) {
+    return 'Numéro invalide (ex: 0551234567, +213551234567) — doit commencer par 05, 06 ou 07';
+  }
+  return true;
+};
+
+const validatePhoneRequired = (value) => {
+  if (!value || value.trim() === '') return 'Téléphone requis';
+  return validatePhone(value);
+};
+
+// ── Validation ID national (10 chiffres) ─────────────────────
+const validateIdNational = (value) => {
+  if (!value || value.trim() === '') return true;
+  if (!/^\d{10}$/.test(value.trim())) return 'L\'ID nationale doit contenir exactement 10 chiffres';
+  return true;
+};
+
+// ── Validation numéro sécurité sociale (14 chiffres) ─────────
+const validateSecuriteSociale = (value) => {
+  if (!value || value.trim() === '') return true;
+  if (!/^\d{14}$/.test(value.trim())) return 'Le N° sécurité sociale doit contenir exactement 14 chiffres';
+  return true;
+};
+
+// ── Validation code postal (5 chiffres) ──────────────────────
+const validateCodePostal = (value) => {
+  if (!value || value.trim() === '') return true;
+  if (!/^\d{5}$/.test(value.trim())) return 'Le code postal doit contenir exactement 5 chiffres';
+  return true;
+};
+
+// ── Validation email ──────────────────────────────────────────
+const validateEmail = (value) => {
+  if (!value || value.trim() === '') return true;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return 'Adresse email invalide';
+  return true;
+};
+
 export default function NewPatientPage() {
   const navigate = useNavigate();
   const [step, setStep]             = useState(0);
@@ -91,7 +140,6 @@ export default function NewPatientPage() {
   const creerPatient = async (payload) => {
     try {
       const { data: patient } = await patientService.create(payload);
-      // Sauvegarder les champs personnalisés après création
       if (Object.keys(valeursCustom).length > 0) {
         await sauvegarderCustom(patient.id);
       }
@@ -135,22 +183,30 @@ export default function NewPatientPage() {
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
 
         {/* Stepper */}
+<<<<<<< HEAD
         <div style={{ display: 'flex', marginBottom: 28, background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+=======
+        <div style={{ display: 'flex', marginBottom: 28, background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
           {STEPS.map((s, i) => (
             <div key={i} onClick={() => i < step && setStep(i)} style={{
               flex: 1, padding: '14px 12px', textAlign: 'center',
-              background: i === step ? 'var(--accent-dim)' : i < step ? 'rgba(0,229,160,0.08)' : 'transparent',
-              borderRight: i < STEPS.length - 1 ? '1px solid var(--border)' : 'none',
+              background: i === step ? 'rgba(37,99,235,0.08)' : i < step ? 'rgba(59,130,246,0.08)' : 'transparent',
+              borderRight: i < STEPS.length - 1 ? '1px solid rgba(37,99,235,0.12)' : 'none',
               cursor: i < step ? 'pointer' : 'default', transition: 'all 0.2s',
             }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: i === step ? 'var(--accent)' : i < step ? 'var(--success)' : 'var(--text-muted)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: i === step ? '#2563eb' : i < step ? '#1d4ed8' : '#64748b' }}>
                 {i < step ? '✓ ' : ''}{s.label}
               </div>
             </div>
           ))}
         </div>
 
+<<<<<<< HEAD
         <div style={{ background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '28px 32px' }}>
+=======
+        <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '28px 32px' }}>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
           <form onSubmit={handleSubmit(onStepSubmit)}>
 
             {/* ══ STEP 0 : Identité ══════════════════════════════════ */}
@@ -158,7 +214,6 @@ export default function NewPatientPage() {
               <div style={{ animation: 'fadeUp 0.3s ease' }}>
                 <SectionTitle>Identite du patient</SectionTitle>
 
-                {/* Saisie vocale */}
                 <VoiceDictation
                   formType="patient"
                   onFieldsExtracted={(fields) => {
@@ -167,7 +222,7 @@ export default function NewPatientPage() {
                     });
                   }}
                 />
-                <div style={{ margin: '12px 0', height: 1, background: 'var(--border)' }} />
+                <div style={{ margin: '12px 0', height: 1, background: 'rgba(37,99,235,0.12)' }} />
 
                 <Row>
                   <Field label="Nom *" error={errors.nom?.message}>
@@ -178,11 +233,21 @@ export default function NewPatientPage() {
                   </Field>
                 </Row>
                 <Row>
-                  <Field label="N identite nationale">
-                    <input {...register('id_national')} placeholder="Ex: 1234567890" style={inputStyle()} />
+                  <Field label="N° identité nationale" error={errors.id_national?.message}>
+                    <input
+                      {...register('id_national', { validate: validateIdNational })}
+                      placeholder="Ex: 1234567890 (10 chiffres)"
+                      maxLength={10}
+                      style={inputStyle(errors.id_national)}
+                    />
                   </Field>
-                  <Field label="N securite sociale">
-                    <input {...register('num_securite_sociale')} placeholder="Ex: 12345678901234" style={inputStyle()} />
+                  <Field label="N° sécurité sociale" error={errors.num_securite_sociale?.message}>
+                    <input
+                      {...register('num_securite_sociale', { validate: validateSecuriteSociale })}
+                      placeholder="Ex: 12345678901234 (14 chiffres)"
+                      maxLength={14}
+                      style={inputStyle(errors.num_securite_sociale)}
+                    />
                   </Field>
                 </Row>
                 <Row>
@@ -217,7 +282,6 @@ export default function NewPatientPage() {
               <div style={{ animation: 'fadeUp 0.3s ease' }}>
                 <SectionTitle>Coordonnees et Adresse</SectionTitle>
 
-                {/* Saisie vocale */}
                 <VoiceDictation
                   formType="patient"
                   onFieldsExtracted={(fields) => {
@@ -226,7 +290,7 @@ export default function NewPatientPage() {
                     });
                   }}
                 />
-                <div style={{ margin: '12px 0', height: 1, background: 'var(--border)' }} />
+                <div style={{ margin: '12px 0', height: 1, background: 'rgba(37,99,235,0.12)' }} />
 
                 <Field label="Adresse complete">
                   <textarea {...register('adresse')} placeholder="Rue, N, quartier..." rows={2} style={{ ...inputStyle(), resize: 'vertical', lineHeight: 1.5 }} />
@@ -245,20 +309,57 @@ export default function NewPatientPage() {
                         {communesDispo.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     ) : (
-                      <div style={{ ...inputStyle(), display: 'flex', alignItems: 'center', color: 'var(--text-muted)', fontSize: 12.5 }}>
+                      <div style={{ ...inputStyle(), display: 'flex', alignItems: 'center', color: '#64748b', fontSize: 12.5 }}>
                         Choisir d'abord une wilaya
                       </div>
                     )}
                   </Field>
                 </Row>
                 <Row>
-                  <Field label="Code postal"><input {...register('code_postal')} placeholder="31000" style={inputStyle()} /></Field>
-                  <Field label="Telephone principal"><input {...register('telephone')} placeholder="+213 5xx xxx xxx" style={inputStyle()} /></Field>
+                  <Field label="Code postal" error={errors.code_postal?.message}>
+                    <input
+                      {...register('code_postal', { validate: validateCodePostal })}
+                      placeholder="31000 (5 chiffres)"
+                      maxLength={5}
+                      style={inputStyle(errors.code_postal)}
+                    />
+                  </Field>
+                  <Field label="Téléphone principal" error={errors.telephone?.message}>
+                    <input
+                      {...register('telephone', { validate: validatePhone })}
+                      placeholder="0551234567 ou +213551234567"
+                      maxLength={17}
+                      style={inputStyle(errors.telephone)}
+                    />
+                  </Field>
                 </Row>
+
+                {/* Hint sous les champs téléphone */}
+                {!errors.telephone && (
+                  <p style={{ marginTop: -10, marginBottom: 12, fontSize: 11, color: '#94a3b8' }}>
+                    Formats acceptés : 05XXXXXXXX · 06XXXXXXXX · 07XXXXXXXX · +213XXXXXXXXX
+                  </p>
+                )}
+
                 <Row>
-                  <Field label="Telephone secondaire"><input {...register('telephone2')} placeholder="+213 5xx xxx xxx" style={inputStyle()} /></Field>
-                  <Field label="Email"><input type="email" {...register('email')} placeholder="patient@email.com" style={inputStyle()} /></Field>
+                  <Field label="Téléphone secondaire" error={errors.telephone2?.message}>
+                    <input
+                      {...register('telephone2', { validate: validatePhone })}
+                      placeholder="0661234567"
+                      maxLength={17}
+                      style={inputStyle(errors.telephone2)}
+                    />
+                  </Field>
+                  <Field label="Email" error={errors.email?.message}>
+                    <input
+                      type="email"
+                      {...register('email', { validate: validateEmail })}
+                      placeholder="patient@email.com"
+                      style={inputStyle(errors.email)}
+                    />
+                  </Field>
                 </Row>
+
                 <SectionTitle style={{ marginTop: 24 }}>Contact d'urgence</SectionTitle>
                 <Row>
                   <Field label="Nom du contact"><input {...register('contact_nom')} placeholder="Benali" style={inputStyle()} /></Field>
@@ -266,7 +367,14 @@ export default function NewPatientPage() {
                 </Row>
                 <Row>
                   <Field label="Lien de parente"><input {...register('contact_lien')} placeholder="Ex: Epoux, Fils, Soeur" style={inputStyle()} /></Field>
-                  <Field label="Telephone"><input {...register('contact_telephone')} placeholder="+213 5xx xxx xxx" style={inputStyle()} /></Field>
+                  <Field label="Téléphone contact" error={errors.contact_telephone?.message}>
+                    <input
+                      {...register('contact_telephone', { validate: validatePhone })}
+                      placeholder="0771234567"
+                      maxLength={17}
+                      style={inputStyle(errors.contact_telephone)}
+                    />
+                  </Field>
                 </Row>
               </div>
             )}
@@ -380,32 +488,30 @@ export default function NewPatientPage() {
                 />
 
                 {/* Récapitulatif */}
-                <div style={{ marginTop: 20, padding: '14px 16px', background: 'var(--accent-dim)', border: '1px solid rgba(0,168,255,0.2)', borderRadius: 'var(--radius-md)' }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)', marginBottom: 8 }}>Recapitulatif du dossier</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-                    <strong style={{ color: 'var(--text-primary)' }}>Patient :</strong> {saved[0]?.prenom} {saved[0]?.nom}<br />
-                    <strong style={{ color: 'var(--text-primary)' }}>Sexe :</strong> {saved[0]?.sexe === 'M' ? 'Masculin' : saved[0]?.sexe === 'F' ? 'Feminin' : '—'} · <strong style={{ color: 'var(--text-primary)' }}>Age :</strong> {saved[0]?.age_diagnostic || '—'} ans<br />
-                    <strong style={{ color: 'var(--text-primary)' }}>Wilaya :</strong> {saved[1]?.wilaya || '—'} · <strong style={{ color: 'var(--text-primary)' }}>Tel :</strong> {saved[1]?.telephone || '—'}
+                <div style={{ marginTop: 20, padding: '14px 16px', background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.16)', borderRadius: '12px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#2563eb', marginBottom: 8 }}>Recapitulatif du dossier</div>
+                  <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.8 }}>
+                    <strong style={{ color: '#0f172a' }}>Patient :</strong> {saved[0]?.prenom} {saved[0]?.nom}<br />
+                    <strong style={{ color: '#0f172a' }}>Sexe :</strong> {saved[0]?.sexe === 'M' ? 'Masculin' : saved[0]?.sexe === 'F' ? 'Feminin' : '—'} · <strong style={{ color: '#0f172a' }}>Age :</strong> {saved[0]?.age_diagnostic || '—'} ans<br />
+                    <strong style={{ color: '#0f172a' }}>Wilaya :</strong> {saved[1]?.wilaya || '—'} · <strong style={{ color: '#0f172a' }}>Tel :</strong> {saved[1]?.telephone || '—'}
                   </div>
                 </div>
               </div>
             )}
 
             {/* Navigation */}
-            <div style={{ display: 'flex', gap: 10, marginTop: 28, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 28, paddingTop: 20, borderTop: '1px solid rgba(37,99,235,0.12)' }}>
               {step > 0 && (
                 <button type="button" onClick={() => setStep(s => s - 1)} style={{
-                  flex: '0 0 110px', padding: '12px', background: 'var(--bg-elevated)',
-                  border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-                  color: 'var(--text-secondary)', fontSize: 13.5, cursor: 'pointer',
+                  flex: '0 0 110px', padding: '12px', background: '#f1f5f9',
+                  border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px',
+                  color: '#334155', fontSize: 13.5, cursor: 'pointer',
                 }}>Retour</button>
               )}
               <button type="submit" disabled={submitting} style={{
                 flex: 1, padding: '12px',
-                background: step === 3
-                  ? 'linear-gradient(135deg, var(--success), #00b38a)'
-                  : 'linear-gradient(135deg, #00a8ff, #0080cc)',
-                border: 'none', borderRadius: 'var(--radius-md)',
+                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                border: 'none', borderRadius: '12px',
                 color: '#fff', fontSize: 13.5, fontWeight: 600,
                 cursor: submitting ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -437,7 +543,7 @@ export default function NewPatientPage() {
 
 // ── Helpers ───────────────────────────────────────────────────
 function SectionTitle({ children, style: s }) {
-  return <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 18, fontFamily: 'var(--font-display)', ...s }}>{children}</h3>;
+  return <h3 style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 18, fontFamily: 'var(--font-display)', ...s }}>{children}</h3>;
 }
 function Row({ children }) {
   return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>{children}</div>;
@@ -445,9 +551,9 @@ function Row({ children }) {
 function Field({ label, error, children }) {
   return (
     <div style={{ marginBottom: 16 }}>
-      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6, letterSpacing: 0.3 }}>{label}</label>
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#334155', marginBottom: 6, letterSpacing: 0.3 }}>{label}</label>
       {children}
-      {error && <p style={{ marginTop: 4, fontSize: 11.5, color: 'var(--danger)' }}>{error}</p>}
+      {error && <p style={{ marginTop: 4, fontSize: 11.5, color: '#dc2626' }}>{error}</p>}
     </div>
   );
 }
@@ -455,9 +561,9 @@ function Spinner() {
   return <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />;
 }
 const inputStyle  = (err) => ({
-  width: '100%', padding: '10px 12px', background: 'var(--bg-elevated)',
-  border: '1px solid ' + (err ? 'var(--danger)' : 'var(--border-light)'),
-  borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: 13.5,
+  width: '100%', padding: '10px 12px', background: '#f1f5f9',
+  border: '1px solid ' + (err ? '#dc2626' : 'rgba(37,99,235,0.08)'),
+  borderRadius: '12px', color: '#0f172a', fontSize: 13.5,
   outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box',
 });
 const selectStyle = (err) => ({ ...inputStyle(err), cursor: 'pointer' });

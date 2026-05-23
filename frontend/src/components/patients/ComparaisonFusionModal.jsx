@@ -31,9 +31,9 @@ const CHAMPS = [
 ];
 
 const CERTITUDE_STYLE = {
-  haute:   { bg: 'rgba(255,77,106,0.12)',  color: '#ff4d6a', label: 'Certitude haute'   },
-  moyenne: { bg: 'rgba(245,166,35,0.12)',  color: '#f5a623', label: 'Certitude moyenne' },
-  faible:  { bg: 'rgba(155,138,251,0.12)', color: '#9b8afb', label: 'Certitude faible'  },
+  haute:   { bg: 'rgba(255,77,106,0.12)',  color: '#dc2626', label: 'Certitude haute'   },
+  moyenne: { bg: 'rgba(245,166,35,0.12)',  color: '#d97706', label: 'Certitude moyenne' },
+  faible:  { bg: 'rgba(155,138,251,0.12)', color: '#7c3aed', label: 'Certitude faible'  },
 };
 
 function formatDate(d) {
@@ -83,8 +83,8 @@ function CellEditable({ champ, value, onChange }) {
             autoFocus
             style={{
               width: '100%', padding: '5px 8px',
-              background: 'var(--bg-elevated)', border: '1px solid var(--accent)',
-              borderRadius: 6, color: 'var(--text-primary)',
+              background: '#f1f5f9', border: '1px solid #2563eb',
+              borderRadius: 6, color: '#0f172a',
               fontSize: 12, fontFamily: 'var(--font-body)',
             }}
           >
@@ -107,8 +107,8 @@ function CellEditable({ champ, value, onChange }) {
           autoFocus
           style={{
             width: '100%', padding: '5px 8px',
-            background: 'var(--bg-elevated)', border: '1px solid var(--accent)',
-            borderRadius: 6, color: 'var(--text-primary)',
+            background: '#f1f5f9', border: '1px solid #2563eb',
+            borderRadius: 6, color: '#0f172a',
             fontSize: 12,
             fontFamily: champ.mono ? 'var(--font-mono)' : 'var(--font-body)',
           }}
@@ -124,7 +124,7 @@ function CellEditable({ champ, value, onChange }) {
       style={{
         padding: '9px 14px', fontSize: 12.5, cursor: 'text',
         fontFamily: champ.mono ? 'var(--font-mono)' : 'var(--font-body)',
-        color: '#00e5a0',
+        color: '#16a34a',
         borderBottom: '1px dashed rgba(0,229,160,0.3)',
         transition: 'background 0.1s',
         position: 'relative',
@@ -208,18 +208,18 @@ export default function ComparaisonFusionModal({
 
       <div style={{
         width: '100%', maxWidth: 980,
-        background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)',
-        border: '1px solid var(--border-light)', overflow: 'hidden',
+        background: '#ffffff', borderRadius: '24px',
+        border: '1px solid rgba(37,99,235,0.08)', overflow: 'hidden',
       }}>
 
         {/* ── Header ── */}
         <div style={{
-          padding: '20px 24px', borderBottom: '1px solid var(--border)',
+          padding: '20px 24px', borderBottom: '1px solid rgba(37,99,235,0.12)',
           display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16,
         }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--text-primary)' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: '#0f172a' }}>
                 {titre || (modeCreation ? 'Doublon détecté' : 'Comparaison des dossiers')}
               </h2>
               <span style={{
@@ -227,12 +227,12 @@ export default function ComparaisonFusionModal({
                 background: cs.bg, color: cs.color,
               }}>{cs.label} — {Math.round(score * 100)}%</span>
             </div>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            <p style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>
               {raisons.join(' · ')}
             </p>
             {modeCreation && (
               <p style={{
-                fontSize: 12, color: '#f5a623', marginTop: 6,
+                fontSize: 12, color: '#d97706', marginTop: 6,
                 padding: '6px 12px', background: 'rgba(245,166,35,0.08)',
                 borderRadius: 6, border: '1px solid rgba(245,166,35,0.2)',
               }}>
@@ -242,8 +242,8 @@ export default function ComparaisonFusionModal({
           </div>
           <button onClick={onClose} style={{
             width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-            background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-            cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14,
+            background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)',
+            cursor: 'pointer', color: '#64748b', fontSize: 14,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'var(--font-body)',
           }}>×</button>
@@ -252,31 +252,31 @@ export default function ComparaisonFusionModal({
         {/* ── Sélection du dossier principal ── */}
         {!modeCreation && (
           <div style={{
-            padding: '12px 24px', background: 'var(--bg-elevated)',
-            borderBottom: '1px solid var(--border)',
+            padding: '12px 24px', background: '#f1f5f9',
+            borderBottom: '1px solid rgba(37,99,235,0.12)',
             display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
           }}>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>
+            <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>
               DOSSIER À CONSERVER :
             </span>
             {[donneesA, donneesB].filter(d => d.id).map(d => (
               <label key={d.id} style={{
                 display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
-                padding: '5px 12px', borderRadius: 'var(--radius-md)',
-                background: principalId === d.id ? 'rgba(0,229,160,0.1)' : 'var(--bg-card)',
-                border: `1px solid ${principalId === d.id ? 'rgba(0,229,160,0.4)' : 'var(--border)'}`,
+                padding: '5px 12px', borderRadius: '12px',
+                background: principalId === d.id ? 'rgba(0,229,160,0.1)' : '#ffffff',
+                border: `1px solid ${principalId === d.id ? 'rgba(0,229,160,0.4)' : 'rgba(37,99,235,0.12)'}`,
                 transition: 'all 0.15s',
               }}>
                 <input type="radio" name="principal" checked={principalId === d.id}
                   onChange={() => setPrincipalId(d.id)}
-                  style={{ accentColor: '#00e5a0' }} />
+                  style={{ accentColor: '#16a34a' }} />
                 <span style={{ fontSize: 12.5, fontWeight: 500,
-                  color: principalId === d.id ? '#00e5a0' : 'var(--text-primary)' }}>
+                  color: principalId === d.id ? '#16a34a' : '#0f172a' }}>
                   {d.nom} {d.prenom} — {d.registration_number}
                 </span>
               </label>
             ))}
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+            <span style={{ fontSize: 11, color: '#64748b', marginLeft: 'auto' }}>
               L'autre dossier sera archivé
             </span>
           </div>
@@ -285,32 +285,32 @@ export default function ComparaisonFusionModal({
         {/* ── Légende colonne fusion ── */}
         <div style={{
           padding: '8px 24px', background: 'rgba(0,229,160,0.03)',
-          borderBottom: '1px solid var(--border)',
+          borderBottom: '1px solid rgba(37,99,235,0.12)',
           fontSize: 11, color: 'rgba(0,229,160,0.6)',
         }}>
-          La colonne <strong style={{ color: '#00e5a0' }}>Après fusion</strong> est éditable — cliquez sur une cellule pour modifier la valeur.
+          La colonne <strong style={{ color: '#16a34a' }}>Après fusion</strong> est éditable — cliquez sur une cellule pour modifier la valeur.
         </div>
 
         {/* ── Tableau de comparaison ── */}
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: 'var(--bg-elevated)' }}>
+              <tr style={{ background: '#f1f5f9' }}>
                 <th style={{ padding: '10px 24px', textAlign: 'left', fontSize: 10,
-                  color: 'var(--text-muted)', fontWeight: 600, letterSpacing: 0.5,
+                  color: '#64748b', fontWeight: 600, letterSpacing: 0.5,
                   textTransform: 'uppercase', width: '18%' }}>Champ</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10,
-                  color: '#00a8ff', fontWeight: 600, letterSpacing: 0.5,
+                  color: '#2563eb', fontWeight: 600, letterSpacing: 0.5,
                   textTransform: 'uppercase', width: '27%' }}>
                   {modeCreation ? 'Nouveau dossier' : donneesA.registration_number}
                 </th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10,
-                  color: '#9b8afb', fontWeight: 600, letterSpacing: 0.5,
+                  color: '#7c3aed', fontWeight: 600, letterSpacing: 0.5,
                   textTransform: 'uppercase', width: '27%' }}>
                   {modeCreation ? `Existant — ${donneesB.registration_number}` : donneesB.registration_number}
                 </th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10,
-                  color: '#00e5a0', fontWeight: 600, letterSpacing: 0.5,
+                  color: '#16a34a', fontWeight: 600, letterSpacing: 0.5,
                   textTransform: 'uppercase', width: '28%' }}>
                   Après fusion (éditable)
                 </th>
@@ -329,26 +329,26 @@ export default function ComparaisonFusionModal({
                     background: different
                       ? 'rgba(245,166,35,0.04)'
                       : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
-                    borderBottom: '1px solid var(--border)',
+                    borderBottom: '1px solid rgba(37,99,235,0.12)',
                   }}>
                     {/* Label */}
                     <td style={{ padding: '9px 24px', fontSize: 11,
-                      color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                      color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.3 }}>
                       {champ.label}
                       {different && (
-                        <div style={{ fontSize: 9, color: '#f5a623', marginTop: 1 }}>Conflit</div>
+                        <div style={{ fontSize: 9, color: '#d97706', marginTop: 1 }}>Conflit</div>
                       )}
                     </td>
                     {/* Valeur A */}
                     <td style={{ padding: '9px 14px', fontSize: 12.5,
                       fontFamily: champ.mono ? 'var(--font-mono)' : 'var(--font-body)',
-                      color: 'var(--text-primary)' }}>
+                      color: '#0f172a' }}>
                       {valA}
                     </td>
                     {/* Valeur B */}
                     <td style={{ padding: '9px 14px', fontSize: 12.5,
                       fontFamily: champ.mono ? 'var(--font-mono)' : 'var(--font-body)',
-                      color: 'var(--text-primary)' }}>
+                      color: '#0f172a' }}>
                       {valB}
                     </td>
                     {/* Fusion éditable */}
@@ -366,34 +366,34 @@ export default function ComparaisonFusionModal({
 
         {/* ── Actions ── */}
         <div style={{
-          padding: '18px 24px', borderTop: '1px solid var(--border)',
+          padding: '18px 24px', borderTop: '1px solid rgba(37,99,235,0.12)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           flexWrap: 'wrap', gap: 12,
         }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: 11, color: '#64748b' }}>
             {Object.values(fusion).filter(v => v && v !== '—').length} champs renseignés dans le dossier fusionné
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <button onClick={onClose} style={{
-              padding: '9px 18px', background: 'var(--bg-elevated)',
-              border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-              color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer',
+              padding: '9px 18px', background: '#f1f5f9',
+              border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px',
+              color: '#334155', fontSize: 13, cursor: 'pointer',
               fontFamily: 'var(--font-body)',
             }}>Annuler</button>
 
             {modeCreation && onForcerCreation && (
               <button onClick={onForcerCreation} style={{
                 padding: '9px 18px', background: 'rgba(155,138,251,0.1)',
-                border: '1px solid rgba(155,138,251,0.3)', borderRadius: 'var(--radius-md)',
-                color: '#9b8afb', fontSize: 13, cursor: 'pointer',
+                border: '1px solid rgba(155,138,251,0.3)', borderRadius: '12px',
+                color: '#7c3aed', fontSize: 13, cursor: 'pointer',
                 fontFamily: 'var(--font-body)',
               }}>Créer quand même</button>
             )}
 
             <button onClick={handleFusion} disabled={loading} style={{
               padding: '9px 22px',
-              background: loading ? 'var(--border)' : 'linear-gradient(135deg, #ff4d6a, #c0392b)',
-              border: 'none', borderRadius: 'var(--radius-md)',
+              background: loading ? 'rgba(37,99,235,0.12)' : 'linear-gradient(135deg, #dc2626, #c0392b)',
+              border: 'none', borderRadius: '12px',
               color: '#fff', fontSize: 13, fontWeight: 600,
               cursor: loading ? 'not-allowed' : 'pointer',
               fontFamily: 'var(--font-body)',

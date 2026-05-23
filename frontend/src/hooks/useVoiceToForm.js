@@ -5,6 +5,9 @@
 
 import { useState, useCallback } from 'react';
 
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1')
+  .replace(/\/api\/v1$/, '');
+
 export default function useVoiceToForm(formType = 'patient') {
   const [isExtracting, setIsExtracting] = useState(false);
   const [lastResult,   setLastResult]   = useState(null);
@@ -19,7 +22,11 @@ export default function useVoiceToForm(formType = 'patient') {
     try {
       const token = localStorage.getItem('access_token');
 
-      const response = await fetch('/api/v1/voice/extract/', {
+      if (!token) {
+        throw new Error('Non authentifié — veuillez vous reconnecter.');
+      }
+
+      const response = await fetch(`${API_BASE}/api/v1/voice/extract/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,7 +39,6 @@ export default function useVoiceToForm(formType = 'patient') {
       });
 
       if (!response.ok) {
-        // try to read error text from backend to help debugging
         let errText = '';
         try { errText = await response.text(); } catch {}
         throw new Error(`Erreur serveur: ${response.status} ${errText}`);

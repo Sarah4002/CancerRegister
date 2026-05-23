@@ -6,6 +6,7 @@ import SigAiAnalysisPanel, { COMMUNES_RISK_ANALYSIS } from './SigAiAnalysisPanel
 
 const STYLES = `
   .sig-wrap { display: flex; flex-direction: column; height: calc(100vh - 60px); background: var(--bg); }
+<<<<<<< HEAD
   .sig-header { padding: 16px 20px; border-bottom: 1px solid var(--border-light); background: #ffffff; }
   .sig-title { font-size: 1.3rem; font-weight: 700; color: #1e293b; margin: 0; }
   .sig-subtitle { font-size: 0.8rem; color: #64748b; margin: 4px 0 0; }
@@ -98,6 +99,62 @@ const STYLES = `
 
   .zone-tooltip { background: rgba(0, 168, 255, 0.8) !important; color: white !important; border: none !important; font-weight: 700 !important; font-size: 0.7rem !important; }
   @media(max-width:1100px) { .sig-container { grid-template-columns: 1fr; } }
+=======
+  .sig-header { padding: 16px 20px; border-bottom: 1px solid rgba(37,99,235,0.08); background: #ffffff; }
+  .sig-title { font-size: 1.3rem; font-weight: 700; color: #0f172a; margin: 0; }
+  .sig-subtitle { font-size: 0.8rem; color: #334155; margin: 4px 0 0; }
+  
+  .sig-container { display: grid; grid-template-columns: 1fr 350px; gap: 0; flex: 1; overflow: hidden; }
+  .sig-map-section { display: flex; flex-direction: column; border-right: 1px solid rgba(37,99,235,0.08); }
+  #sig-map { flex: 1; min-height: 0; }
+  
+  .sig-stats-section { display: flex; flex-direction: column; background: #ffffff; overflow: hidden; }
+  .ss-tabs { display: flex; border-bottom: 1px solid rgba(37,99,235,0.08); }
+  .ss-tab { flex: 1; padding: 10px; background: none; border: none; color: #334155; font-size: 0.75rem;
+     font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; }
+  .ss-tab.active { color: #0f172a; border-bottom-color: #2563eb; background: rgba(0,168,255,0.05); }
+  .ss-body { flex: 1; overflow-y: auto; padding: 12px; }
+  .ss-body::-webkit-scrollbar { width: 3px; }
+  .ss-body::-webkit-scrollbar-thumb { background: rgba(37,99,235,0.12); border-radius: 2px; }
+  
+  .stat-card { background: #f1f5f9; border: 1px solid rgba(37,99,235,0.08); border-radius: 12px;
+     padding: 12px; margin-bottom: 10px; }
+  .sc-title { font-size: 0.8rem; font-weight: 600; color: #0f172a; margin-bottom: 8px; }
+  .sc-count { font-size: 1.5rem; font-weight: 700; color: #2563eb; }
+  .sc-pct { font-size: 0.7rem; color: #334155; margin-top: 4px; }
+  
+  .cancer-item { background: #f1f5f9; border: 1px solid rgba(37,99,235,0.08); border-radius: 12px;
+     padding: 10px; margin-bottom: 8px; }
+  .ci-name { font-size: 0.8rem; font-weight: 600; color: #0f172a; }
+  .ci-value { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+  .ci-count { font-size: 1.2rem; font-weight: 700; color: #2563eb; }
+  .ci-pct { font-size: 0.75rem; background: rgba(0,168,255,0.15); color: #2563eb; padding: 2px 6px; border-radius: 10px; }
+  
+  .communes-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .commune-card { background: #f1f5f9; border: 1px solid rgba(37,99,235,0.08); border-radius: 12px;
+     padding: 10px; cursor: pointer; transition: all .15s; }
+  .commune-card:hover { border-color: #2563eb; background: rgba(0,168,255,0.03); }
+  .cc-name { font-size: 0.8rem; font-weight: 600; color: #0f172a; margin-bottom: 4px; }
+  .cc-stats { display: flex; justify-content: space-between; font-size: 0.7rem; color: #334155; }
+  
+  .causes-item { background: #f1f5f9; border: 1px solid rgba(37,99,235,0.08); border-radius: 12px;
+     padding: 10px; margin-bottom: 8px; }
+  .ci-header { font-size: 0.8rem; font-weight: 600; color: #0f172a; margin-bottom: 6px; }
+  .ci-cause { font-size: 0.7rem; color: #334155; padding: 4px 0; padding-left: 12px; }
+  .ci-cause:before { content: '• '; color: #2563eb; font-weight: bold; }
+  
+  .loading { display: flex; align-items: center; justify-content: center; height: 100%; gap: 10px; color: #334155; }
+  .loader { width: 20px; height: 20px; border: 2px solid rgba(37,99,235,0.12); border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  
+  .leaflet-popup-content-wrapper { background: #ffffff !important; border: 1px solid rgba(37,99,235,0.08) !important; 
+     border-radius: 12px !important; box-shadow: 0 8px 24px rgba(0,0,0,0.3) !important; }
+  .leaflet-popup-content { color: #0f172a !important; font-size: 0.75rem !important; }
+  .leaflet-popup-tip { background: #ffffff !important; border: 1px solid rgba(37,99,235,0.08) !important; }
+  .leaflet-container a.leaflet-popup-close-button { color: #334155 !important; }
+  
+  @media(max-width:1100px) { .sig-container { grid-template-columns: 1fr; } .sig-stats-section { max-height: 350px; border-top: 1px solid rgba(37,99,235,0.08); border-right: none; } }
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
 `;
 
 function SigPageV2() {
@@ -429,10 +486,17 @@ function SigPageV2() {
     };
   }, [leafletReady, heatmapReady]);
 
+<<<<<<< HEAD
   useEffect(() => {
     renderHeatmap();
     renderBasicMarkers();
   }, [mapDataAll, thermalEnabled, topWilaya]);
+=======
+      mapDataAll.forEach(wilaya => {
+        const cases = wilaya.cases || 0;
+        const color = cases > 20 ? '#d32f2f' : cases > 10 ? '#f57c00' : cases > 5 ? '#fbc02d' : '#2563eb';
+        const radius = (cases / maxCases) * 30 + 5;
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
 
   useEffect(() => {
     renderCommuneMarkers();
@@ -795,6 +859,7 @@ function SigPageV2() {
             </div>
 
             <div className="ss-body">
+<<<<<<< HEAD
               {tab === 'overview' && (
                 <div>
                   <div className="sc-title">Mes zones sauvegardées</div>
@@ -808,6 +873,42 @@ function SigPageV2() {
                         className="zone-item" 
                         style={{ border: selectedZoneIds.includes(zone.id) ? '1px solid #00a8ff' : '', cursor: 'pointer' }}
                         onClick={() => zoomToZone(zone)}
+=======
+              {loading ? (
+                <div className="loading">
+                  <div className="loader" />
+                </div>
+              ) : (
+                <>
+                  {/* Bouton retour si wilaya sélectionnée */}
+                  {selectedWilaya && (
+                    <div style={{ marginBottom: 12 }}>
+                      <button
+                        onClick={() => {
+                          setSelectedWilaya(null);
+                          setTab('overview');
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          background: 'rgba(0,168,255,0.15)',
+                          border: '1px solid rgba(0,168,255,0.3)',
+                          color: '#2563eb',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          transition: 'all .15s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'rgba(0,168,255,0.25)';
+                          e.target.style.borderColor = 'rgba(0,168,255,0.5)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'rgba(0,168,255,0.15)';
+                          e.target.style.borderColor = 'rgba(0,168,255,0.3)';
+                        }}
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
                       >
                         <input 
                           type="checkbox" 
@@ -839,6 +940,7 @@ function SigPageV2() {
                       </div>
                     </div>
                   )}
+<<<<<<< HEAD
                 </div>
               )}
               {tab === 'cancers' && (
@@ -857,6 +959,53 @@ function SigPageV2() {
                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
                   <SigAiAnalysisPanel selectedCommuneId={selectedCommuneId} onCommuneChange={setSelectedCommuneId} />
                 </div>
+=======
+
+                  {/* Cancers Tab */}
+                  {tab === 'cancers' && aggregatedCancerStats.length > 0 && (
+                    <div>
+                      <div className="sc-title" style={{ marginBottom: 12 }}>Cancers renseignés</div>
+                      {aggregatedCancerStats.map((cancer, idx) => (
+                        <div key={idx} className="cancer-item">
+                          <div className="ci-name">
+                            {cancer.name && cancer.code && cancer.name !== cancer.code
+                              ? `${cancer.name} (${cancer.code})`
+                              : (cancer.name || cancer.code || 'Inconnu')}
+                          </div>
+                          <div className="ci-value">
+                            <div>
+                              <div className="ci-count">{cancer.count}</div>
+                              <div style={{ fontSize: '0.65rem', color: '#334155' }}>
+                                - patients
+                              </div>
+                            </div>
+                            <div className="ci-pct">{cancer.percentage}%</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Causes Tab */}
+                  {tab === 'causes' && Object.keys(aggregatedCancerCauses).length > 0 && (
+                    <div>
+                      <div className="sc-title" style={{ marginBottom: 12 }}>Causes des Cancers Dominants</div>
+                      {Object.entries(aggregatedCancerCauses).map(([cancer, data], idx) => (
+                        <div key={idx} className="causes-item">
+                          <div className="ci-header">
+                            {data.label} ({data.percentage}%)
+                          </div>
+                          {data.causes.map((cause, cIdx) => (
+                            <div key={cIdx} className="ci-cause">
+                              {cause}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
               )}
             </div>
           </div>

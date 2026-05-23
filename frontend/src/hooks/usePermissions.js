@@ -17,6 +17,7 @@ export const ROLES = {
   DOCTOR:         'doctor',
   ANAPATH:        'anapath',
   EPIDEMIOLOGIST: 'epidemiologist',
+  PHARMACIST:     'pharmacist',
   READONLY:       'readonly',
 };
 
@@ -25,6 +26,7 @@ export const ROLE_LABELS = {
   doctor:         'Médecin Oncologue',
   anapath:        'Médecin Anatomopathologiste',
   epidemiologist: 'Épidémiologiste',
+  pharmacist:     'Pharmacien',
   readonly:       'Lecture seule',
 };
 
@@ -33,6 +35,7 @@ export const ROLE_COLORS = {
   doctor:         { color: '#00a8ff', bg: 'rgba(0,168,255,0.1)',   border: 'rgba(0,168,255,0.25)'   },
   anapath:        { color: '#9b8afb', bg: 'rgba(155,138,251,0.1)', border: 'rgba(155,138,251,0.25)' },
   epidemiologist: { color: '#00e5a0', bg: 'rgba(0,229,160,0.1)',   border: 'rgba(0,229,160,0.25)'   },
+  pharmacist:     { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',   border: 'rgba(245,158,11,0.25)'   },
   readonly:       { color: '#9ca3af', bg: 'rgba(107,114,128,0.1)', border: 'rgba(107,114,128,0.25)' },
 };
 
