@@ -40,7 +40,7 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
     default='localhost,127.0.0.1,rnc-registre-nationale-de-cancer-1.onrender.com'
-).split(),
+).split(',')
 
 # ─────────────────────────────────────────────
 # Applications
@@ -196,6 +196,7 @@ _CORS_DEFAULTS = ','.join([
     'http://localhost:5173',
     # ── App mobile Vercel (formulaire habitudes de vie QR code) ──
     'https://patientlifestyleform.vercel.app',
+    'https://registredecancer.vercel.app',
 ])
 
 CORS_ALLOWED_ORIGINS = config(
