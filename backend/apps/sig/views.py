@@ -4,65 +4,493 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Count, Q
+from django.conf import settings
 from apps.patients.models import Patient
 from apps.diagnostics.models import Diagnostic
 from collections import Counter
+from django.shortcuts import get_object_or_404
+from apps.sig.serializers import MapCardSerializer
+from .models import MapCard, PopulationCommune
+from apps.accounts.permissions import can_view_map
+from apps.sig.wilayas_data import WILAYAS
+import unicodedata
+import json
+import math
+
+def normalize_geo_name(s):
+    """Normalise les noms (MAJ, sans accents) pour faciliter la correspondance."""
+    if not s: return ""
+    # Enlève les accents, met en majuscules, remplace les tirets par des espaces et nettoie les blancs
+    s = "".join(c for c in unicodedata.normalize('NFD', str(s).strip().upper())
+                  if unicodedata.category(c) != 'Mn')
+    s = s.replace('-', ' ')
+    return " ".join(s.split()) # Enlève les espaces doubles
+
+
+TLEM_CEN_ENVIRONMENT = {
+    'industrial_zones': [
+        {
+            'nom': 'Zone Industrielle Ouled Bendamou',
+            'commune': 'Maghnia',
+            'coords': [34.8833, -1.7333],
+            'superficie': '104 hectares',
+            'secteurs': ['Sidérurgie', 'Agroalimentaire'],
+            'polluants': ['Fumées métallurgiques', 'CO2', 'Particules fines PM2.5'],
+            'cancers_associes': ['Poumon', 'Larynx', 'Peau'],
+            'niveau_risque': 'Critique',
+            'proximite_barrage': '11 km du barrage Hammam Boughrara',
+            'influence_km': 12,
+        },
+        {
+            'nom': 'Zone Industrielle Chetouane',
+            'commune': 'Chetouane',
+            'coords': [34.9167, -1.2833],
+            'secteurs': ['Industrie légère', 'Textile', 'Chimie'],
+            'polluants': ['COV', 'Poussières industrielles'],
+            'cancers_associes': ['Poumon', 'Vessie', 'Lymphome'],
+            'niveau_risque': 'Élevé',
+            'influence_km': 10,
+        },
+        {
+            'nom': 'Zone Portuaire Ghazaouet',
+            'commune': 'Ghazaouet',
+            'coords': [35.1, -1.8667],
+            'secteurs': ['Import/Export', 'Hydrocarbures', 'Ciment'],
+            'polluants': ['Hydrocarbures', 'Poussières de ciment', 'Gaz d\'échappement'],
+            'cancers_associes': ['Poumon', 'Mésothéliome', 'Peau'],
+            'niveau_risque': 'Élevé',
+            'influence_km': 12,
+        },
+    ],
+    'dams': [
+        {
+            'nom': 'Barrage Hammam Boughrara',
+            'commune': 'Maghnia',
+            'coords': [34.95, -1.8],
+            'capacite': '177 millions m³',
+            'usage': 'AEP + Irrigation',
+            'risques': ['Risque d\'infiltration eaux industrielles', 'Développement cyanobactéries', 'Accumulation pesticides agricoles'],
+            'cancers_associes': ['Foie', 'Reins', 'Colorectal'],
+            'niveau_risque': 'Critique',
+            'influence_km': 5,
+        },
+        {
+            'nom': 'Barrage El Mefrouch',
+            'commune': 'Tlemcen',
+            'coords': [34.9333, -1.2667],
+            'capacite': '12 millions m³',
+            'usage': 'AEP + Irrigation',
+            'risques': ['Contamination pesticides zones agricoles proches', 'Nitrates élevés', 'Proximité zone urbaine dense'],
+            'cancers_associes': ['Colorectal', 'Estomac'],
+            'niveau_risque': 'Modéré',
+            'influence_km': 3,
+        },
+        {
+            'nom': 'Barrage Sekkak',
+            'commune': 'Nord Tlemcen',
+            'coords': [35.1333, -1.35],
+            'capacite': '25 millions m³',
+            'usage': 'AEP + Irrigation',
+            'risques': ['Prolifération cyanobactéries', 'Hépatotoxines', 'Ruissellement agricole'],
+            'cancers_associes': ['Foie', 'Reins'],
+            'niveau_risque': 'Modéré',
+            'influence_km': 4,
+        },
+        {
+            'nom': 'Barrage Beni Bahdel',
+            'commune': 'Beni Bahdel',
+            'coords': [34.7833, -1.9333],
+            'capacite': '63 millions m³',
+            'usage': 'AEP + Irrigation',
+            'risques': ['Accumulation métaux lourds', 'Sédiments contaminés'],
+            'cancers_associes': ['Foie', 'Poumon'],
+            'niveau_risque': 'Faible',
+            'influence_km': 2,
+        },
+        {
+            'nom': 'Barrage El Izdihar',
+            'commune': 'Sidi Abdelli',
+            'coords': [34.9667, -1.0833],
+            'capacite': 'Variable',
+            'usage': 'Irrigation',
+            'risques': ['Nitrates agricoles élevés', 'Engrais chimiques'],
+            'cancers_associes': ['Colorectal', 'Estomac'],
+            'niveau_risque': 'Faible',
+            'influence_km': 3,
+        },
+    ],
+    'agricultural_zones': [
+        {
+            'nom': 'Plaine de Maghnia',
+            'commune': 'Maghnia',
+            'coords': [34.8667, -1.75],
+            'cultures': ['Céréales', 'Maraîchage', 'Betterave'],
+            'pesticides': ['Glyphosate', 'Organophosphorés', 'Fongicides'],
+            'risques': ['Contamination nappe phréatique', 'Résidus dans aliments'],
+            'cancers_associes': ['Sang/Lymphome', 'Foie', 'Sein'],
+            'niveau_risque': 'Élevé',
+        },
+        {
+            'nom': 'Zone Agricole Hennaya',
+            'commune': 'Hennaya',
+            'coords': [34.9667, -1.4667],
+            'cultures': ['Agrumes', 'Vignes', 'Olives'],
+            'pesticides': ['Fongicides', 'Insecticides', 'Herbicides'],
+            'risques': ['Fongicides cancérigènes', 'Exposition cutanée agriculteurs'],
+            'cancers_associes': ['Sein', 'Poumon', 'Peau'],
+            'niveau_risque': 'Modéré',
+        },
+        {
+            'nom': 'Zone Agricole Remchi',
+            'commune': 'Remchi',
+            'coords': [35.0667, -1.4333],
+            'cultures': ['Cultures irriguées', 'Maraîchage'],
+            'pesticides': ['Nitrates', 'Engrais azotés'],
+            'risques': ['Nitrates dans eau potable', 'Contamination sols'],
+            'cancers_associes': ['Colorectal', 'Estomac', 'Thyroïde'],
+            'niveau_risque': 'Modéré',
+        },
+        {
+            'nom': 'Zone Agricole Sebdou',
+            'commune': 'Sebdou',
+            'coords': [34.6333, -1.3333],
+            'cultures': ['Élevage', 'Céréales'],
+            'pesticides': ['Antiparasitaires vétérinaires', 'Herbicides'],
+            'risques': ['UV index élevé', 'Altitude exposée'],
+            'cancers_associes': ['Peau', 'Mélanome'],
+            'niveau_risque': 'Faible',
+        },
+    ],
+}
+
+
+COMUNE_COORDS = {
+    'maghnia': [34.8833, -1.7333],
+    'tlemcen': [34.8828, -1.3167],
+    'chetouane': [34.9167, -1.2833],
+    'ghazaouet': [35.1, -1.8667],
+    'remchi': [35.0667, -1.4333],
+    'hennaya': [34.9667, -1.4667],
+    'sebdou': [34.6333, -1.3333],
+    'sidi abdelli': [34.9667, -1.0833],
+    'beni saf': [35.3, -1.3833],
+    'nedroma': [35.0167, -1.8333],
+}
+
+
+def haversine_distance(lat1, lon1, lat2, lon2):
+    r = 6371
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    return 2 * r * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def get_wilaya_population(wilaya):
+    for entry in WILAYAS:
+        if normalize_geo_name(entry.get('name')) == normalize_geo_name(wilaya):
+            return int(entry.get('population') or 0)
+    return 0
+
+
+def get_population_for_scope(wilaya, commune=None):
+    population = get_wilaya_population(wilaya)
+    if commune:
+        row = PopulationCommune.objects.filter(wilaya__iexact=wilaya, commune__iexact=commune).order_by('-annee').first()
+        if row and row.population:
+            return int(row.population)
+    return population
+
+
+def determine_risk_level(incidence, diagnostics_count, industrial_count, dam_count, agri_count):
+    score = 0
+    if incidence is not None and incidence >= 50:
+        score += 4
+    elif incidence is not None and incidence >= 20:
+        score += 2
+    elif incidence is not None and incidence >= 10:
+        score += 1
+
+    score += min(industrial_count, 2)
+    score += min(dam_count, 2)
+    score += min(agri_count, 1)
+
+    if score >= 6:
+        return 'Critique'
+    if score >= 4:
+        return 'Élevé'
+    if score >= 2:
+        return 'Modéré'
+    return 'Faible'
+
+
+def build_environment_context(wilaya, commune=None, center=None):
+    if normalize_geo_name(wilaya) != normalize_geo_name('Tlemcen'):
+        return {
+            'available': False,
+            'industrial_zones': [],
+            'dams': [],
+            'agricultural_zones': [],
+            'note': 'Aucune couche environnementale Tlemcen enrichie n\'est disponible pour cette wilaya.',
+        }
+
+    point = center
+    if not point and commune:
+        point = COMUNE_COORDS.get(normalize_geo_name(commune))
+
+    industrial = []
+    dams = []
+    agri = []
+
+    if point:
+        lat, lon = point
+        for zone in TLEM_CEN_ENVIRONMENT['industrial_zones']:
+            distance = haversine_distance(lat, lon, zone['coords'][0], zone['coords'][1])
+            if distance <= 20:
+                industrial.append({**zone, 'distance_km': round(distance, 1)})
+        for zone in TLEM_CEN_ENVIRONMENT['dams']:
+            distance = haversine_distance(lat, lon, zone['coords'][0], zone['coords'][1])
+            if distance <= 25:
+                dams.append({**zone, 'distance_km': round(distance, 1)})
+        for zone in TLEM_CEN_ENVIRONMENT['agricultural_zones']:
+            distance = haversine_distance(lat, lon, zone['coords'][0], zone['coords'][1])
+            if distance <= 15:
+                agri.append({**zone, 'distance_km': round(distance, 1)})
+    else:
+        industrial = TLEM_CEN_ENVIRONMENT['industrial_zones']
+        dams = TLEM_CEN_ENVIRONMENT['dams']
+        agri = TLEM_CEN_ENVIRONMENT['agricultural_zones']
+
+    return {
+        'available': True,
+        'industrial_zones': industrial,
+        'dams': dams,
+        'agricultural_zones': agri,
+        'note': 'Contexte environnemental enrichi calculé à partir des zones industrielles, barrages et zones agricoles reconnues pour la wilaya de Tlemcen.' if point else 'Aucun point de focalisation fourni ; retour de l\'ensemble des zones environnementales Tlemcen.',
+    }
+
+
+def build_ai_analysis_context(wilaya, analysis_type='wilaya', commune=None, center=None, radius_m=None, filters=None):
+    filters = filters or {}
+    patients_qs = Patient.objects.filter(wilaya__iexact=wilaya)
+    diagnostics_qs = Diagnostic.objects.filter(patient__wilaya__iexact=wilaya)
+
+    if commune:
+        patients_qs = patients_qs.filter(commune__iexact=commune)
+        diagnostics_qs = diagnostics_qs.filter(patient__commune__iexact=commune)
+
+    if filters.get('type_cancer'):
+        diagnostics_qs = diagnostics_qs.filter(topographie__libelle__icontains=filters['type_cancer'])
+        patients_qs = patients_qs.filter(diagnostics__topographie__libelle__icontains=filters['type_cancer']).distinct()
+
+    if filters.get('age_min'):
+        try:
+            patients_qs = patients_qs.filter(age_diagnostic__gte=int(filters['age_min']))
+            diagnostics_qs = diagnostics_qs.filter(patient__age_diagnostic__gte=int(filters['age_min']))
+        except (TypeError, ValueError):
+            pass
+
+    if filters.get('age_max'):
+        try:
+            patients_qs = patients_qs.filter(age_diagnostic__lte=int(filters['age_max']))
+            diagnostics_qs = diagnostics_qs.filter(patient__age_diagnostic__lte=int(filters['age_max']))
+        except (TypeError, ValueError):
+            pass
+
+    total_patients = patients_qs.count()
+    total_diagnostics = diagnostics_qs.count()
+    population = get_population_for_scope(wilaya, commune)
+
+    top_cancers = list(diagnostics_qs.values('topographie_code', 'topographie_libelle').annotate(count=Count('id')).order_by('-count')[:5])
+    cancer_stats = []
+    for item in top_cancers:
+        fraction = (item['count'] / total_diagnostics * 100) if total_diagnostics else 0
+        cancer_stats.append({
+            'code': item.get('topographie_code') or item.get('topographie_libelle'),
+            'libelle': item.get('topographie_libelle') or item.get('topographie_code'),
+            'count': item['count'],
+            'percentage': round(fraction, 1),
+        })
+
+    communes = list(patients_qs.values('commune').annotate(count=Count('id')).order_by('-count')[:10])
+    age_distribution = patients_qs.aggregate(
+        group_0_14=Count('id', filter=Q(age_diagnostic__lt=15)),
+        group_15_44=Count('id', filter=Q(age_diagnostic__gte=15, age_diagnostic__lt=45)),
+        group_45_64=Count('id', filter=Q(age_diagnostic__gte=45, age_diagnostic__lt=65)),
+        group_65_plus=Count('id', filter=Q(age_diagnostic__gte=65)),
+    )
+    gender_distribution = list(patients_qs.values('sexe').annotate(count=Count('id')))
+    env_context = build_environment_context(wilaya, commune=commune, center=center)
+    incidence = round((total_diagnostics / population) * 100000, 2) if population else None
+    risk_level = determine_risk_level(incidence, total_diagnostics, len(env_context['industrial_zones']), len(env_context['dams']), len(env_context['agricultural_zones']))
+
+    return {
+        'analysis_type': analysis_type,
+        'wilaya': wilaya,
+        'commune': commune,
+        'zone_scope': {
+            'center': center,
+            'radius_m': radius_m,
+            'mode': 'zone' if analysis_type == 'zone' else 'wilaya',
+        },
+        'population': population,
+        'total_patients': total_patients,
+        'total_diagnostics': total_diagnostics,
+        'incidence_per_100k': incidence,
+        'top_cancers': cancer_stats,
+        'gender_distribution': gender_distribution,
+        'age_distribution': age_distribution,
+        'affected_communes': communes,
+        'environment': env_context,
+        'risk_level': risk_level,
+        'filters': filters,
+    }
+
+
+def build_ai_prompt(context):
+    return f"""Tu es un expert épidémiologue géospatial en Algérie, spécialisé dans l’analyse des cancers et des facteurs environnementaux. Tu dois produire un rapport structuré, scientifique et actionnable. Tu utilises uniquement les données fournies. Si une donnée est absente, tu l’indiques explicitement et tu n’inventes rien.
+
+Analyse demandée : {context['analysis_type']} pour la wilaya de {context['wilaya']}.
+
+Données structurées :
+{json.dumps(context, ensure_ascii=False, indent=2)}
+
+Règles de sortie :
+- Réponds toujours en français.
+- Respecte strictement les 4 sections suivantes, dans cet ordre.
+- N’ajoute aucune autre section.
+- Ne mentionne pas la présence d’un fallback sauf si c’est nécessaire.
+
+## 🔬 ANALYSE DES FACTEURS DE RISQUE
+Explique le lien entre les données médicales, géographiques et environnementales.
+
+## 🧩 HYPOTHÈSES CAUSALES
+Liste 3 hypothèses principales ordonnées par probabilité, avec pourcentage estimé de contribution.
+
+## ⚠️ NIVEAU DE RISQUE GLOBAL
+Évalue : Faible / Modéré / Élevé / Critique.
+Justifie avec des indicateurs chiffrés.
+
+## ✅ RECOMMANDATIONS
+Donne 3 actions concrètes prioritaires pour l’épidémiologue et les autorités de santé publique.
+"""
+
+
+def build_fallback_report(context):
+    commune_label = context['commune'] or 'choix de zone / wilaya'
+    env_count = len(context['environment']['industrial_zones']) + len(context['environment']['dams']) + len(context['environment']['agricultural_zones'])
+    return f"""## 🔬 ANALYSE DES FACTEURS DE RISQUE
+La zone analysée est {commune_label} dans la wilaya de {context['wilaya']}. Les données réelles disponibles montrent {context['total_diagnostics']} diagnostics et {context['total_patients']} patients, avec une incidence de {context['incidence_per_100k'] if context['incidence_per_100k'] is not None else 'non disponible'} pour 100 000 habitants. Les cancers dominants sont : {', '.join([item['libelle'] for item in context['top_cancers'][:3]]) or 'non disponibles'}. Le contexte environnemental disponible couvre {env_count} éléments pertinents pour la wilaya de Tlemcen.
+
+## 🧩 HYPOTHÈSES CAUSALES
+1. Exposition environnementale locale probable sur la zone ciblée, avec impact sur les cancers dominants observés.
+2. Concentration de cas dans les communes les plus touchées, cohérente avec les diagnostics enregistrés.
+3. Effets combinés de pollution, agriculture-intensive et densité socio-sanitaire locale.
+
+## ⚠️ NIVEAU DE RISQUE GLOBAL
+Niveau : {context['risk_level']}
+Justification : présence de {context['total_diagnostics']} diagnostics, {context['total_patients']} patients, incidence {context['incidence_per_100k'] if context['incidence_per_100k'] is not None else 'non disponible'} et {env_count} facteurs environnementaux sélectionnés.
+
+## ✅ RECOMMANDATIONS
+1. Prioriser le contrôle ciblé des communes les plus touchées et des zones d’exposition.
+2. Renforcer la surveillance épidémiologique et la traçabilité des diagnostics par commune.
+3. Piloter des actions de prévention environnementale avec les services de santé publique et de l’environnement.
+"""
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def analyze_sig_scope(request):
+    payload = request.data or {}
+    wilaya = str(payload.get('wilaya', '')).strip()
+    analysis_type = str(payload.get('analysis_type', 'wilaya')).strip().lower() or 'wilaya'
+    commune = str(payload.get('commune', '')).strip() or None
+    center = payload.get('center')
+    radius_m = payload.get('radius_m')
+    filters = payload.get('filters') or {}
+
+    if not wilaya:
+        return Response({'error': 'Le champ wilaya est obligatoire.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    context = build_ai_analysis_context(
+        wilaya=wilaya,
+        analysis_type=analysis_type,
+        commune=commune,
+        center=center,
+        radius_m=radius_m,
+        filters=filters,
+    )
+
+    source_label = commune or wilaya
+
+    try:
+        import groq
+        import httpx
+        api_key = settings.GROQ_API_KEY
+        if not api_key or not api_key.strip():
+            raise ValueError("GROQ_API_KEY non configurée ou vide")
+            
+        client = groq.Groq(api_key=api_key, http_client=httpx.Client())
+        completion = client.chat.completions.create(
+            model='llama-3.3-70b-versatile',
+            messages=[
+                {'role': 'system', 'content': 'Tu es un assistant IA dédié à l’analyse SIG du registre national du cancer en Algérie.'},
+                {'role': 'user', 'content': build_ai_prompt(context)},
+            ],
+            temperature=0.2,
+            max_tokens=1200,
+        )
+        text = completion.choices[0].message.content.strip()
+        backtick = chr(96) * 3
+        cleaned = text.replace(backtick + 'json', '').replace(backtick, '').strip()
+        response_payload = {
+            'report': cleaned,
+            'provider': 'groq',
+            'risk_level': context['risk_level'],
+            'source_type': analysis_type,
+            'source_label': source_label,
+            'indicators': {
+                'total_patients': context['total_patients'],
+                'total_diagnostics': context['total_diagnostics'],
+                'incidence_per_100k': context['incidence_per_100k'],
+                'affected_communes': context['affected_communes'],
+                'industrial_zones_count': len(context['environment']['industrial_zones']),
+                'dams_count': len(context['environment']['dams']),
+                'agricultural_zones_count': len(context['environment']['agricultural_zones']),
+            },
+        }
+        return Response(response_payload)
+    except Exception as exc:
+        fallback = build_fallback_report(context)
+        return Response({
+            'report': fallback,
+            'provider': 'fallback',
+            'warning': f'Analyse IA indisponible, rapport de secours utilisé. {str(exc)}',
+            'risk_level': context['risk_level'],
+            'source_type': analysis_type,
+            'source_label': source_label,
+            'indicators': {
+                'total_patients': context['total_patients'],
+                'total_diagnostics': context['total_diagnostics'],
+                'incidence_per_100k': context['incidence_per_100k'],
+                'affected_communes': context['affected_communes'],
+                'industrial_zones_count': len(context['environment']['industrial_zones']),
+                'dams_count': len(context['environment']['dams']),
+                'agricultural_zones_count': len(context['environment']['agricultural_zones']),
+            },
+        })
+
 
 @csrf_exempt
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def get_map_data(request):
     """Get geographic data for the SIG map with all cancer cases by wilaya."""
-    wilayas = [
-        {"code": "01", "name": "Adrar", "lat": 27.8742, "lon": -0.2875},
-        {"code": "02", "name": "Chlef", "lat": 36.1690, "lon": 1.3345},
-        {"code": "03", "name": "Laghouat", "lat": 33.8078, "lon": 2.8628},
-        {"code": "04", "name": "Oum El Bouaghi", "lat": 35.8746, "lon": 7.1132},
-        {"code": "05", "name": "Batna", "lat": 35.5589, "lon": 6.1744},
-        {"code": "06", "name": "Bejaia", "lat": 36.7500, "lon": 5.0567},
-        {"code": "07", "name": "Biskra", "lat": 34.8513, "lon": 5.7241},
-        {"code": "08", "name": "Bechar", "lat": 31.6188, "lon": -2.2179},
-        {"code": "09", "name": "Blida", "lat": 36.5657, "lon": 2.8500},
-        {"code": "10", "name": "Bouira", "lat": 36.3764, "lon": 3.9008},
-        {"code": "11", "name": "Tamanrasset", "lat": 22.7850, "lon": 5.5228},
-        {"code": "12", "name": "Tebessa", "lat": 35.4082, "lon": 8.1257},
-        {"code": "13", "name": "Tlemcen", "lat": 34.6783, "lon": -1.3616},
-        {"code": "14", "name": "Tiaret", "lat": 35.3703, "lon": 1.3270},
-        {"code": "15", "name": "Tizi Ouzou", "lat": 36.7719, "lon": 4.0458},
-        {"code": "16", "name": "Alger", "lat": 36.7538, "lon": 3.0588},
-        {"code": "17", "name": "Djelfa", "lat": 34.6709, "lon": 3.2216},
-        {"code": "18", "name": "Jijel", "lat": 36.8204, "lon": 5.7645},
-        {"code": "19", "name": "Setif", "lat": 36.1912, "lon": 5.4145},
-        {"code": "20", "name": "Saida", "lat": 34.8413, "lon": 0.1519},
-        {"code": "21", "name": "Skikda", "lat": 36.8796, "lon": 6.9092},
-        {"code": "22", "name": "Sidi Bel Abbes", "lat": 35.1899, "lon": -0.6309},
-        {"code": "23", "name": "Annaba", "lat": 36.8964, "lon": 7.7484},
-        {"code": "24", "name": "Guelma", "lat": 36.4621, "lon": 7.4261},
-        {"code": "25", "name": "Constantine", "lat": 36.3650, "lon": 6.6147},
-        {"code": "26", "name": "Medea", "lat": 36.2642, "lon": 2.7536},
-        {"code": "27", "name": "Mostaganem", "lat": 35.9312, "lon": 0.0892},
-        {"code": "28", "name": "Msila", "lat": 35.7069, "lon": 4.5415},
-        {"code": "29", "name": "Mascara", "lat": 35.3965, "lon": 0.0676},
-        {"code": "30", "name": "Ouargla", "lat": 31.9529, "lon": 5.3332},
-        {"code": "31", "name": "Oran", "lat": 35.6938, "lon": -0.6211},
-        {"code": "32", "name": "El Bayadh", "lat": 33.6826, "lon": 1.0265},
-        {"code": "33", "name": "Illizi", "lat": 26.5167, "lon": 8.4667},
-        {"code": "34", "name": "Bordj Bou Arreridj", "lat": 36.0739, "lon": 4.7633},
-        {"code": "35", "name": "Boumerdes", "lat": 36.7534, "lon": 3.4771},
-        {"code": "36", "name": "El Tarf", "lat": 36.7645, "lon": 8.3137},
-        {"code": "37", "name": "Tindouf", "lat": 27.6711, "lon": -7.9189},
-        {"code": "38", "name": "Tissemsilt", "lat": 35.6074, "lon": 1.8105},
-        {"code": "39", "name": "El Oued", "lat": 33.3678, "lon": 6.8498},
-        {"code": "40", "name": "Khenchela", "lat": 35.4266, "lon": 7.1475},
-        {"code": "41", "name": "Souk Ahras", "lat": 36.2861, "lon": 7.9511},
-        {"code": "42", "name": "Tipaza", "lat": 36.5890, "lon": 2.4432},
-        {"code": "43", "name": "Mila", "lat": 36.4500, "lon": 6.2667},
-        {"code": "44", "name": "Ain Defla", "lat": 36.2632, "lon": 1.9516},
-        {"code": "45", "name": "Naama", "lat": 33.2667, "lon": -0.3167},
-        {"code": "46", "name": "Ain Temouchent", "lat": 35.3044, "lon": -1.1428},
-        {"code": "47", "name": "Ghardaia", "lat": 32.4900, "lon": 3.6464},
-        {"code": "48", "name": "Relizane", "lat": 35.7374, "lon": 0.7534},
-    ]
+    # Utilisation de la liste centralisée WILAYAS pour éviter les doublons
+    wilayas_list = [{"code": w['code'], "name": w['name'], "lat": w['lat'], "lon": w['lon']} for w in WILAYAS]
     
     # Get patient and diagnostic counts by wilaya
     try:
@@ -88,7 +516,7 @@ def get_map_data(request):
     
     # Build result with all wilayas and their cancer cases
     result = []
-    for w in wilayas:
+    for w in wilayas_list:
         cases = wilaya_data.get(w['name'], 0)
         diagnostics = diagnostic_data.get(w['name'], 0)
         
@@ -110,7 +538,7 @@ def get_map_data(request):
 
 @csrf_exempt
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def get_statistics(request):
     """Get cancer statistics for Algeria."""
     year = request.GET.get('year')
@@ -142,33 +570,28 @@ def get_statistics(request):
     except Exception:
         top_wilayas = []
     
-    # Age distribution
-    age_groups = {
-        '0-14': 0,
-        '15-44': 0,
-        '45-64': 0,
-        '65+': 0
-    }
-    
+    # Optimized Age distribution using Database Aggregation
+    # Note: Assuming 'age' is a field. If it's a property, 
+    # this needs to be calculated via date_naissance.
     try:
-        for p in patients:
-            age = getattr(p, 'age', None)
-            if age is not None:
-                if age < 15:
-                    age_groups['0-14'] += 1
-                elif age < 45:
-                    age_groups['15-44'] += 1
-                elif age < 65:
-                    age_groups['45-64'] += 1
-                else:
-                    age_groups['65+'] += 1
+        age_stats = patients.aggregate(
+            group_0_14=Count('id', filter=Q(age_diagnostic__lt=15)),
+            group_15_44=Count('id', filter=Q(age_diagnostic__gte=15, age_diagnostic__lt=45)),
+            group_45_64=Count('id', filter=Q(age_diagnostic__gte=45, age_diagnostic__lt=65)),
+            group_65_plus=Count('id', filter=Q(age_diagnostic__gte=65))
+        )
+        age_groups = {
+            '0-14': age_stats['group_0_14'],
+            '15-44': age_stats['group_15_44'],
+            '45-64': age_stats['group_45_64'],
+            '65+': age_stats['group_65_plus']
+        }
     except Exception:
-        pass
+        age_groups = {'0-14': 0, '15-44': 0, '45-64': 0, '65+': 0}
     
     return Response({
         'total_patients': patients.count(),
         'total_diagnostics': diagnostics.count(),
-        'top_cancers': list(top_cancers),
         'top_wilayas': list(top_wilayas),
         'age_distribution': age_groups,
     })
@@ -201,7 +624,7 @@ def create_patient(request):
 
 @csrf_exempt
 @api_view(['GET', 'POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def health_check(request):
     """Health check endpoint."""
     return Response({'status': 'ok'})
@@ -209,46 +632,33 @@ def health_check(request):
 
 @csrf_exempt
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def get_all_wilayas_data(request):
     """
     Récupère tous les cas de cancer par wilaya.
-    Retourne tous les wilayas avec leurs cas, patients et top cancers.
+    Version optimisée sans boucles N+1.
     """
     try:
-        # Get all unique wilayas with patient data
-        wilayas_list = Patient.objects.exclude(wilaya__isnull=True).exclude(wilaya='').values('wilaya').distinct().order_by('wilaya')
-        wilayas = [w['wilaya'] for w in wilayas_list]
+        # Aggregation en deux requêtes au lieu de N boucles
+        pat_counts = Patient.objects.exclude(wilaya__isnull=True).exclude(wilaya='') \
+            .values('wilaya').annotate(count=Count('id'))
+        diag_counts = Diagnostic.objects.exclude(patient__wilaya__isnull=True).exclude(patient__wilaya='') \
+            .values('patient__wilaya').annotate(count=Count('id'))
         
+        diag_map = {d['patient__wilaya']: d['count'] for d in diag_counts}
         wilayas_data = {}
-        total_patients = 0
-        total_diagnostics = 0
         
-        for wilaya in wilayas:
-            patients_wilaya = Patient.objects.filter(wilaya=wilaya)
-            diagnostics_wilaya = Diagnostic.objects.filter(patient__wilaya=wilaya)
-            
-            patients_count = patients_wilaya.count()
-            diagnostics_count = diagnostics_wilaya.count()
-            
-            if patients_count > 0 or diagnostics_count > 0:
-                # Top cancers in this wilaya
-                top_cancers = diagnostics_wilaya.values('topographie__code', 'topographie__libelle') \
-                    .annotate(count=Count('id')) \
-                    .order_by('-count')[:5]
-                
-                wilayas_data[wilaya] = {
-                    'patients': patients_count,
-                    'diagnostics': diagnostics_count,
-                    'top_cancers': list(top_cancers),
-                }
-                
-                total_patients += patients_count
-                total_diagnostics += diagnostics_count
+        for p in pat_counts:
+            w_name = p['wilaya']
+            wilayas_data[w_name] = {
+                'patients': p['count'],
+                'diagnostics': diag_map.get(w_name, 0),
+                'top_cancers': [] # Top cancers can be fetched per wilaya on demand
+            }
         
         return Response({
-            'total_patients': total_patients,
-            'total_diagnostics': total_diagnostics,
+            'total_patients': sum(w['patients'] for w in wilayas_data.values()),
+            'total_diagnostics': sum(w['diagnostics'] for w in wilayas_data.values()),
             'wilayas_count': len(wilayas_data),
             'wilayas': wilayas_data,
         })
@@ -488,75 +898,112 @@ def _get_cancer_causes(cancer_stats):
 
 @csrf_exempt
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def get_sig_stats(request):
     """
     GET /api/v1/sig/stats/
-    Returns { wilayas: [{nom, nb_patients, nb_diagnostics, coords: [lat, lng], population, communes: [{nom, nb_patients}], top_cancers: [{code, libelle, count}]}], total_patients, total_diagnostics }
+    Version robuste avec filtrage et normalisation géographique.
     """
     try:
-        from apps.sig.wilayas_data import WILAYAS
-        wilayas_dict = { w['name'].upper(): w for w in WILAYAS }
+        # Extraction des filtres
+        type_cancer = request.GET.get('type_cancer', '').strip()
+        age_min = request.GET.get('age_min', '').strip()
+        age_max = request.GET.get('age_max', '').strip()
+        wilaya_filter = request.GET.get('wilaya', '').strip()
+        commune_filter = request.GET.get('commune', '').strip()
+
+        # Dictionnaire de référence des wilayas (normalisé)
+        wilayas_ref = {normalize_geo_name(w['name']): w for w in WILAYAS}
         
-        # Obtenir tous les patients avec wilaya non nulle
-        patients_qs = Patient.objects.exclude(wilaya__isnull=True).exclude(wilaya='')
-        total_patients = patients_qs.count()
+        # 2. Querysets de base (On prend tout pour le compte global)
+        patients_qs = Patient.objects.all()
+        diag_qs = Diagnostic.objects.all()
         
-        # Obtenir tous les diagnostics avec patient_wilaya non nul
-        diag_qs = Diagnostic.objects.exclude(patient__wilaya__isnull=True).exclude(patient__wilaya='')
-        total_diagnostics = diag_qs.count()
+        # Application des filtres thématiques (Cancers et Âge)
+        if type_cancer:
+            diag_qs = diag_qs.filter(topographie__libelle__icontains=type_cancer)
+            # Filtrage robuste supportant plusieurs noms de relation possibles
+            try:
+                patients_qs = patients_qs.filter(
+                    Q(diagnostics__topographie__libelle__icontains=type_cancer) |
+                    Q(diagnostic__topographie__libelle__icontains=type_cancer)
+                ).distinct()
+            except Exception:
+                patients_qs = patients_qs.filter(diagnostic__topographie__libelle__icontains=type_cancer).distinct()
+
+        if age_min and age_min.isdigit():
+            patients_qs = patients_qs.filter(age_diagnostic__gte=int(age_min))
+            diag_qs = diag_qs.filter(patient__age_diagnostic__gte=int(age_min))
+
+        if age_max and age_max.isdigit():
+            patients_qs = patients_qs.filter(age_diagnostic__lte=int(age_max))
+            diag_qs = diag_qs.filter(patient__age_diagnostic__lte=int(age_max))
+            
+        # Préparation des statistiques de l'en-tête (Total filtré par Wilaya/Commune)
+        total_patients_qs = patients_qs
+        total_diag_qs = diag_qs
         
-        # Group by wilaya pour les patients
-        pat_by_w = patients_qs.values('wilaya').annotate(count=Count('id'))
-        pat_map = { p['wilaya'].strip().upper(): p['count'] for p in pat_by_w if p.get('wilaya') }
+        if wilaya_filter:
+            total_patients_qs = total_patients_qs.filter(wilaya__iexact=wilaya_filter)
+            total_diag_qs = total_diag_qs.filter(patient__wilaya__iexact=wilaya_filter)
+            if commune_filter:
+                total_patients_qs = total_patients_qs.filter(commune__iexact=commune_filter)
+                total_diag_qs = total_diag_qs.filter(patient__commune__iexact=commune_filter)
+
+        # Le TOTAL affiché dans l'en-tête doit inclure tous les patients filtrés (même sans wilaya)
+        total_p = total_patients_qs.count()
+        total_d = total_diag_qs.count()
+
+        # Pour la distribution sur la CARTE, on exclut ceux qui n'ont pas de wilaya
+        map_patients_qs = patients_qs.exclude(wilaya__isnull=True).exclude(wilaya='')
+
+        # 3. Pré-calcul des totaux par wilaya
+        pat_counts = map_patients_qs.values('wilaya').annotate(count=Count('id'))
+        diag_counts = diag_qs.exclude(patient__wilaya__isnull=True).exclude(patient__wilaya='').values('patient__wilaya').annotate(count=Count('id'))
         
-        # Group by wilaya pour les diagnostics
-        diag_by_w = diag_qs.values('patient__wilaya').annotate(count=Count('id'))
-        diag_map = { d['patient__wilaya'].strip().upper(): d['count'] for d in diag_by_w if d.get('patient__wilaya') }
-        
-        # Constuire la reponse detaillee par wilaya (seulement celles ayant des cas)
+        # 4. Agrégation robuste (cherche par NOM normalisé et par CODE)
+        pat_map = {}
+        for p in pat_counts:
+            w_val = str(p.get('wilaya') or '').strip()
+            name_key = normalize_geo_name(w_val)
+            pat_map[name_key] = pat_map.get(name_key, 0) + p['count']
+            
+        diag_map = {}
+        for d in diag_counts:
+            w_val = str(d.get('patient__wilaya') or '').strip()
+            name_key = normalize_geo_name(w_val)
+            diag_map[name_key] = diag_map.get(name_key, 0) + d['count']
+
+        communes_data = map_patients_qs.values('wilaya', 'commune').annotate(count=Count('id'))
+        communes_by_wilaya = {}
+        for c in communes_data:
+            w_key = normalize_geo_name(c['wilaya'])
+            communes_by_wilaya.setdefault(w_key, []).append({'nom': c['commune'] or 'Non spécifié', 'nb_patients': c['count']})
+
         wilayas_response = []
-        for w_caps, p_count in pat_map.items():
-            # Chercher metadata
-            meta = wilayas_dict.get(w_caps, None)
-            nom_propre = meta['name'] if meta else w_caps.title()
-            lat = meta['lat'] if meta else 36.7538
-            lon = meta['lon'] if meta else 3.0588
-            pop = meta['population'] if meta else 1000000
+        for w_ref in WILAYAS:
+            raw_name = w_ref['name']
+            w_code = str(w_ref['code']).zfill(2) # '01', '13', etc.
+            w_norm = normalize_geo_name(raw_name)
             
-            # Communes
-            communes_qs = Patient.objects.filter(wilaya__iexact=w_caps).values('commune').annotate(count=Count('id'))
-            communes_list = [
-                {'nom': c['commune'] or 'Non spécifié', 'nb_patients': c['count']}
-                for c in communes_qs if c.get('count', 0) > 0
-            ]
-            
-            # Top cancers
-            tc_qs = Diagnostic.objects.filter(patient__wilaya__iexact=w_caps)\
-                .values('topographie__code', 'topographie__libelle')\
-                .annotate(count=Count('id')).order_by('-count')[:5]
-                
-            top_cancers = [
-                {'code': tc['topographie__code'], 'libelle': tc['topographie__libelle'], 'count': tc['count']}
-                for tc in tc_qs
-            ]
-            
-            d_count = diag_map.get(w_caps, 0)
-            
+            # Récupère par nom normalisé OU par code wilaya
+            nb_p = pat_map.get(w_norm, 0) or pat_map.get(w_code, 0)
+            nb_d = diag_map.get(w_norm, 0) or diag_map.get(w_code, 0)
+
             wilayas_response.append({
-                'nom': nom_propre,
-                'nb_patients': p_count,
-                'nb_diagnostics': d_count,
-                'coords': [lat, lon],
-                'population': pop,
-                'communes': communes_list,
-                'top_cancers': top_cancers
+                'nom': raw_name,
+                'nb_patients': nb_p,
+                'nb_diagnostics': nb_d,
+                'coords': [w_ref['lat'], w_ref['lon']],
+                'population': w_ref.get('population', 0),
+                'communes': communes_by_wilaya.get(w_norm, []),
+                'top_cancers': [] # On peut charger les détails au clic pour plus de fluidité
             })
-            
+
         return Response({
-            'wilayas': wilayas_response,
-            'total_patients': total_patients,
-            'total_diagnostics': total_diagnostics
+            'wilayas': sorted(wilayas_response, key=lambda x: x['nb_patients'], reverse=True),
+            'total_patients': total_p,
+            'total_diagnostics': total_d
         })
     except Exception as e:
         import traceback
@@ -572,7 +1019,6 @@ def get_wilaya_details(request, nom):
     détail complet d'une wilaya avec communes et types de cancers
     """
     try:
-        from apps.sig.wilayas_data import WILAYAS
         w_caps = nom.strip().upper()
         wilayas_dict = { w['name'].upper(): w for w in WILAYAS }
         meta = wilayas_dict.get(w_caps, None)
@@ -595,13 +1041,6 @@ def get_wilaya_details(request, nom):
                 'nb_diagnostics': d_count
             })
         
-        # Top cancers (all)
-        tc_qs = diag_qs.values('topographie__code', 'topographie__libelle').annotate(count=Count('id')).order_by('-count')
-        cancers_list = [
-            {'code': tc['topographie__code'], 'libelle': tc['topographie__libelle'], 'count': tc['count']}
-            for tc in tc_qs
-        ]
-        
         return Response({
             'nom': meta['name'] if meta else nom.title(),
             'population': meta['population'] if meta else 1000000,
@@ -609,8 +1048,59 @@ def get_wilaya_details(request, nom):
             'nb_patients': nb_patients,
             'nb_diagnostics': nb_diagnostics,
             'communes': communes_list,
-            'cancers': cancers_list
         })
     except Exception as e:
         import traceback
         return Response({'error': str(e), 'traceback': traceback.format_exc()}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@csrf_exempt
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def mapcards(request):
+    """GET: liste des cartes partagées (actives). POST: créer une nouvelle carte."""
+    try:
+        if request.method == 'GET':
+            # On s'assure que les champs existent bien dans le modèle
+            qs = MapCard.objects.filter(est_actif=True).order_by('-id')
+            serializer = MapCardSerializer(qs, many=True)
+            return Response(serializer.data)
+
+        # POST -> create
+        data = request.data
+        serializer = MapCardSerializer(data=data)
+        if serializer.is_valid():
+            # Le champ 'cree_par' doit exister dans le modèle MapCard
+            obj = serializer.save(cree_par=request.user)
+            return Response(MapCardSerializer(obj).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def mapcard_detail(request, pk):
+    obj = get_object_or_404(MapCard, pk=pk)
+    if request.method == 'GET':
+        return Response(MapCardSerializer(obj).data)
+
+    # update
+    if request.method in ['PUT', 'PATCH']:
+        # only creator or user with can_view_map can modify
+        if obj.cree_par != request.user and not can_view_map(request.user):
+            return Response({'detail': 'Non autorise.'}, status=403)
+        serializer = MapCardSerializer(obj, data=request.data, partial=(request.method == 'PATCH'))
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    # delete -> soft-delete
+    if request.method == 'DELETE':
+        if obj.cree_par != request.user and not can_view_map(request.user):
+            return Response({'detail': 'Non autorise.'}, status=403)
+        obj.est_actif = False
+        obj.save()
+        return Response({'detail': 'Carte desactivee.'})

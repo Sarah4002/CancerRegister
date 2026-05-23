@@ -8,12 +8,13 @@
  */
 
 import { useNavigate } from 'react-router-dom';
-import usePermissions, { ROLE_LABELS } from '../../hooks/usePermissions';
+import usePermissions from '../../hooks/usePermissions';
 
 // ── Page accès refusé (route complète) ────────────────────────
 export default function AccessDenied({ message }) {
   const navigate       = useNavigate();
-  const { roleLabel, roleColor } = usePermissions();
+  const permissions = usePermissions() || {};
+  const { roleLabel = 'Utilisateur', roleColor = {} } = permissions;
 
   return (
     <div style={{
@@ -57,10 +58,13 @@ export default function AccessDenied({ message }) {
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
           padding: '6px 14px', borderRadius: 20, marginBottom: 28,
-          background: roleColor.bg, border: `1px solid ${roleColor.border}`,
-          fontSize: 12, fontWeight: 600, color: roleColor.color,
+          background: roleColor?.bg ?? 'var(--bg-elevated)',
+          border: `1px solid ${roleColor?.border ?? 'var(--border)'}`,
+          fontSize: 12,
+          fontWeight: 600,
+          color: roleColor?.color ?? 'var(--text-secondary)',
         }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: roleColor.color }} />
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: roleColor?.color ?? 'var(--text-muted)' }} />
           Votre profil : {roleLabel}
         </div>
 

@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { patientService } from '../../services/patientService';
-import { examenService } from '../../services/examenService';
-import { diagnosticService } from '../../services/diagnosticService';
-import { traitementService } from '../../services/traitementService';
-import { suiviService } from '../../services/suiviService';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/layout/Sidebar';
 import ExamenModal from '../../components/patients/ExamenModal';
-import { WILAYAS, COMMUNES_PAR_WILAYA } from './communesAlgerie';
-import toast from 'react-hot-toast';
+import { diagnosticService } from '../../services/diagnosticService';
+import { examenService } from '../../services/examenService';
+import { patientService } from '../../services/patientService';
+import { suiviService } from '../../services/suiviService';
+import { traitementService } from '../../services/traitementService';
+import { COMMUNES_PAR_WILAYA, WILAYAS } from './communesAlgerie';
 
 const MOBILE_APP_BASE_URL = import.meta.env.VITE_MOBILE_APP_URL || 'https://votre-app-mobile.com/patient';
 
@@ -280,8 +280,8 @@ export default function PatientDossierPage() {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
-        .sidebar-item { padding: 12px 16px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; color: var(--text-secondary); transition: 0.2s; font-size: 14px; font-weight: 500; }
-        .sidebar-item:hover { background: rgba(0,168,255,0.05); color: var(--text-primary); }
+        .sidebar-item { padding: 12px 16px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; color: #64748b; transition: 0.2s; font-size: 14px; font-weight: 500; }
+        .sidebar-item:hover { background: #f1f5f9; color: #1e293b; }
         .sidebar-item.active { background: rgba(0,168,255,0.1); color: var(--accent); border-left: 3px solid var(--accent); }
         .main-content { flex: 1; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 12px; padding: 24px; min-height: 500px; }
         .input-st { width: 100%; padding: 8px 12px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 13px; outline: none; box-sizing: border-box; }
@@ -289,14 +289,14 @@ export default function PatientDossierPage() {
       `}</style>
       
       {/* ── Header ── */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+      <div style={{ background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ width: 56, height: 56, borderRadius: '50%', flexShrink: 0, background: patient.sexe === 'F' ? 'linear-gradient(135deg, rgba(245,101,196,0.2), rgba(245,101,196,0.1))' : 'linear-gradient(135deg, rgba(0,168,255,0.2), rgba(0,168,255,0.1))', border: '2px solid ' + (patient.sexe === 'F' ? 'rgba(245,101,196,0.3)' : 'rgba(0,168,255,0.3)'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: patient.sexe === 'F' ? 'rgba(245,101,196,0.9)' : 'rgba(0,168,255,0.9)' }}>
             {((patient.nom?.[0] || '') + (patient.prenom?.[0] || '')).toUpperCase()}
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
-              <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>
+              <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#1e293b' }}>
                 {patient.nom} {patient.prenom}
               </h2>
               <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color, border: '1px solid ' + sc.border }}>{patient.statut_label}</span>
@@ -332,7 +332,7 @@ export default function PatientDossierPage() {
 
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         {/* ── SIDEBAR ── */}
-        <div style={{ width: 240, flexShrink: 0 }}>
+        <div style={{ width: 240, flexShrink: 0, background: '#ffffff', borderRadius: 12, padding: 8, border: '1px solid var(--border-light)' }}>
           <div className={`sidebar-item ${activeMainTab === 'identite' ? 'active' : ''}`} onClick={() => setActiveMainTab('identite')}>
             Identité & Profil
           </div>

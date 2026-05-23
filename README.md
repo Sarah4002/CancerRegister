@@ -84,9 +84,10 @@ cp .env.example .env
 # Éditer .env avec vos paramètres DB locaux
 
 # Créer la base de données PostgreSQL
-psql -U postgres -c "CREATE DATABASE cancer_registry;"
-psql -U postgres -c "CREATE USER registry_user WITH PASSWORD 'registry_pass_2024';"
-psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE cancer_registry TO registry_user;"
+sudo -u postgres psql -c "CREATE DATABASE cancer_registry;"
+sudo -u postgres psql -c "CREATE USER registry_user WITH PASSWORD 'registry_pass_2024';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE cancer_registry TO registry_user;"
+sudo -u postgres psql -d cancer_registry -c "GRANT ALL ON SCHEMA public TO registry_user;"
 
 # Migrations
 python manage.py migrate

@@ -1,7 +1,7 @@
 import api from './api';
 
 export const sigService = {
-  getSigStats: () => api.get('/sig/stats/'),
+  getSigStats: (params = {}) => api.get('/sig/stats/', { params }),
   getWilayaDetails: (nom) => api.get(`/sig/wilaya/${nom}/`),
   
   /**
@@ -60,9 +60,8 @@ export const sigService = {
    * @param {string} commune - Commune (optionnel)
    * @returns {Promise}
    */
-  getDiagnosticsData: (wilaya = 'Tlemcen', commune = null) => {
-    const params = { wilaya };
-    if (commune) params.commune = commune;
+  getDiagnosticsData: (params = {}) => {
+    // params: { wilaya, commune, topographie__code, age_min, age_max, date_from, date_to }
     return api.get('/diagnostics/', { params });
   },
 
@@ -126,5 +125,8 @@ export const sigService = {
     } catch (error) {
       throw error;
     }
-  },
+  },  analyzeScope: (payload) => api.post('/sig/analyze/', payload),  getMapCards: () => api.get('/sig/cards/'),
+  createMapCard: (data) => api.post('/sig/cards/', data),
+  updateMapCard: (id, data) => api.patch(`/sig/cards/${id}/`, data),
+  deleteMapCard: (id) => api.delete(`/sig/cards/${id}/`),
 };

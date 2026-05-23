@@ -20,11 +20,7 @@ GROQ_API_KEY = config('GROQ_API_KEY', default=None)
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production-2024')
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    'devona-copasetic-chieko.ngrok-free.dev',
-]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.github.dev', '.app.github.dev', '*']
 
 # ─────────────────────────────────────────────
 # Applications
@@ -188,8 +184,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5173",
     "https://patientlifestyleform.vercel.app",
-    " https://devona-copasetic-chieko.ngrok-free.dev",
+    "https://devona-copasetic-chieko.ngrok-free.dev",
 ]
+
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_CREDENTIALS = True
 

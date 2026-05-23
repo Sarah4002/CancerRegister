@@ -10,7 +10,7 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 import PatientsPage from './pages/patients/PatientsPage';
 import NewPatientPage from './pages/patients/NewPatientPage';
 import PatientDossierPage from './pages/patients/PatientDossierPage';
-import DoublonsPage from './pages/patients/DoublonsPage';
+import DoublonsPage from './pages/patients/Doublonspage';
 
 import DiagnosticsPage from './pages/diagnostics/DiagnosticsPage';
 import NewDiagnosticPage from './pages/diagnostics/NewDiagnosticPage';
@@ -28,7 +28,7 @@ import RCPPage from './pages/rcp/RCPPage';
 import NewRCPPage, { NewDossierRCPPage } from './pages/rcp/NewRCPPage';
 import RCPDetailPage from './pages/rcp/RCPDetailPage';
 
-import CartographiePage from './pages/cartographie/CartographiePage';
+import { SigPageV2 } from './pages/sig/SigPagev2.jsx';
 
 import StatistiquesPage from './pages/statistiques/StatistiquesPage';
 import StatsPage from './pages/stats/StatsPage';
@@ -233,7 +233,7 @@ function App() {
         {/* ───────── Carte SIG ───────── */}
         <Route path="/carte" element={
           <PermRoute permission="viewMap">
-            <CartographiePage />
+            <SigPageV2 />
           </PermRoute>
         } />
 

@@ -139,7 +139,9 @@ class PatientViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def search_advanced(self, request):
         qs = self.get_queryset()
-        q  = request.query_params.get('q', '').strip()
+
+        # simple full-text q over common identifiers
+        q = request.query_params.get('q', '').strip()
         if q:
             qs = qs.filter(
                 Q(nom__icontains=q) | Q(prenom__icontains=q) |
@@ -147,8 +149,57 @@ class PatientViewSet(viewsets.ModelViewSet):
                 Q(id_national__icontains=q) |
                 Q(telephone__icontains=q)
             )
-        serializer = PatientListSerializer(qs[:50], many=True)
+
+        # filters by explicit fields
+        date_naissance = request.query_params.get('date_naissance')
+        if date_naissance:
+            try:
+                qs = qs.filter(date_naissance=date_naissance)
+            except Exception:
+                pass
+
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        if date_from:
+            qs = qs.filter(date_enregistrement__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(date_enregistrement__date__lte=date_to)
+
+        wilaya = request.query_params.get('wilaya')
+        if wilaya:
+            qs = qs.filter(wilaya__icontains=wilaya)
+
+        commune = request.query_params.get('commune')
+        if commune:
+            qs = qs.filter(commune__icontains=commune)
+
+        sexe = request.query_params.get('sexe')
+        if sexe:
+            qs = qs.filter(sexe__iexact=sexe)
+
+        statut_dossier = request.query_params.get('statut_dossier')
+        if statut_dossier:
+            qs = qs.filter(statut_dossier__iexact=statut_dossier)
+
+        # age filters handled by get_queryset via age_min/age_max
+        serializer = PatientListSerializer(qs[:100], many=True)
         return Response({'results': serializer.data, 'count': qs.count()})
+
+    def destroy(self, request, *args, **kwargs):
+        # Soft-delete: set est_actif False instead of hard delete
+        if not can_write_patient(request.user):
+            return Response({'detail': 'Non autorise.'}, status=403)
+        instance = self.get_object()
+        instance.est_actif = False
+        instance.save(update_fields=['est_actif', 'date_modification'])
+        AccessLog.objects.create(
+            user=request.user,
+            action=AccessLog.Action.DELETE,
+            resource='patient',
+            resource_id=str(instance.id),
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Patient supprime (est_actif=false).'}, status=200)
 
     # Action mobile : habitudes de vie (acces public via QR code)
     @action(

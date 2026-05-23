@@ -14,14 +14,43 @@ from apps.accounts.models import AccessLog
 from apps.accounts.permissions import CanReadOrWriteDiagnostic, can_write_diagnostic
 
 
-class TopographieViewSet(viewsets.ReadOnlyModelViewSet):
-    """Referentiel ICD-O-3 Topographies — lecture seule."""
+class TopographieViewSet(viewsets.ModelViewSet):
+    """Referentiel ICD-O-3 Topographies — lecture et création via API.
+    La création/modification/suppression est restreinte via un controle
+    explicite dans `perform_create`/`perform_update`.
+    """
     serializer_class   = TopographieSerializer
     permission_classes = [IsAuthenticated]
     filter_backends    = [filters.SearchFilter]
     search_fields      = ['code', 'libelle', 'categorie']
-    queryset           = TopographieICD.objects.filter(est_actif=True)
+    queryset           = TopographieICD.objects.all()
     pagination_class   = None
+
+    def perform_create(self, serializer):
+        # seuls les utilisateurs ayant la permission d'ecrire des diagnostics
+        # peuvent créer de nouvelles topographies.
+        from apps.accounts.permissions import can_write_diagnostic
+        if not can_write_diagnostic(self.request.user):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Non autorise a creer des topographies.')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        from apps.accounts.permissions import can_write_diagnostic
+        if not can_write_diagnostic(self.request.user):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Non autorise a modifier des topographies.')
+        serializer.save()
+
+    def destroy(self, request, *args, **kwargs):
+        # Soft-delete: mark est_actif False
+        from apps.accounts.permissions import can_write_diagnostic
+        if not can_write_diagnostic(request.user):
+            return Response({'detail': 'Non autorise.'}, status=403)
+        instance = self.get_object()
+        instance.est_actif = False
+        instance.save()
+        return Response({'detail': 'Topographie desactivee.'})
 
 
 class MorphologieViewSet(viewsets.ReadOnlyModelViewSet):

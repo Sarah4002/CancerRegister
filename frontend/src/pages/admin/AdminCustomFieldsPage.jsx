@@ -5,10 +5,10 @@
  * Accessible via /admin/champs-personnalises
  */
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { AppLayout } from '../../components/layout/Sidebar';
 import { apiClient } from '../../services/apiClient';
-import toast from 'react-hot-toast';
 
 const MODULE_LABELS = {
   patient:    { label: 'Dossier patient',      color: '#00a8ff', icon: '' },
@@ -295,10 +295,10 @@ export default function AdminCustomFieldsPage() {
   });
 
   // KPIs
-  const total  = champs.length;
-  const actifs = champs.filter(c => c.actif).length;
+  const total  = Array.isArray(champs) ? champs.length : 0;
+  const actifs = Array.isArray(champs) ? champs.filter(c => c?.actif).length : 0;
   const parModule = Object.keys(MODULE_LABELS).reduce((acc, m) => {
-    acc[m] = champs.filter(c => c.module === m).length;
+    acc[m] = Array.isArray(champs) ? champs.filter(c => c.module === m).length : 0;
     return acc;
   }, {});
 

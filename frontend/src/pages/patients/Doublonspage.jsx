@@ -42,7 +42,7 @@ function DoublonCard({ paire, onVoir }) {
   const cs = CERTITUDE_STYLE[paire.certitude] || CERTITUDE_STYLE.faible;
   return (
     <div
-      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', transition: 'box-shadow 0.15s' }}
+      style={{ background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', transition: 'box-shadow 0.15s' }}
       onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.12)'}
       onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
     >
@@ -133,9 +133,9 @@ export default function DoublonsPage() {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       {/* Header */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+      <div style={{ background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--text-primary)', marginBottom: 6 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: '#1e293b', marginBottom: 6 }}>
             Doublons detectes
           </h1>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
@@ -169,7 +169,7 @@ export default function DoublonsPage() {
         ].map(f => (
           <button key={f.key} onClick={() => setFiltre(f.key)} style={{
             padding: '7px 14px',
-            background: filtre === f.key ? 'var(--bg-card)' : 'var(--bg-elevated)',
+            background: filtre === f.key ? '#ffffff' : 'var(--bg-elevated)',
             border: '1px solid ' + (filtre === f.key ? f.color : 'var(--border)'),
             borderRadius: 'var(--radius-md)', fontSize: 12, fontWeight: 500,
             color: filtre === f.key ? f.color : 'var(--text-muted)',

@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { patientService } from '../../services/patientService';
-import { AppLayout } from '../../components/layout/Sidebar';
+import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { Link, useNavigate } from 'react-router-dom';
+import { AppLayout } from '../../components/layout/Sidebar';
 import CanRegImportExport from '../../components/patients/CanRegImportExport';
+import { patientService } from '../../services/patientService';
 
 const STATUT_COLORS = {
   nouveau:    { bg: 'rgba(155,138,251,0.15)', color: '#9b8afb', border: 'rgba(155,138,251,0.3)' },
@@ -33,32 +33,49 @@ function StatusBadge({ statut, label }) {
 
 export default function PatientsPage() {
   const navigate = useNavigate();
-  const [patients,   setPatients]   = useState([]);
-  const [stats,      setStats]      = useState(null);
-  const [loading,    setLoading]    = useState(true);
-  const [search,     setSearch]     = useState('');
-  const [filters,    setFilters]    = useState({ sexe: '', statut_dossier: '', wilaya: '' });
-  const [pagination, setPagination] = useState({ count: 0, next: null, previous: null, page: 1 });
+  const [patients,      setPatients]      = useState([]);
+  const [stats,         setStats]         = useState(null);
+  const [loading,       setLoading]       = useState(true);
+  const [search,        setSearch]        = useState('');
+  const [dateNaissance, setDateNaissance] = useState('');
+  const [filters,       setFilters]       = useState({ sexe: '', statut_dossier: '', wilaya: '', commune: '' });
+  const [pagination,    setPagination]    = useState({ count: 0, next: null, previous: null, page: 1 });
+  const [deletingId,    setDeletingId]    = useState(null);
 
   const fetchPatients = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { page: pagination.page, search };
-      if (filters.sexe)           params.sexe           = filters.sexe;
-      if (filters.statut_dossier) params.statut_dossier = filters.statut_dossier;
-      if (filters.wilaya)         params.wilaya         = filters.wilaya;
+      const hasAdvancedCriteria = !!(
+        search || dateNaissance || filters.sexe || filters.statut_dossier || filters.wilaya || filters.commune
+      );
 
-      const { data } = await patientService.list(params);
-      setPatients(data.results || data);
-      if (data.count !== undefined) {
-        setPagination(p => ({ ...p, count: data.count, next: data.next, previous: data.previous }));
+      if (hasAdvancedCriteria) {
+        const params = {
+          q: search || undefined,
+          date_naissance: dateNaissance || undefined,
+          sexe: filters.sexe || undefined,
+          statut_dossier: filters.statut_dossier || undefined,
+          wilaya: filters.wilaya || undefined,
+          commune: filters.commune || undefined,
+        };
+        const { data } = await patientService.searchAdvanced(params);
+        setPatients(data.results || []);
+        setPagination({ count: data.count ?? data.results?.length ?? 0, next: null, previous: null, page: 1 });
+      } else {
+        const params = { page: pagination.page };
+        const { data } = await patientService.list(params);
+        setPatients(data.results || data);
+        if (data.count !== undefined) {
+          setPagination(p => ({ ...p, count: data.count, next: data.next, previous: data.previous }));
+        }
       }
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error('Erreur lors du chargement des patients');
     } finally {
       setLoading(false);
     }
-  }, [search, filters, pagination.page]);
+  }, [search, dateNaissance, filters, pagination.page]);
 
   useEffect(() => { fetchPatients(); }, [fetchPatients]);
 
@@ -86,7 +103,7 @@ export default function PatientsPage() {
             { label: 'Décédés',        val: stats.decede,      color: '#ff4d6a' },
           ].map(({ label, val, color }) => (
             <div key={label} style={{
-              background: 'var(--bg-card)', border: '1px solid var(--border-light)',
+              background: '#ffffff', border: '1px solid var(--border-light)',
               borderRadius: 'var(--radius-md)', padding: '14px 16px',
             }}>
               <div style={{ fontSize: 22, fontWeight: 700, color, fontFamily: 'var(--font-display)', marginBottom: 2 }}>
@@ -100,9 +117,10 @@ export default function PatientsPage() {
 
       {/* Toolbar */}
       <div style={{
-        background: 'var(--bg-card)', border: '1px solid var(--border-light)',
+        background: '#ffffff', border: '1px solid var(--border-light)',
         borderRadius: 'var(--radius-md)', padding: '14px 18px',
         display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
       }}>
         {/* Search */}
         <div style={{
@@ -125,6 +143,19 @@ export default function PatientsPage() {
         </div>
 
         {/* Filters */}
+        <input
+          type="date"
+          value={dateNaissance}
+          onChange={e => setDateNaissance(e.target.value)}
+          style={{ padding: '8px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 12.5, outline: 'none' }}
+          title="Date de naissance"
+        />
+        <input
+          value={filters.commune}
+          onChange={e => setFilters(f => ({ ...f, commune: e.target.value }))}
+          placeholder="Commune"
+          style={{ padding: '8px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 12.5, outline: 'none', minWidth: 150 }}
+        />
         {[
           { key: 'sexe', label: 'Sexe', opts: [['', 'Tous'], ['M', 'Masculin'], ['F', 'Féminin']] },
           { key: 'statut_dossier', label: 'Statut', opts: [['', 'Tous'], ['nouveau', 'Nouveau'], ['traitement', 'Traitement'], ['remission', 'Rémission'], ['perdu', 'Perdu de vue'], ['decede', 'Décédé']] },
@@ -169,7 +200,7 @@ export default function PatientsPage() {
 
       {/* Table */}
       <div style={{
-        background: 'var(--bg-card)', border: '1px solid var(--border-light)',
+        background: '#ffffff', border: '1px solid var(--border-light)',
         borderRadius: 'var(--radius-md)', overflow: 'hidden',
       }}>
         {loading ? (
@@ -235,13 +266,40 @@ export default function PatientsPage() {
                     {new Date(p.date_enregistrement).toLocaleDateString('fr-DZ')}
                   </td>
                   <td style={{ padding: '12px 14px' }} onClick={e => e.stopPropagation()}>
-                    <Link to={`/patients/${p.id}`} style={{ textDecoration: 'none' }}>
-                      <button style={{
-                        padding: '5px 12px', background: 'var(--bg-elevated)',
-                        border: '1px solid var(--border)', borderRadius: 6,
-                        color: 'var(--text-secondary)', fontSize: 11.5, cursor: 'pointer',
-                      }}>Voir</button>
-                    </Link>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <Link to={`/patients/${p.id}`} style={{ textDecoration: 'none' }}>
+                        <button style={{
+                          padding: '5px 12px', background: 'var(--bg-elevated)',
+                          border: '1px solid var(--border)', borderRadius: 6,
+                          color: 'var(--text-secondary)', fontSize: 11.5, cursor: 'pointer',
+                        }}>Voir</button>
+                      </Link>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!window.confirm('Confirmez-vous la suppression du patient ?')) return;
+                          setDeletingId(p.id);
+                          try {
+                            await patientService.delete(p.id);
+                            setPatients(prev => prev.filter(item => item.id !== p.id));
+                            toast.success('Patient supprimé.');
+                            setPagination(prev => ({ ...prev, count: Math.max(0, prev.count - 1) }));
+                          } catch (err) {
+                            toast.error(err.response?.data?.detail || 'Erreur lors de la suppression.');
+                          } finally {
+                            setDeletingId(null);
+                          }
+                        }}
+                        disabled={deletingId === p.id}
+                        style={{
+                          padding: '5px 12px', background: deletingId === p.id ? 'var(--border)' : 'rgba(255,77,106,0.12)',
+                          border: '1px solid rgba(255,77,106,0.3)', borderRadius: 6,
+                          color: '#ff4d6a', fontSize: 11.5, cursor: deletingId === p.id ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        {deletingId === p.id ? 'Suppression...' : 'Supprimer'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
