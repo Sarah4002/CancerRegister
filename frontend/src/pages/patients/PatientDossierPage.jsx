@@ -182,21 +182,21 @@ export default function PatientDossierPage() {
   const [dossierEditMode, setDossierEditMode] = useState(false);
   const [dossierForm, setDossierForm] = useState({});
 
-useEffect(() => {
-  const invalid = id === undefined || id === null || id === '' || id === 'undefined';
-  if (invalid) {
-    console.warn('[PatientDossierPage] invalid route param id:', id);
-    toast.error('Identifiant patient manquant');
-    navigate('/patients');
-    return;
-  }
+  useEffect(() => {
+    const invalid = id === undefined || id === null || id === '' || id === 'undefined';
+    if (invalid) {
+      console.warn('[PatientDossierPage] invalid route param id:', id);
+      toast.error('Identifiant patient manquant');
+      navigate('/patients');
+      return;
+    }
 
-  loadAllData();
-}, [id, navigate]);
+    loadAllData();
+  }, [id, navigate]);
 
-const loadAllData = async () => {
-  if (id === undefined || id === null || id === '' || id === 'undefined') return;
-  setLoading(true);
+  const loadAllData = async () => {
+    if (id === undefined || id === null || id === '' || id === 'undefined') return;
+    setLoading(true);
     try {
       const [ resPatient, resDossier, resExamens, resDiag, resTrt, resSuiv ] = await Promise.all([
         patientService.get(id).catch(e => { toast.error('Patient introuvable'); navigate('/patients'); throw e; }),
@@ -225,7 +225,7 @@ const loadAllData = async () => {
       const nonStringFields = ['date_naissance', 'age_diagnostic', 'nombre_enfants', 'date_deces'];
       Object.keys(payload).forEach(k => { 
         if (payload[k] === null && !nonStringFields.includes(k)) {
-           payload[k] = ''; // Force char/text fields to "" instead of null
+           payload[k] = '';
         }
         if (payload[k] === '') {
            payload[k] = nonStringFields.includes(k) ? null : '';
@@ -284,6 +284,12 @@ const loadAllData = async () => {
     { key: 'habitudes',   label: 'Habitudes de vie' },
     { key: 'contacts',    label: 'Contacts'         },
     { key: 'qrcode',      label: 'QR Code'          },
+  ];
+
+  const DOSSIER_TABS = [
+    { key: 'clinique',   label: 'Infos Cliniques' },
+    { key: 'diagnostic', label: 'Diagnostic'      },
+    { key: 'examens',    label: 'Examens & Bilans'},
   ];
 
   return (
@@ -488,7 +494,6 @@ const loadAllData = async () => {
                       </div>
                     ))}
                   </div>
-                  {/* Boutons bas de formulaire */}
                   <div style={{ display: 'flex', gap: 10, marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(37,99,235,0.12)', justifyContent: 'flex-end' }}>
                     <button onClick={handleCancel} style={{ padding: '10px 20px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px', color: '#334155', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Annuler</button>
                     <button onClick={handleUpdatePatient} disabled={saving} style={{ padding: '10px 26px', background: saving ? 'rgba(37,99,235,0.12)' : 'linear-gradient(135deg, #16a34a, #00b38a)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -500,19 +505,22 @@ const loadAllData = async () => {
             </>
           )}
 
-          {/* == DOSSIER MeDICAL == */}
+          {/* == DOSSIER MeDICAL (MÊME DESIGN HARMONISÉ) == */}
           {activeMainTab === 'dossier' && (
              <div>
-               <div style={{ display: 'flex', gap: 10, borderBottom: '1px solid rgba(37,99,235,0.12)', paddingBottom: 10, marginBottom: 20 }}>
-                 <button onClick={() => setActiveSubTab('clinique')} style={subTabSt(activeSubTab === 'clinique')}>Infos Cliniques</button>
-                 <button onClick={() => setActiveSubTab('diagnostic')} style={subTabSt(activeSubTab === 'diagnostic')}>Diagnostic</button>
-                 <button onClick={() => setActiveSubTab('examens')} style={subTabSt(activeSubTab === 'examens')}>Examens & Bilans</button>
+               {/* Même design de navigation en onglets étalés */}
+               <div style={{ display: 'flex', marginBottom: 20, background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+                 {DOSSIER_TABS.map(t => (
+                   <button key={t.key} onClick={() => setActiveSubTab(t.key)} style={{ flex: 1, padding: '12px 6px', background: 'none', border: 'none', borderBottom: '2px solid ' + (activeSubTab === t.key ? '#2563eb' : 'transparent'), color: activeSubTab === t.key ? '#2563eb' : '#64748b', fontSize: 11.5, fontWeight: activeSubTab === t.key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}>
+                     {t.label}
+                   </button>
+                 ))}
                </div>
 
                {activeSubTab === 'clinique' && (
-                 <div>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-                     <h3 style={{ margin: 0, color: '#0f172a' }}>Constantes & Actes</h3>
+                 <div style={{ animation: 'fadeIn 0.2s ease' }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                     <SectionLabel style={{ margin: 0 }}>Constantes & Actes</SectionLabel>
                      {!dossierEditMode ? (
                        <button onClick={() => { setDossierForm(dossier || {}); setDossierEditMode(true); }} style={btnSt}>Modifier le dossier</button>
                      ) : (
@@ -524,47 +532,45 @@ const loadAllData = async () => {
                    </div>
 
                    {!dossierEditMode ? (
-                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                       <InfoItem label="Tension arterielle" value={dossier?.tension_arterielle} />
-                       <InfoItem label="Temperature (°C)" value={dossier?.temperature} />
-                       <InfoItem label="Pouls (bpm)" value={dossier?.pouls} />
-                       <InfoItem label="Glycemie (g/L)" value={dossier?.glycemie} />
-                       <InfoItem label="Taille (cm) / Poids (kg)" value={`${dossier?.taille_cm || '-'} / ${dossier?.poids_kg || '-'}`} />
-                       <InfoItem label="Allergies connues" value={dossier?.allergies} isTextarea />
-                       <InfoItem label="Acte chirurgical precedent" value={dossier?.acte_chirurgical} isTextarea />
-                     </div>
+                     <Grid>
+                       <InfoRow label="Tension arterielle" value={dossier?.tension_arterielle} />
+                       <InfoRow label="Temperature" value={dossier?.temperature ? `${dossier.temperature} °C` : '—'} />
+                       <InfoRow label="Pouls" value={dossier?.pouls ? `${dossier.pouls} bpm` : '—'} />
+                       <InfoRow label="Glycemie" value={dossier?.glycemie ? `${dossier.glycemie} g/L` : '—'} />
+                       <InfoRow label="Taille / Poids" value={dossier?.taille_cm || dossier?.poids_kg ? `${dossier?.taille_cm || '—'} cm / ${dossier?.poids_kg || '—'} kg` : '—'} />
+                       <InfoRow label="Allergies connues" value={dossier?.allergies} full />
+                       <InfoRow label="Acte chirurgical precedent" value={dossier?.acte_chirurgical} full />
+                     </Grid>
                    ) : (
-                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                       <EditItem label="Tension arterielle" val={dossierForm.tension_arterielle} onChange={v => setDossierForm({...dossierForm, tension_arterielle: v})} />
-                       <EditItem label="Temperature (°C)" val={dossierForm.temperature} type="number" onChange={v => setDossierForm({...dossierForm, temperature: v})} />
-                       <EditItem label="Pouls (bpm)" val={dossierForm.pouls} type="number" onChange={v => setDossierForm({...dossierForm, pouls: v})} />
-                       <EditItem label="Glycemie (g/L)" val={dossierForm.glycemie} type="number" onChange={v => setDossierForm({...dossierForm, glycemie: v})} />
-                       <EditItem label="Taille (cm)" val={dossierForm.taille_cm} type="number" onChange={v => setDossierForm({...dossierForm, taille_cm: v})} />
-                       <EditItem label="Poids (kg)" val={dossierForm.poids_kg} type="number" onChange={v => setDossierForm({...dossierForm, poids_kg: v})} />
-                       <div style={{ gridColumn: '1 / -1' }}>
-                         <label className="label-st">Allergies</label>
-                         <textarea className="input-st" value={dossierForm.allergies || ''} onChange={e => setDossierForm({...dossierForm, allergies: e.target.value})} rows={3} />
-                       </div>
+                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px', animation: 'fadeIn 0.2s ease' }}>
+                       <div style={{ marginBottom: 14 }}><label className="label-st">Tension arterielle</label><input className="input-st" value={dossierForm.tension_arterielle || ''} onChange={e => setDossierForm({...dossierForm, tension_arterielle: e.target.value})} /></div>
+                       <div style={{ marginBottom: 14 }}><label className="label-st">Temperature (°C)</label><input className="input-st" type="number" value={dossierForm.temperature || ''} onChange={e => setDossierForm({...dossierForm, temperature: e.target.value})} /></div>
+                       <div style={{ marginBottom: 14 }}><label className="label-st">Pouls (bpm)</label><input className="input-st" type="number" value={dossierForm.pouls || ''} onChange={e => setDossierForm({...dossierForm, pouls: e.target.value})} /></div>
+                       <div style={{ marginBottom: 14 }}><label className="label-st">Glycemie (g/L)</label><input className="input-st" type="number" step="0.01" value={dossierForm.glycemie || ''} onChange={e => setDossierForm({...dossierForm, glycemie: e.target.value})} /></div>
+                       <div style={{ marginBottom: 14 }}><label className="label-st">Taille (cm)</label><input className="input-st" type="number" value={dossierForm.taille_cm || ''} onChange={e => setDossierForm({...dossierForm, taille_cm: e.target.value})} /></div>
+                       <div style={{ marginBottom: 14 }}><label className="label-st">Poids (kg)</label><input className="input-st" type="number" value={dossierForm.poids_kg || ''} onChange={e => setDossierForm({...dossierForm, poids_kg: e.target.value})} /></div>
+                       <div style={{ gridColumn: '1 / -1', marginBottom: 14 }}><label className="label-st">Allergies</label><textarea className="input-st" value={dossierForm.allergies || ''} onChange={e => setDossierForm({...dossierForm, allergies: e.target.value})} rows={3} style={{resize: 'vertical'}} /></div>
+                       <div style={{ gridColumn: '1 / -1', marginBottom: 14 }}><label className="label-st">Acte chirurgical precedent</label><textarea className="input-st" value={dossierForm.acte_chirurgical || ''} onChange={e => setDossierForm({...dossierForm, acte_chirurgical: e.target.value})} rows={3} style={{resize: 'vertical'}} /></div>
                      </div>
                    )}
                  </div>
                )}
 
                {activeSubTab === 'diagnostic' && (
-                 <div>
-                   <h3 style={{ marginTop: 0, color: '#0f172a' }}>Diagnostic(s) associe(s)</h3>
+                 <div style={{ animation: 'fadeIn 0.2s ease' }}>
+                   <SectionLabel>Diagnostic(s) associe(s)</SectionLabel>
                    {diagnostics.length === 0 ? (
-                     <div style={{ padding: 20, color: '#64748b' }}>Aucun diagnostic recensé.</div>
+                     <div style={{ padding: '12px 0', color: '#64748b', fontStyle: 'italic', fontSize: 13 }}>Aucun diagnostic recensé.</div>
                    ) : (
-                     diagnostics.map(diag => (
-                       <div key={diag.id} style={{ background: '#f1f5f9', padding: 16, borderRadius: 8, marginBottom: 12, border: '1px solid rgba(37,99,235,0.12)' }}>
-                         <h4 style={{ margin: '0 0 10px 0', color: '#0f172a' }}>Topographie: {diag.topographie_code}</h4>
-                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13, color: '#334155' }}>
-                           <div><strong>Date:</strong> {new Date(diag.date_diagnostic).toLocaleDateString()}</div>
-                           <div><strong>Stade AJCC:</strong> {diag.stade_ajcc}</div>
-                           <div><strong>Morphologie:</strong> {diag.morphologie_code}</div>
-                           <div><strong>Base:</strong> {diag.base_diagnostic}</div>
-                         </div>
+                     diagnostics.map((diag, index) => (
+                       <div key={diag.id} style={{ marginBottom: index !== diagnostics.length - 1 ? 28 : 0, paddingBottom: 16, borderBottom: index !== diagnostics.length - 1 ? '1px dashed rgba(37,99,235,0.15)' : 'none' }}>
+                         <div style={{ fontWeight: 600, fontSize: 14, color: '#2563eb', marginBottom: 10 }}>Topographie: {diag.topographie_code}</div>
+                         <Grid>
+                           <InfoRow label="Date du Diagnostic" value={diag.date_diagnostic ? new Date(diag.date_diagnostic).toLocaleDateString('fr-DZ') : '—'} />
+                           <InfoRow label="Stade AJCC" value={diag.stade_ajcc} />
+                           <InfoRow label="Morphologie" value={diag.morphologie_code} />
+                           <InfoRow label="Base du Diagnostic" value={diag.base_diagnostic} />
+                         </Grid>
                        </div>
                      ))
                    )}
@@ -572,31 +578,33 @@ const loadAllData = async () => {
                )}
 
                {activeSubTab === 'examens' && (
-                 <div>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-                     <h3 style={{ margin: 0, color: '#0f172a' }}>Examens & Bilans</h3>
+                 <div style={{ animation: 'fadeIn 0.2s ease' }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                     <SectionLabel style={{ margin: 0 }}>Examens & Bilans</SectionLabel>
                      <button onClick={() => setShowExamenModal(true)} style={btnSt}>+ Prescrire un examen</button>
                    </div>
                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                      <thead>
                        <tr style={{ borderBottom: '1px solid rgba(37,99,235,0.12)', color: '#64748b' }}>
-                         <th style={{ padding: '12px 0', textAlign: 'left' }}>Categorie</th>
-                         <th style={{ padding: '12px 0', textAlign: 'left' }}>Examen</th>
-                         <th style={{ padding: '12px 0', textAlign: 'left' }}>Statut</th>
-                         <th style={{ padding: '12px 0', textAlign: 'right' }}>Prescrit le</th>
+                         <th style={{ padding: '12px 8px', textAlign: 'left' }}>Categorie</th>
+                         <th style={{ padding: '12px 8px', textAlign: 'left' }}>Examen</th>
+                         <th style={{ padding: '12px 8px', textAlign: 'left' }}>Valeur</th>
+                         <th style={{ padding: '12px 8px', textAlign: 'left' }}>Statut</th>
+                         <th style={{ padding: '12px 8px', textAlign: 'right' }}>Prescrit le</th>
                        </tr>
                      </thead>
                      <tbody>
                        {examens.length === 0 ? (
-                         <tr><td colSpan={4} style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>Aucun examen.</td></tr>
+                         <tr><td colSpan={5} style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontStyle: 'italic' }}>Aucun examen enregistré.</td></tr>
                        ) : examens.map(ex => {
                          const st = EXAMEN_STATUT_COLORS[ex.statut] || EXAMEN_STATUT_COLORS.en_attente;
                          return (
                            <tr key={ex.id} style={{ borderBottom: '1px solid rgba(37,99,235,0.08)' }}>
-                             <td style={{ padding: '12px 0', color: '#0f172a' }}>{ex.categorie}</td>
-                             <td style={{ padding: '12px 0', color: '#334155' }}>{ex.nom_examen}</td>
-                             <td style={{ padding: '12px 0' }}><span style={{ padding: '3px 8px', borderRadius: 4, background: st.bg, color: st.color, fontSize: 11 }}>{ex.statut}</span></td>
-                             <td style={{ padding: '12px 0', textAlign: 'right', color: '#334155' }}>{new Date(ex.date_prescription).toLocaleDateString()}</td>
+                             <td style={{ padding: '12px 8px', color: '#0f172a', fontWeight: 500 }}>{ex.categorie}</td>
+                             <td style={{ padding: '12px 8px', color: '#334155' }}>{ex.nom_examen}</td>
+                             <td style={{ padding: '12px 8px', color: '#0f172a', fontWeight: 600 }}>{ex.valeur || '—'}</td>
+                             <td style={{ padding: '12px 8px' }}><span style={{ padding: '4px 8px', borderRadius: 20, background: st.bg, color: st.color, fontSize: 11, fontWeight: 600 }}>{ex.statut}</span></td>
+                             <td style={{ padding: '12px 8px', textAlign: 'right', color: '#64748b' }}>{new Date(ex.date_prescription).toLocaleDateString('fr-DZ')}</td>
                            </tr>
                          );
                        })}
@@ -609,30 +617,30 @@ const loadAllData = async () => {
 
           {/* == TRAITEMENTS == */}
           {activeMainTab === 'traitements' && (
-            <div>
-              <h3 style={{ marginTop: 0, color: '#0f172a' }}>Historique des Traitements</h3>
+            <div style={{ animation: 'fadeIn 0.2s ease' }}>
+              <SectionLabel>Historique des Traitements</SectionLabel>
               {Object.keys(traitements).map(key => traitements[key]?.length > 0 && (
                 <div key={key} style={{ marginBottom: 20 }}>
-                  <h4 style={{ textTransform: 'capitalize', color: '#2563eb', borderBottom: '1px solid rgba(37,99,235,0.12)', paddingBottom: 6 }}>{key}</h4>
+                  <h4 style={{ textTransform: 'capitalize', color: '#2563eb', borderBottom: '1px solid rgba(37,99,235,0.12)', paddingBottom: 6, marginTop: 0, marginBottom: 8, fontSize: 14 }}>{key}</h4>
                   {traitements[key].map(t => (
-                     <div key={t.id} style={{ background: '#f1f5f9', padding: 12, borderRadius: 8, margin: '8px 0', fontSize: 13, color: '#334155' }}>
-                       Phase: {t.phase_traitement} - Statut: {t.statut_traitement} {t.date_debut && `- Début: ${new Date(t.date_debut).toLocaleDateString()}`}
+                     <div key={t.id} style={{ background: '#f1f5f9', padding: '12px 16px', borderRadius: '12px', margin: '8px 0', fontSize: 13, color: '#334155', border: '1px solid rgba(37,99,235,0.06)' }}>
+                       Phase: <strong style={{ color: '#0f172a' }}>{t.phase_traitement}</strong> — Statut: <span style={{ color: '#2563eb', fontWeight: 500 }}>{t.statut_traitement}</span> {t.date_debut && ` — Début: ${new Date(t.date_debut).toLocaleDateString('fr-DZ')}`}
                      </div>
                   ))}
                 </div>
               ))}
-              {Object.keys(traitements).every(k => !traitements[k]?.length) && <div style={{ color: '#64748b' }}>Aucun traitement trouvé.</div>}
+              {Object.keys(traitements).every(k => !traitements[k]?.length) && <div style={{ color: '#64748b', fontStyle: 'italic', fontSize: 13 }}>Aucun traitement trouvé.</div>}
             </div>
           )}
 
           {/* == SUIVI CLINIQUE == */}
           {activeMainTab === 'suivi' && (
-            <div>
-               <h3 style={{ marginTop: 0, color: '#0f172a' }}>Consultations & Suivi</h3>
-               {suivi.length === 0 ? <div style={{ color: '#64748b' }}>Aucune consultation enregistrée.</div> : (
+            <div style={{ animation: 'fadeIn 0.2s ease' }}>
+               <SectionLabel>Consultations & Suivi</SectionLabel>
+               {suivi.length === 0 ? <div style={{ color: '#64748b', fontStyle: 'italic', fontSize: 13 }}>Aucune consultation enregistrée.</div> : (
                  suivi.map(c => (
-                   <div key={c.id} style={{ background: '#f1f5f9', padding: 12, borderRadius: 8, margin: '8px 0', fontSize: 13, color: '#334155' }}>
-                     <strong>Date: {new Date(c.date_consultation).toLocaleDateString()}</strong> - PS ECOG: {c.ps_ecog} - Poids: {c.poids_kg}kg
+                   <div key={c.id} style={{ background: '#f1f5f9', padding: '12px 16px', borderRadius: '12px', margin: '8px 0', fontSize: 13, color: '#334155', border: '1px solid rgba(37,99,235,0.06)' }}>
+                     <strong style={{ color: '#0f172a' }}>Date: {new Date(c.date_consultation).toLocaleDateString('fr-DZ')}</strong> — PS ECOG: <span style={{ fontWeight: 600 }}>{c.ps_ecog}</span> — Poids: <span style={{ fontWeight: 600 }}>{c.poids_kg} kg</span>
                    </div>
                  ))
                )}
@@ -648,22 +656,7 @@ const loadAllData = async () => {
   );
 }
 
-// Micro-components
-function InfoItem({ label, value, isTextarea }) {
-  return (
-    <div style={{ gridColumn: isTextarea ? '1 / -1' : 'auto', background: '#f1f5f9', padding: '12px 14px', borderRadius: 8, border: '1px solid rgba(37,99,235,0.08)' }}>
-      <div className="label-st">{label}</div>
-      <div style={{ fontSize: 14, color: value ? '#0f172a' : '#64748b', whiteSpace: isTextarea ? 'pre-wrap' : 'nowrap' }}>
-        {value || 'Non renseigné'}
-      </div>
-    </div>
-  );
-}
-function EditItem({ label, val, onChange, type="text" }) {
-  return (
-    <div><label className="label-st">{label}</label><input className="input-st" type={type} value={val || ''} onChange={e => onChange(e.target.value)} /></div>
-  );
-}
+// Micro-components originaux conservés
 function Info({ val, mono }) { return <span style={{ fontSize: 12.5, color: '#334155' }}><span style={{ fontFamily: mono ? 'var(--font-mono)' : 'inherit', color: '#0f172a' }}>{val}</span></span>; }
 function Grid({ children }) { return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>{children}</div>; }
 function SectionLabel({ children, style: s }) { return <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: '#64748b', marginBottom: 12, ...s }}>{children}</div>; }
@@ -687,7 +680,6 @@ function HabitudeRow({ label, value, colorMap, labelMap }) {
   );
 }
 
-const subTabSt = (active) => ({ padding: '6px 12px', background: active ? '#2563eb' : 'transparent', border: 'none', borderRadius: 20, color: active ? '#0f172a' : '#334155', cursor: 'pointer', fontSize: 13, fontWeight: active ? 600 : 400 });
-const btnSt = { padding: '8px 16px', background: '#2563eb', color: '#0f172a', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500 };
+const btnSt = { padding: '8px 16px', background: '#2563eb', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500 };
 const btnStSecondary = { padding: '8px 16px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', color: '#334155', borderRadius: 6, cursor: 'pointer', fontSize: 13 };
 const btnStSuccess = { padding: '8px 16px', background: 'linear-gradient(135deg, #16a34a, #00b38a)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500 };
