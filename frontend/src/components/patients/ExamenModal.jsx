@@ -6,7 +6,8 @@ export default function ExamenModal({ patientId, onClose, onSuccess }) {
   const [categorie, setCategorie] = useState(CATEGORIES_EXAMENS[0].value);
   const [nomExamen, setNomExamen] = useState('');
   const [datePrescription, setDatePrescription] = useState(new Date().toISOString().split('T')[0]);
-  const [observations, setObservations] = useState('');
+  // 1. Remplacement de l'état 'observations' par 'valeur'
+  const [valeur, setValeur] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -23,7 +24,8 @@ export default function ExamenModal({ patientId, onClose, onSuccess }) {
         categorie,
         nom_examen: nomExamen,
         date_prescription: datePrescription,
-        observations
+        // 2. Envoi de la propriété 'valeur' à la place d'observations
+        valeur 
       });
       onSuccess();
       onClose();
@@ -85,13 +87,15 @@ export default function ExamenModal({ patientId, onClose, onSuccess }) {
             />
           </div>
 
+          {/* 3. Modification du bloc HTML/JSX pour le champ Valeur */}
           <div style={fieldSt}>
-            <label style={labelSt}>Observations (Optionnel)</label>
-            <textarea 
-              value={observations} 
-              onChange={e => setObservations(e.target.value)} 
-              rows={3}
-              style={{ ...inputSt, resize: 'vertical' }}
+            <label style={labelSt}>Valeur (Optionnel)</label>
+            <input 
+              type="text" 
+              value={valeur} 
+              onChange={e => setValeur(e.target.value)} 
+              placeholder="Ex: 120 mg/dL, Négatif..."
+              style={inputSt}
             />
           </div>
 
