@@ -1345,7 +1345,7 @@ function DownloadMenu({ report, chartLabel, chartData, chartRef }) {
 }
 
 // ── MiniAIReport : fond blanc ─────────────────────────────────────────────────
-function MiniAIReport({ chartId, filters, chartRef, chartData }) {
+function MiniAIReport({ chartId, chartLabel, filters, chartRef, chartData }) {
   const [state, setState] = useState('idle');
   const [report, setReport] = useState(null);
   const [open,   setOpen]   = useState(false);
@@ -1357,6 +1357,9 @@ function MiniAIReport({ chartId, filters, chartRef, chartData }) {
     try {
       const created = await statsApi.generateReport({
         titre: `Analyse automatique — ${new Date().toLocaleDateString('fr-FR')}`,
+        chart_id: chartId,
+        chart_label: chartLabel,
+        chart_data: Array.isArray(chartData) ? chartData.slice(0, 40) : [],
         ...filters,
       });
 
@@ -1655,7 +1658,13 @@ function ChartCard({ chart, filters, onRemove, title, sub, children, span = 1 })
         )}
       </div>
 
-      <MiniAIReport chartId={chart.id} filters={filters} chartRef={chartRef} chartData={data} />
+      <MiniAIReport
+        chartId={chart.id}
+        chartLabel={chart.label}
+        filters={filters}
+        chartRef={chartRef}
+        chartData={data}
+      />
     </div>
   );
 }

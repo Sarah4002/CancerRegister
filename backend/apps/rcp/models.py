@@ -157,7 +157,50 @@ class DossierRCP(models.Model):
 
 
 # ─────────────────────────────────────────────────────────────────
-# 4. DÉCISION RCP
+# 4. FICHIERS / IMAGES DICOM DU DOSSIER
+# ─────────────────────────────────────────────────────────────────
+
+def upload_to_dossier(instance, filename):
+    return f"rcp/dossiers/{instance.dossier_id}/{filename}"
+
+
+class FichierDossierRCP(models.Model):
+
+    class TypeFichier(models.TextChoices):
+        DICOM      = 'dicom',      'Image DICOM'
+        SCANNER    = 'scanner',    'Scanner / TDM'
+        IRM        = 'irm',        'IRM'
+        RADIO      = 'radio',      'Radiographie'
+        ECHO       = 'echo',       'Echographie'
+        ANAPATH    = 'anapath',    'Anatomopathologie'
+        BIOLOGIE   = 'biologie',   'Bilan biologique'
+        AUTRE      = 'autre',      'Autre document'
+
+    dossier      = models.ForeignKey(DossierRCP, on_delete=models.CASCADE, related_name='fichiers')
+    fichier      = models.FileField(upload_to=upload_to_dossier)
+    nom_original = models.CharField(max_length=255, blank=True)
+    type_fichier = models.CharField(max_length=20, choices=TypeFichier.choices, default='autre')
+    description  = models.CharField(max_length=300, blank=True)
+    taille_bytes = models.PositiveIntegerField(null=True, blank=True)
+    date_upload  = models.DateTimeField(auto_now_add=True)
+    uploade_par  = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        db_table  = 'fichiers_dossier_rcp'
+        ordering  = ['-date_upload']
+        verbose_name = 'Fichier dossier RCP'
+
+    def __str__(self):
+        return f"{self.nom_original} — {self.dossier}"
+
+    def save(self, *args, **kwargs):
+        if self.fichier and not self.nom_original:
+            self.nom_original = self.fichier.name.split('/')[-1]
+        super().save(*args, **kwargs)
+
+
+# ─────────────────────────────────────────────────────────────────
+# 5. DÉCISION RCP
 # ─────────────────────────────────────────────────────────────────
 
 class DecisionRCP(models.Model):
@@ -207,3 +250,27 @@ class DecisionRCP(models.Model):
 
     def __str__(self):
         return f"[{self.dossier}] {self.get_type_decision_display()}"
+
+
+# ─────────────────────────────────────────────────────────────────
+# 6. MESSAGERIE RCP (chat en temps réel via polling / WebSocket)
+# ─────────────────────────────────────────────────────────────────
+
+class MessageRCP(models.Model):
+    reunion      = models.ForeignKey(ReunionRCP, on_delete=models.CASCADE, related_name='messages')
+    dossier      = models.ForeignKey(
+        DossierRCP, on_delete=models.CASCADE, related_name='discussions',
+        null=True, blank=True
+    )
+    auteur       = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages_rcp')
+    contenu      = models.TextField()
+    est_important = models.BooleanField(default=False)
+    date_envoi   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table  = 'rcp_messages'
+        ordering  = ['date_envoi']
+        verbose_name = 'Message RCP'
+
+    def __str__(self):
+        return f"[{self.reunion}] {self.auteur} — {self.date_envoi:%H:%M}"

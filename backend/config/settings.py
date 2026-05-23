@@ -7,6 +7,23 @@ from pathlib import Path
 from datetime import timedelta
 from decouple import config
 import os
+import dj_database_url
+
+DATABASE_URL = config('DATABASE_URL', default=None)
+
+if DATABASE_URL:
+    DATABASES = {'default': dj_database_url.parse(DATABASE_URL)}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME', default='cancer_registry'),
+            'USER': config('DB_USER', default='registry_user'),
+            'PASSWORD': config('DB_PASSWORD', default='registry_pass_2024'),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+        }
+    }
 
 # ─────────────────────────────────────────────
 # Base
@@ -20,11 +37,10 @@ GROQ_API_KEY = config('GROQ_API_KEY', default=None)
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production-2024')
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    'devona-copasetic-chieko.ngrok-free.dev',
-]
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1'
+).split(',')
 
 # ─────────────────────────────────────────────
 # Applications
@@ -56,7 +72,7 @@ LOCAL_APPS = [
     'apps.suivi',
     'apps.stats',
     'apps.rcp',
-    'apps.voice', 
+    'apps.voice',
     'apps.custom_fields',
     'apps.sig',
     'apps.exports',
@@ -100,20 +116,6 @@ TEMPLATES = [
         },
     },
 ]
-
-# ─────────────────────────────────────────────
-# Database (PostgreSQL)
-# ─────────────────────────────────────────────
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='cancer_registry'),
-        'USER': config('DB_USER', default='registry_user'),
-        'PASSWORD': config('DB_PASSWORD', default='registry_pass_2024'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
-    }
-}
 
 # ─────────────────────────────────────────────
 # Custom User
@@ -184,11 +186,26 @@ SIMPLE_JWT = {
 # ─────────────────────────────────────────────
 # CORS
 # ─────────────────────────────────────────────
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "https://patientlifestyleform.vercel.app",
-    " https://devona-copasetic-chieko.ngrok-free.dev",
+# Origines autorisées — inclut l'app mobile Vercel (formulaire QR code patient)
+# et le frontend React local/production.
+# Pour ajouter une nouvelle origine sans modifier ce fichier :
+#   CORS_ALLOWED_ORIGINS=https://mon-app.vercel.app,http://localhost:5173  dans .env
+_CORS_DEFAULTS = ','.join([
+    'http://localhost:3000',
+    'http://localhost:5173',
+    # ── App mobile Vercel (formulaire habitudes de vie QR code) ──
+    'https://patientlifestyleform.vercel.app',
+])
+
+CORS_ALLOWED_ORIGINS = config(
+    'CORS_ALLOWED_ORIGINS',
+    default=_CORS_DEFAULTS,
+).split(',')
+
+# Autorise également tous les sous-domaines *.vercel.app en preview deployments
+# (Vercel génère une URL unique par branche, ex: patientlifestyleform-git-main-xxx.vercel.app)
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^https://patientlifestyleform[a-zA-Z0-9\-]*\.vercel\.app$',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -209,7 +226,13 @@ CORS_ALLOW_HEADERS = [
 # ─────────────────────────────────────────────
 # Mobile App URL (QR Code generation)
 # ─────────────────────────────────────────────
-MOBILE_APP_BASE_URL = 'https://patientlifestyleform.vercel.app/patient'
+# URL de base utilisée pour construire les liens QR code dans PatientDetailPage.
+# Format final : MOBILE_APP_BASE_URL + "/{patient_id}?ref={registration_number}"
+# → https://patientlifestyleform.vercel.app/patient/79?ref=P-2026-0049
+MOBILE_APP_BASE_URL = config(
+    'MOBILE_APP_BASE_URL',
+    default='https://patientlifestyleform.vercel.app/patient',
+)
 
 # ─────────────────────────────────────────────
 # API Documentation

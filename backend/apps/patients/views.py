@@ -122,6 +122,114 @@ class PatientViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
+    # ── NOUVEAU : endpoint public pour l'app mobile QR code ───────────────────
+    # GET /api/v1/patients/{id}/public/
+    # Retourne uniquement les champs nécessaires au pré-remplissage.
+    # Accessible sans authentification (le patient scan le QR depuis son téléphone).
+    @action(
+        detail=True,
+        methods=['get'],
+        permission_classes=[AllowAny],
+        url_path='public',
+    )
+    def public(self, request, pk=None):
+        """
+        Endpoint public (AllowAny) pour l'application mobile QR code.
+        Expose uniquement les champs nécessaires au formulaire habitudes de vie.
+        Aucune donnée médicale sensible n'est exposée.
+        """
+        try:
+            patient = Patient.objects.get(pk=pk, est_actif=True)
+        except Patient.DoesNotExist:
+            return Response(
+                {'detail': 'Dossier introuvable.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return Response({
+            'id':                    patient.id,
+            'registration_number':   patient.registration_number,
+            'nom':                   patient.nom,
+            'prenom':                patient.prenom,
+            'age':                   patient.age,
+            'wilaya':                patient.wilaya,
+            # Valeurs actuelles pour pré-remplissage
+            'tabagisme':             patient.tabagisme,
+            'alcool':                patient.alcool,
+            'activite_physique':     patient.activite_physique,
+            'alimentation':          patient.alimentation,
+            'antecedents_familiaux': patient.antecedents_familiaux,
+        })
+
+    # ── Action mobile : habitudes de vie (PATCH public) ───────────────────────
+    # PATCH /api/v1/patients/{id}/habitudes/
+    @action(
+        detail=True,
+        methods=['patch'],
+        permission_classes=[AllowAny],
+        url_path='habitudes',
+    )
+    def habitudes(self, request, pk=None):
+        """
+        Mise à jour des habitudes de vie via l'application mobile (QR code).
+        Accessible sans authentification — champs limités à la liste blanche.
+        """
+        try:
+            patient = Patient.objects.get(pk=pk, est_actif=True)
+        except Patient.DoesNotExist:
+            return Response(
+                {'detail': 'Dossier introuvable.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        CHAMPS_AUTORISES = {
+            'tabagisme', 'alcool', 'activite_physique',
+            'alimentation', 'antecedents_familiaux',
+        }
+        VALEURS_VALIDES = {
+            'tabagisme':         {'non', 'ex', 'actif', 'inconnu'},
+            'alcool':            {'non', 'oui', 'inconnu'},
+            'activite_physique': {'sedentaire', 'moderee', 'active', 'inconnu'},
+            'alimentation':      {'equilibree', 'grasse', 'sucree', 'vegetarienne', 'inconnu'},
+        }
+
+        errors  = {}
+        updates = {}
+
+        for champ, valeur in request.data.items():
+            if champ not in CHAMPS_AUTORISES:
+                continue
+            if champ in VALEURS_VALIDES:
+                if valeur not in VALEURS_VALIDES[champ]:
+                    errors[champ] = f"Valeur invalide : {valeur!r}"
+                    continue
+            updates[champ] = valeur
+
+        if errors:
+            return Response({'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
+        if not updates:
+            return Response(
+                {'detail': 'Aucune donnée valide reçue.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        for champ, valeur in updates.items():
+            setattr(patient, champ, valeur)
+        patient.save(update_fields=list(updates.keys()) + ['date_modification'])
+
+        AccessLog.objects.create(
+            user=request.user if request.user.is_authenticated else None,
+            action=AccessLog.Action.UPDATE,
+            resource='patient_habitudes_mobile',
+            resource_id=str(patient.id),
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+
+        return Response({
+            'detail': 'Habitudes de vie mises à jour.',
+            'updated_fields': list(updates.keys()),
+        })
+
     @action(detail=False, methods=['get'])
     def stats(self, request):
         qs = Patient.objects.filter(est_actif=True)
@@ -145,27 +253,27 @@ class PatientViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def changer_statut(self, request, pk=None):
         if not can_write_patient(request.user):
-            return Response({'detail': 'Non autorise.'}, status=403)
+            return Response({'detail': 'Non autorisé.'}, status=403)
         patient = self.get_object()
         nouveau_statut = request.data.get('statut_dossier')
         if nouveau_statut not in dict(Patient.StatutDossier.choices):
             return Response({'error': 'Statut invalide.'}, status=400)
         patient.statut_dossier = nouveau_statut
         patient.save()
-        return Response({'message': 'Statut mis a jour.', 'statut': nouveau_statut})
+        return Response({'message': 'Statut mis à jour.', 'statut': nouveau_statut})
 
     @action(detail=True, methods=['get', 'patch', 'put'])
     def dossier(self, request, pk=None):
         patient = self.get_object()
         dossier, created = DossierMedical.objects.get_or_create(patient=patient)
-        
+
         if request.method == 'GET':
             serializer = DossierMedicalSerializer(dossier)
             return Response(serializer.data)
-            
+
         if not can_write_patient(request.user):
             raise PermissionDenied("Vous n'avez pas le droit de modifier le dossier médical.")
-            
+
         serializer = DossierMedicalSerializer(dossier, data=request.data, partial=(request.method == 'PATCH'))
         if serializer.is_valid():
             serializer.save()
@@ -218,15 +326,25 @@ class PatientViewSet(viewsets.ModelViewSet):
         serializer = PatientListSerializer(qs[:50], many=True)
         return Response({'results': serializer.data, 'count': qs.count()})
 
-    @action(detail=True, methods=['patch'], permission_classes=[AllowAny], url_path='habitudes')
+    # Action mobile : habitudes de vie (acces public via QR code)
+    @action(
+        detail=True,
+        methods=['patch'],
+        permission_classes=[AllowAny],
+        url_path='habitudes',
+    )
     def habitudes(self, request, pk=None):
         patient = self.get_object()
-        CHAMPS_AUTORISES = {'tabagisme', 'alcool', 'activite_physique', 'alimentation', 'antecedents_familiaux'}
+
+        CHAMPS_AUTORISES = {
+            'tabagisme', 'alcool', 'activite_physique',
+            'alimentation', 'antecedents_familiaux',
+        }
         VALEURS_VALIDES = {
-            'tabagisme': {'non', 'ex', 'actif', 'inconnu'},
-            'alcool': {'non', 'oui', 'inconnu'},
+            'tabagisme':         {'non', 'ex', 'actif', 'inconnu'},
+            'alcool':            {'non', 'oui', 'inconnu'},
             'activite_physique': {'sedentaire', 'moderee', 'active', 'inconnu'},
-            'alimentation': {'equilibree', 'grasse', 'sucree', 'vegetarienne', 'inconnu'},
+            'alimentation':      {'equilibree', 'grasse', 'sucree', 'vegetarienne', 'inconnu'},
         }
 
         errors  = {}
@@ -235,9 +353,10 @@ class PatientViewSet(viewsets.ModelViewSet):
         for champ, valeur in request.data.items():
             if champ not in CHAMPS_AUTORISES:
                 continue
-            if champ in VALEURS_VALIDES and valeur not in VALEURS_VALIDES[champ]:
-                errors[champ] = f"Valeur invalide : {valeur!r}"
-                continue
+            if champ in VALEURS_VALIDES:
+                if valeur not in VALEURS_VALIDES[champ]:
+                    errors[champ] = f"Valeur invalide : {valeur!r}"
+                    continue
             updates[champ] = valeur
 
         if errors:
@@ -256,13 +375,74 @@ class PatientViewSet(viewsets.ModelViewSet):
             resource_id=str(patient.id),
             ip_address=request.META.get('REMOTE_ADDR'),
         )
-        return Response({'detail': 'Habitudes de vie mises a jour.', 'updated_fields': list(updates.keys())})
 
+        return Response({
+            'detail': 'Habitudes de vie mises a jour.',
+            'updated_fields': list(updates.keys()),
+        })
+
+    # Action mobile : habitudes de vie (acces public via QR code)
+    @action(
+        detail=True,
+        methods=['patch'],
+        permission_classes=[AllowAny],
+        url_path='habitudes',
+    )
+    def habitudes(self, request, pk=None):
+        patient = self.get_object()
+
+        CHAMPS_AUTORISES = {
+            'tabagisme', 'alcool', 'activite_physique',
+            'alimentation', 'antecedents_familiaux',
+        }
+        VALEURS_VALIDES = {
+            'tabagisme':         {'non', 'ex', 'actif', 'inconnu'},
+            'alcool':            {'non', 'oui', 'inconnu'},
+            'activite_physique': {'sedentaire', 'moderee', 'active', 'inconnu'},
+            'alimentation':      {'equilibree', 'grasse', 'sucree', 'vegetarienne', 'inconnu'},
+        }
+
+        errors  = {}
+        updates = {}
+
+        for champ, valeur in request.data.items():
+            if champ not in CHAMPS_AUTORISES:
+                continue
+            if champ in VALEURS_VALIDES:
+                if valeur not in VALEURS_VALIDES[champ]:
+                    errors[champ] = f"Valeur invalide : {valeur!r}"
+                    continue
+            updates[champ] = valeur
+
+        if errors:
+            return Response({'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
+        if not updates:
+            return Response({'detail': 'Aucune donnee valide recue.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        for champ, valeur in updates.items():
+            setattr(patient, champ, valeur)
+        patient.save(update_fields=list(updates.keys()) + ['date_modification'])
+
+        AccessLog.objects.create(
+            user=request.user if request.user.is_authenticated else None,
+            action=AccessLog.Action.UPDATE,
+            resource='patient_habitudes_mobile',
+            resource_id=str(patient.id),
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+
+        return Response({
+            'detail': 'Habitudes de vie mises a jour.',
+            'updated_fields': list(updates.keys()),
+        })
+
+    # GET /api/v1/patients/doublons/
     @action(detail=False, methods=['get'], url_path='doublons')
     def doublons(self, request):
         if not can_write_patient(request.user):
             return Response({'detail': 'Non autorise.'}, status=403)
-        seuil = float(request.query_params.get('seuil', 0.82))
+
+        seuil     = float(request.query_params.get('seuil', 0.82))
         certitude = request.query_params.get('certitude', None)
         paires = detecter_doublons(seuil_similarite=seuil)
         if certitude:
@@ -283,6 +463,7 @@ class PatientViewSet(viewsets.ModelViewSet):
     def fusionner(self, request, pk=None):
         if not can_write_patient(request.user):
             return Response({'detail': 'Non autorise.'}, status=403)
+
         id_secondaire = request.data.get('id_secondaire')
         if not id_secondaire:
             return Response({'detail': 'Le champ id_secondaire est requis.'}, status=400)
@@ -290,6 +471,7 @@ class PatientViewSet(viewsets.ModelViewSet):
             id_secondaire = int(id_secondaire)
         except (ValueError, TypeError):
             return Response({'detail': 'id_secondaire doit etre un entier.'}, status=400)
+
         if int(pk) == id_secondaire:
             return Response({'detail': 'Les deux dossiers sont identiques.'}, status=400)
         try:
@@ -303,10 +485,12 @@ class PatientViewSet(viewsets.ModelViewSet):
     def verifier_doublon(self, request):
         if not can_read_patient(request.user):
             return Response({'detail': 'Non autorise.'}, status=403)
-        from apps.patients.duplicate_service import normalize, similarity, _apercu
-        nom = request.data.get('nom', '')
-        prenom = request.data.get('prenom', '')
-        date_naiss = request.data.get('date_naissance')
+
+        from apps.patients.duplicate_service import normalize, similarity, _apercu, _previsualiser_fusion
+
+        nom         = request.data.get('nom', '')
+        prenom      = request.data.get('prenom', '')
+        date_naiss  = request.data.get('date_naissance')
         id_national = request.data.get('id_national', '')
 
         if not nom or not prenom:
@@ -323,6 +507,7 @@ class PatientViewSet(viewsets.ModelViewSet):
             if id_national and p['id_national'] and normalize(id_national) == normalize(p['id_national']):
                 score = 1.0
                 raisons.append("Meme numero d'identite nationale")
+
             if date_naiss and p['date_naissance']:
                 try:
                     from datetime import date
@@ -331,10 +516,10 @@ class PatientViewSet(viewsets.ModelViewSet):
                         nom_score = similarity(f"{nom} {prenom}", f"{p['nom']} {p['prenom']}")
                         if nom_score >= 0.95:
                             score = max(score, 0.97)
-                            raisons.append('Meme nom, prenom et date de naissance')
+                            raisons.append('Même nom, prénom et date de naissance')
                         elif nom_score >= 0.82:
                             score = max(score, 0.90)
-                            raisons.append(f'Noms similaires + meme date de naissance ({int(nom_score*100)}%)')
+                            raisons.append(f'Noms similaires + même date de naissance ({int(nom_score*100)}%)')
                 except Exception:
                     pass
             nom_sim = similarity(f"{nom} {prenom}", f"{p['nom']} {p['prenom']}")

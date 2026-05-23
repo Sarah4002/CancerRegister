@@ -10,7 +10,7 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 import PatientsPage from './pages/patients/PatientsPage';
 import NewPatientPage from './pages/patients/NewPatientPage';
 import PatientDossierPage from './pages/patients/PatientDossierPage';
-import DoublonsPage from './pages/patients/DoublonsPage';
+import DoublonsPage from './pages/patients/Doublonspage';
 
 import DiagnosticsPage from './pages/diagnostics/DiagnosticsPage';
 import NewDiagnosticPage from './pages/diagnostics/NewDiagnosticPage';
