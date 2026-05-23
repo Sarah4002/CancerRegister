@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import useAuthStore from '../../hooks/useAuth';
 import usePermissions from '../../hooks/usePermissions';
+import NotificationBell from './NotificationBell';
 
 const SIDEBAR_WIDTH = 260;
 const MOBILE_BREAKPOINT = 1100;
@@ -205,12 +206,15 @@ export function AppLayout({ children, title }) {
         }}
       >
         <div style={topbarStyle}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
             <div style={{ width: 3, height: 20, background: 'linear-gradient(180deg, #2563eb, #93c5fd)', borderRadius: 2 }} />
             <div>
               <h1 style={pageTitleStyle}>{title}</h1>
               <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Interface simple, lumineuse et centree sur le travail clinique</div>
             </div>
+          </div>
+          <div style={{ marginLeft: 'auto' }}>
+            <NotificationBell />
           </div>
         </div>
         <div className="app-shell__content" style={{ padding: isMobile ? '18px 14px 24px' : '28px', flex: 1 }}>

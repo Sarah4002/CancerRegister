@@ -20,9 +20,6 @@ from apps.accounts.models import AccessLog
 
 
 class PatientViewSet(viewsets.ModelViewSet):
-    # CanWritePatient gere automatiquement :
-    #   - SAFE_METHODS (GET/HEAD/OPTIONS) => can_read_patient (oncologue + anapath + epidemio + admin)
-    #   - autres (POST/PUT/PATCH/DELETE)  => can_write_patient (oncologue + admin seulement)
     permission_classes = [IsAuthenticated, CanWritePatient]
     filter_backends    = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields   = ['sexe', 'statut_dossier', 'statut_vital', 'wilaya']
@@ -52,7 +49,6 @@ class PatientViewSet(viewsets.ModelViewSet):
         return PatientDetailSerializer
 
     def perform_create(self, serializer):
-        # Verifier explicitement la permission d'ecriture
         if not can_write_patient(self.request.user):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Seuls les médecins oncologues peuvent créer un dossier patient.")
@@ -66,7 +62,6 @@ class PatientViewSet(viewsets.ModelViewSet):
         )
 
     def perform_update(self, serializer):
-        # Verifier explicitement la permission d'ecriture
         if not can_write_patient(self.request.user):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Vous n'avez pas le droit de modifier un dossier patient.")
@@ -85,72 +80,47 @@ class PatientViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['get'])
-    def stats(self, request):
-        qs = Patient.objects.filter(est_actif=True)
+    # ── NOUVEAU : endpoint public pour l'app mobile QR code ───────────────────
+    # GET /api/v1/patients/{id}/public/
+    # Retourne uniquement les champs nécessaires au pré-remplissage.
+    # Accessible sans authentification (le patient scan le QR depuis son téléphone).
+    @action(
+        detail=True,
+        methods=['get'],
+        permission_classes=[AllowAny],
+        url_path='public',
+    )
+    def public(self, request, pk=None):
+        """
+        Endpoint public (AllowAny) pour l'application mobile QR code.
+        Expose uniquement les champs nécessaires au formulaire habitudes de vie.
+        Aucune donnée médicale sensible n'est exposée.
+        """
+        try:
+            patient = Patient.objects.get(pk=pk, est_actif=True)
+        except Patient.DoesNotExist:
+            return Response(
+                {'detail': 'Dossier introuvable.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
         return Response({
-            'total':      qs.count(),
-            'nouveau':    qs.filter(statut_dossier='nouveau').count(),
-            'traitement': qs.filter(statut_dossier='traitement').count(),
-            'remission':  qs.filter(statut_dossier='remission').count(),
-            'decede':     qs.filter(statut_vital='decede').count(),
-            'perdu_vue':  qs.filter(statut_dossier='perdu').count(),
-            'par_sexe': {
-                'M': qs.filter(sexe='M').count(),
-                'F': qs.filter(sexe='F').count(),
-            },
-            'par_wilaya': list(
-                qs.values('wilaya').annotate(count=Count('id'))
-                  .order_by('-count')[:10]
-            ),
+            'id':                    patient.id,
+            'registration_number':   patient.registration_number,
+            'nom':                   patient.nom,
+            'prenom':                patient.prenom,
+            'age':                   patient.age,
+            'wilaya':                patient.wilaya,
+            # Valeurs actuelles pour pré-remplissage
+            'tabagisme':             patient.tabagisme,
+            'alcool':                patient.alcool,
+            'activite_physique':     patient.activite_physique,
+            'alimentation':          patient.alimentation,
+            'antecedents_familiaux': patient.antecedents_familiaux,
         })
 
-    @action(detail=True, methods=['post'])
-    def changer_statut(self, request, pk=None):
-        if not can_write_patient(request.user):
-            return Response({'detail': 'Non autorise.'}, status=403)
-        patient = self.get_object()
-        nouveau_statut = request.data.get('statut_dossier')
-        if nouveau_statut not in dict(Patient.StatutDossier.choices):
-            return Response({'error': 'Statut invalide.'}, status=400)
-        patient.statut_dossier = nouveau_statut
-        patient.save()
-        return Response({'message': 'Statut mis a jour.', 'statut': nouveau_statut})
-
-    @action(detail=True, methods=['get', 'patch', 'put'])
-    def dossier(self, request, pk=None):
-        patient = self.get_object()
-        dossier, created = DossierMedical.objects.get_or_create(patient=patient)
-        
-        if request.method == 'GET':
-            serializer = DossierMedicalSerializer(dossier)
-            return Response(serializer.data)
-            
-        if not can_write_patient(request.user):
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Vous n'avez pas le droit de modifier le dossier médical.")
-            
-        serializer = DossierMedicalSerializer(dossier, data=request.data, partial=(request.method == 'PATCH'))
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=False, methods=['get'])
-    def search_advanced(self, request):
-        qs = self.get_queryset()
-        q  = request.query_params.get('q', '').strip()
-        if q:
-            qs = qs.filter(
-                Q(nom__icontains=q) | Q(prenom__icontains=q) |
-                Q(registration_number__icontains=q) |
-                Q(id_national__icontains=q) |
-                Q(telephone__icontains=q)
-            )
-        serializer = PatientListSerializer(qs[:50], many=True)
-        return Response({'results': serializer.data, 'count': qs.count()})
-
-    # Action mobile : habitudes de vie (acces public via QR code)
+    # ── Action mobile : habitudes de vie (PATCH public) ───────────────────────
+    # PATCH /api/v1/patients/{id}/habitudes/
     @action(
         detail=True,
         methods=['patch'],
@@ -158,7 +128,17 @@ class PatientViewSet(viewsets.ModelViewSet):
         url_path='habitudes',
     )
     def habitudes(self, request, pk=None):
-        patient = self.get_object()
+        """
+        Mise à jour des habitudes de vie via l'application mobile (QR code).
+        Accessible sans authentification — champs limités à la liste blanche.
+        """
+        try:
+            patient = Patient.objects.get(pk=pk, est_actif=True)
+        except Patient.DoesNotExist:
+            return Response(
+                {'detail': 'Dossier introuvable.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         CHAMPS_AUTORISES = {
             'tabagisme', 'alcool', 'activite_physique',
@@ -186,7 +166,10 @@ class PatientViewSet(viewsets.ModelViewSet):
         if errors:
             return Response({'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
         if not updates:
-            return Response({'detail': 'Aucune donnee valide recue.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'detail': 'Aucune donnée valide reçue.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         for champ, valeur in updates.items():
             setattr(patient, champ, valeur)
@@ -201,16 +184,79 @@ class PatientViewSet(viewsets.ModelViewSet):
         )
 
         return Response({
-            'detail': 'Habitudes de vie mises a jour.',
+            'detail': 'Habitudes de vie mises à jour.',
             'updated_fields': list(updates.keys()),
         })
 
-    # GET /api/v1/patients/doublons/
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        qs = Patient.objects.filter(est_actif=True)
+        return Response({
+            'total':      qs.count(),
+            'nouveau':    qs.filter(statut_dossier='nouveau').count(),
+            'traitement': qs.filter(statut_dossier='traitement').count(),
+            'remission':  qs.filter(statut_dossier='remission').count(),
+            'decede':     qs.filter(statut_vital='decede').count(),
+            'perdu_vue':  qs.filter(statut_dossier='perdu').count(),
+            'par_sexe': {
+                'M': qs.filter(sexe='M').count(),
+                'F': qs.filter(sexe='F').count(),
+            },
+            'par_wilaya': list(
+                qs.values('wilaya').annotate(count=Count('id'))
+                  .order_by('-count')[:10]
+            ),
+        })
+
+    @action(detail=True, methods=['post'])
+    def changer_statut(self, request, pk=None):
+        if not can_write_patient(request.user):
+            return Response({'detail': 'Non autorisé.'}, status=403)
+        patient = self.get_object()
+        nouveau_statut = request.data.get('statut_dossier')
+        if nouveau_statut not in dict(Patient.StatutDossier.choices):
+            return Response({'error': 'Statut invalide.'}, status=400)
+        patient.statut_dossier = nouveau_statut
+        patient.save()
+        return Response({'message': 'Statut mis à jour.', 'statut': nouveau_statut})
+
+    @action(detail=True, methods=['get', 'patch', 'put'])
+    def dossier(self, request, pk=None):
+        patient = self.get_object()
+        dossier, created = DossierMedical.objects.get_or_create(patient=patient)
+
+        if request.method == 'GET':
+            serializer = DossierMedicalSerializer(dossier)
+            return Response(serializer.data)
+
+        if not can_write_patient(request.user):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Vous n'avez pas le droit de modifier le dossier médical.")
+
+        serializer = DossierMedicalSerializer(dossier, data=request.data, partial=(request.method == 'PATCH'))
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'])
+    def search_advanced(self, request):
+        qs = self.get_queryset()
+        q  = request.query_params.get('q', '').strip()
+        if q:
+            qs = qs.filter(
+                Q(nom__icontains=q) | Q(prenom__icontains=q) |
+                Q(registration_number__icontains=q) |
+                Q(id_national__icontains=q) |
+                Q(telephone__icontains=q)
+            )
+        serializer = PatientListSerializer(qs[:50], many=True)
+        return Response({'results': serializer.data, 'count': qs.count()})
+
     @action(detail=False, methods=['get'], url_path='doublons')
     def doublons(self, request):
-        # Seuls les utilisateurs pouvant ecrire peuvent gerer les doublons
         if not can_write_patient(request.user):
-            return Response({'detail': 'Non autorise.'}, status=403)
+            return Response({'detail': 'Non autorisé.'}, status=403)
 
         seuil     = float(request.query_params.get('seuil', 0.82))
         certitude = request.query_params.get('certitude', None)
@@ -235,11 +281,10 @@ class PatientViewSet(viewsets.ModelViewSet):
 
         return Response({'count': len(data), 'seuil': seuil, 'paires': data})
 
-    # POST /api/v1/patients/{id}/fusionner/
     @action(detail=True, methods=['post'], url_path='fusionner')
     def fusionner(self, request, pk=None):
         if not can_write_patient(request.user):
-            return Response({'detail': 'Non autorise.'}, status=403)
+            return Response({'detail': 'Non autorisé.'}, status=403)
 
         id_secondaire = request.data.get('id_secondaire')
         if not id_secondaire:
@@ -247,7 +292,7 @@ class PatientViewSet(viewsets.ModelViewSet):
         try:
             id_secondaire = int(id_secondaire)
         except (ValueError, TypeError):
-            return Response({'detail': 'id_secondaire doit etre un entier.'}, status=400)
+            return Response({'detail': 'id_secondaire doit être un entier.'}, status=400)
 
         if int(pk) == id_secondaire:
             return Response({'detail': 'Les deux dossiers sont identiques.'}, status=400)
@@ -264,12 +309,10 @@ class PatientViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'detail': str(e)}, status=400)
 
-    # POST /api/v1/patients/verifier_doublon/
     @action(detail=False, methods=['post'], url_path='verifier_doublon')
     def verifier_doublon(self, request):
-        # Tous les roles ayant acces aux patients peuvent verifier
         if not can_read_patient(request.user):
-            return Response({'detail': 'Non autorise.'}, status=403)
+            return Response({'detail': 'Non autorisé.'}, status=403)
 
         from apps.patients.duplicate_service import normalize, similarity, _apercu, _previsualiser_fusion
 
@@ -299,7 +342,7 @@ class PatientViewSet(viewsets.ModelViewSet):
             if (id_national and p['id_national']
                     and normalize(id_national) == normalize(p['id_national'])):
                 score = 1.0
-                raisons.append("Meme numero d'identite nationale")
+                raisons.append("Même numéro d'identité nationale")
 
             if date_naiss and p['date_naissance']:
                 try:
@@ -311,10 +354,10 @@ class PatientViewSet(viewsets.ModelViewSet):
                         )
                         if nom_score >= 0.95:
                             score = max(score, 0.97)
-                            raisons.append('Meme nom, prenom et date de naissance')
+                            raisons.append('Même nom, prénom et date de naissance')
                         elif nom_score >= 0.82:
                             score = max(score, 0.90)
-                            raisons.append(f'Noms similaires + meme date de naissance ({int(nom_score*100)}%)')
+                            raisons.append(f'Noms similaires + même date de naissance ({int(nom_score*100)}%)')
                 except Exception:
                     pass
 
