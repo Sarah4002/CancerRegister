@@ -350,18 +350,19 @@ export default function DashboardPage() {
   const [draft,   setDraft]   = useState(DEFAULT_FILTERS);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [{ data: d }, { data: a }] = await Promise.all([
-        dashboardService.global(filters),
-        dashboardService.alertes(),
-      ]);
-      setData(d); setAlertes(a);
-      setLastUpdate(new Date());
-    } catch (err) {
-      console.error('Dashboard error:', err);
-    } finally { setLoading(false); }
-  }, [filters]);
+  setLoading(true);
+  try {
+    const [{ data: d }, alertesRes] = await Promise.all([
+      dashboardService.global(filters),
+      dashboardService.alertes().catch(() => ({ data: [] })), // ← ne bloque pas
+    ]);
+    setData(d);
+    setAlertes(alertesRes.data || []);
+    setLastUpdate(new Date());
+  } catch (err) {
+    console.error('Dashboard error:', err);
+  } finally { setLoading(false); }
+}, [filters]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
