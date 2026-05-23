@@ -197,7 +197,7 @@ _CORS_DEFAULTS = ','.join([
     # ── App mobile Vercel (formulaire habitudes de vie QR code) ──
     'https://patientlifestyleform.vercel.app',
     'https://registredecancer.vercel.app',
-    'registrecancer.vercel.app',
+    'https://registrecancer.vercel.app',
 ])
 
 CORS_ALLOWED_ORIGINS = config(
