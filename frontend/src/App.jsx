@@ -28,7 +28,7 @@ import RCPPage from './pages/rcp/RCPDashboard';
 import NewRCPPage, { NewDossierRCPPage } from './pages/rcp/NewRCPPage';
 import RCPDetailPage from './pages/rcp/RCPSallePage';
 
-import CartographiePage from './pages/cartographie/CartographiePage';
+import { SigPageV2 } from './pages/sig/SigPagev2.jsx';
 
 import StatistiquesPage from './pages/statistiques/StatistiquesPage';
 import StatsPage from './pages/stats/StatsPage';
@@ -238,7 +238,7 @@ function App() {
         {/* ───────── Carte SIG ───────── */}
         <Route path="/carte" element={
           <PermRoute permission="viewMap">
-            <CartographiePage />
+            <SigPageV2 />
           </PermRoute>
         } />
 

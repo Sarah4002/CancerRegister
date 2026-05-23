@@ -25,7 +25,7 @@ export const patientService = {
   stats: () => api.get('/patients/stats/'),
 
   // Recherche avancée
-  searchAdvanced: (q) => api.get('/patients/search_advanced/', { params: { q } }),
+  searchAdvanced: (params = {}) => api.get('/patients/search_advanced/', { params }),
 
   // Changer statut
   changerStatut: (id, statut_dossier) =>

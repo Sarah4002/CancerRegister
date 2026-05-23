@@ -37,10 +37,14 @@ GROQ_API_KEY = config('GROQ_API_KEY', default=None)
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production-2024')
 DEBUG = config('DEBUG', default=True, cast=bool)
 
+<<<<<<< HEAD
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.github.dev', '.app.github.dev', '*']
+=======
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
     default='localhost,127.0.0.1,rnc-registre-nationale-de-cancer-1.onrender.com'
 ).split(',')
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
 
 # ─────────────────────────────────────────────
 # Applications
@@ -187,6 +191,13 @@ SIMPLE_JWT = {
 # ─────────────────────────────────────────────
 # CORS
 # ─────────────────────────────────────────────
+<<<<<<< HEAD
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "https://patientlifestyleform.vercel.app",
+    "https://devona-copasetic-chieko.ngrok-free.dev",
+=======
 # Origines autorisées — inclut l'app mobile Vercel (formulaire QR code patient)
 # et le frontend React local/production.
 # Pour ajouter une nouvelle origine sans modifier ce fichier :
@@ -209,7 +220,11 @@ CORS_ALLOWED_ORIGINS = config(
 # (Vercel génère une URL unique par branche, ex: patientlifestyleform-git-main-xxx.vercel.app)
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r'^https://patientlifestyleform[a-zA-Z0-9\-]*\.vercel\.app$',
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
 ]
+
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_CREDENTIALS = True
 

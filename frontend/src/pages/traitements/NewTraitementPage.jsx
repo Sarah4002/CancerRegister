@@ -79,17 +79,28 @@ export default function NewTraitementPage() {
         <div style={{ display:'flex', gap:8, marginBottom:20 }}>
           {Object.entries(TYPE_CONFIG).map(([k, v]) => (
             <a key={k} href={`/traitements/nouveau?type=${k}`} style={{ textDecoration:'none' }}>
+<<<<<<< HEAD
+              <div style={{ padding:'8px 14px', background: k===type ? `${v.color}18` : '#ffffff', border:`1px solid ${k===type ? v.color+'40' : 'var(--border-light)'}`, borderRadius:'var(--radius-md)', color: k===type ? v.color : 'var(--text-muted)', fontSize:12, fontWeight: k===type ? 600 : 400, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
+=======
               <div style={{ padding:'8px 14px', background: k===type ? `${v.color}18` : '#ffffff', border:`1px solid ${k===type ? v.color+'40' : 'rgba(37,99,235,0.08)'}`, borderRadius:'12px', color: k===type ? v.color : '#64748b', fontSize:12, fontWeight: k===type ? 600 : 400, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
                 {v.icon} {v.label}
               </div>
             </a>
           ))}
         </div>
 
+<<<<<<< HEAD
+        <div style={{ background:'#ffffff', border:`1px solid ${cfg.color}20`, borderRadius:'var(--radius-lg)', padding:'28px 32px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid var(--border)' }}>
+            <span style={{ fontSize:24 }}>{cfg.icon}</span>
+            <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'#1e293b' }}>
+=======
         <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
             <span style={{ fontSize:24 }}>{cfg.icon}</span>
             <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'#0f172a' }}>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
               Nouveau – {cfg.label}
             </h2>
           </div>

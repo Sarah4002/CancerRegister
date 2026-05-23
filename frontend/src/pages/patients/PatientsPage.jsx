@@ -1,9 +1,16 @@
+<<<<<<< HEAD
+import { useCallback, useEffect, useState } from 'react';
+=======
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { patientService } from '../../services/patientService';
 import { AppLayout } from '../../components/layout/Sidebar';
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
 import toast from 'react-hot-toast';
+import { Link, useNavigate } from 'react-router-dom';
+import { AppLayout } from '../../components/layout/Sidebar';
 import CanRegImportExport from '../../components/patients/CanRegImportExport';
+import { patientService } from '../../services/patientService';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    CONSTANTS
@@ -660,6 +667,16 @@ function DeleteIconButton({ onClick }) {
 ───────────────────────────────────────────────────────────────────────────── */
 export default function PatientsPage() {
   const navigate = useNavigate();
+<<<<<<< HEAD
+  const [patients,      setPatients]      = useState([]);
+  const [stats,         setStats]         = useState(null);
+  const [loading,       setLoading]       = useState(true);
+  const [search,        setSearch]        = useState('');
+  const [dateNaissance, setDateNaissance] = useState('');
+  const [filters,       setFilters]       = useState({ sexe: '', statut_dossier: '', wilaya: '', commune: '' });
+  const [pagination,    setPagination]    = useState({ count: 0, next: null, previous: null, page: 1 });
+  const [deletingId,    setDeletingId]    = useState(null);
+=======
   const [patients,       setPatients]       = useState([]);
   const [stats,          setStats]          = useState(null);
   const [loading,        setLoading]        = useState(true);
@@ -669,25 +686,50 @@ export default function PatientsPage() {
   const [showExport,     setShowExport]     = useState(false);
   const [deleteTarget,   setDeleteTarget]   = useState(null);
   const [deleteLoading,  setDeleteLoading]  = useState(false);
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
 
   const fetchPatients = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { page: pagination.page, search };
-      if (filters.sexe)           params.sexe           = filters.sexe;
-      if (filters.statut_dossier) params.statut_dossier = filters.statut_dossier;
-      if (filters.wilaya)         params.wilaya         = filters.wilaya;
+      const hasAdvancedCriteria = !!(
+        search || dateNaissance || filters.sexe || filters.statut_dossier || filters.wilaya || filters.commune
+      );
 
+<<<<<<< HEAD
+      if (hasAdvancedCriteria) {
+        const params = {
+          q: search || undefined,
+          date_naissance: dateNaissance || undefined,
+          sexe: filters.sexe || undefined,
+          statut_dossier: filters.statut_dossier || undefined,
+          wilaya: filters.wilaya || undefined,
+          commune: filters.commune || undefined,
+        };
+        const { data } = await patientService.searchAdvanced(params);
+        setPatients(data.results || []);
+        setPagination({ count: data.count ?? data.results?.length ?? 0, next: null, previous: null, page: 1 });
+      } else {
+        const params = { page: pagination.page };
+        const { data } = await patientService.list(params);
+        setPatients(data.results || data);
+        if (data.count !== undefined) {
+          setPagination(p => ({ ...p, count: data.count, next: data.next, previous: data.previous }));
+        }
+      }
+    } catch (err) {
+      console.error(err);
+=======
       const { data } = await patientService.list(params);
       setPatients(data.results || data);
       if (data.count !== undefined)
         setPagination(p => ({ ...p, count:data.count, next:data.next, previous:data.previous }));
     } catch {
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
       toast.error('Erreur lors du chargement des patients');
     } finally {
       setLoading(false);
     }
-  }, [search, filters, pagination.page]);
+  }, [search, dateNaissance, filters, pagination.page]);
 
   useEffect(() => { fetchPatients(); }, [fetchPatients]);
 
@@ -735,9 +777,14 @@ export default function PatientsPage() {
             { label:'Décédés',        val:stats.decede,     color:'#dc2626' },
           ].map(({ label, val, color }) => (
             <div key={label} style={{
+<<<<<<< HEAD
+              background: '#ffffff', border: '1px solid var(--border-light)',
+              borderRadius: 'var(--radius-md)', padding: '14px 16px',
+=======
               background:'#fff', border:'1px solid rgba(37,99,235,0.1)',
               borderRadius:14, padding:'18px 20px', position:'relative', overflow:'hidden',
               boxShadow:'0 2px 8px rgba(15,23,42,0.06)',
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
             }}>
               <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:`linear-gradient(90deg,${color},${color}88)`, borderRadius:'14px 14px 0 0' }} />
               <div style={{ minHeight:22, marginBottom:6 }} />
@@ -750,9 +797,16 @@ export default function PatientsPage() {
 
       {/* Toolbar */}
       <div style={{
+<<<<<<< HEAD
+        background: '#ffffff', border: '1px solid var(--border-light)',
+        borderRadius: 'var(--radius-md)', padding: '14px 18px',
+        display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+=======
         background:'var(--bg-card)', border:'1px solid var(--border-light)',
         borderRadius:'var(--radius-md)', padding:'14px 18px',
         display:'flex', alignItems:'center', gap:12, marginBottom:16, flexWrap:'wrap',
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
       }}>
         {/* Search */}
         <div style={{
@@ -775,6 +829,19 @@ export default function PatientsPage() {
         </div>
 
         {/* Filters */}
+        <input
+          type="date"
+          value={dateNaissance}
+          onChange={e => setDateNaissance(e.target.value)}
+          style={{ padding: '8px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 12.5, outline: 'none' }}
+          title="Date de naissance"
+        />
+        <input
+          value={filters.commune}
+          onChange={e => setFilters(f => ({ ...f, commune: e.target.value }))}
+          placeholder="Commune"
+          style={{ padding: '8px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 12.5, outline: 'none', minWidth: 150 }}
+        />
         {[
           { key:'sexe',           label:'Sexe',   opts:[['','Tous'],['M','Masculin'],['F','Féminin']] },
           { key:'statut_dossier', label:'Statut', opts:[['','Tous'],['nouveau','Nouveau'],['traitement','Traitement'],['remission','Rémission'],['perdu','Perdu de vue'],['decede','Décédé']] },
@@ -844,8 +911,13 @@ export default function PatientsPage() {
 
       {/* Table */}
       <div style={{
+<<<<<<< HEAD
+        background: '#ffffff', border: '1px solid var(--border-light)',
+        borderRadius: 'var(--radius-md)', overflow: 'hidden',
+=======
         background:'var(--bg-card)', border:'1px solid var(--border-light)',
         borderRadius:'var(--radius-md)', overflow:'hidden',
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
       }}>
         {loading ? (
           <div style={{ padding:48, textAlign:'center', color:'#64748b' }}>
@@ -901,12 +973,50 @@ export default function PatientsPage() {
                   <td style={{ padding:'12px 14px', fontSize:11, color:'#64748b', fontFamily:'var(--font-mono)' }}>
                     {new Date(p.date_enregistrement).toLocaleDateString('fr-DZ')}
                   </td>
+<<<<<<< HEAD
+                  <td style={{ padding: '12px 14px' }} onClick={e => e.stopPropagation()}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <Link to={`/patients/${p.id}`} style={{ textDecoration: 'none' }}>
+                        <button style={{
+                          padding: '5px 12px', background: 'var(--bg-elevated)',
+                          border: '1px solid var(--border)', borderRadius: 6,
+                          color: 'var(--text-secondary)', fontSize: 11.5, cursor: 'pointer',
+                        }}>Voir</button>
+                      </Link>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!window.confirm('Confirmez-vous la suppression du patient ?')) return;
+                          setDeletingId(p.id);
+                          try {
+                            await patientService.delete(p.id);
+                            setPatients(prev => prev.filter(item => item.id !== p.id));
+                            toast.success('Patient supprimé.');
+                            setPagination(prev => ({ ...prev, count: Math.max(0, prev.count - 1) }));
+                          } catch (err) {
+                            toast.error(err.response?.data?.detail || 'Erreur lors de la suppression.');
+                          } finally {
+                            setDeletingId(null);
+                          }
+                        }}
+                        disabled={deletingId === p.id}
+                        style={{
+                          padding: '5px 12px', background: deletingId === p.id ? 'var(--border)' : 'rgba(255,77,106,0.12)',
+                          border: '1px solid rgba(255,77,106,0.3)', borderRadius: 6,
+                          color: '#ff4d6a', fontSize: 11.5, cursor: deletingId === p.id ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        {deletingId === p.id ? 'Suppression...' : 'Supprimer'}
+                      </button>
+                    </div>
+=======
                   <td style={{ padding:'12px 8px 12px 14px' }} onClick={e => e.stopPropagation()}>
                     <Link to={`/patients/${p.id}`} style={{ textDecoration:'none' }}>
                       <button style={{ padding:'5px 12px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:6, color:'#334155', fontSize:11.5, cursor:'pointer' }}>
                         Voir
                       </button>
                     </Link>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
                   </td>
                   <td style={{ padding:'12px 14px 12px 4px' }} onClick={e => e.stopPropagation()}>
                     <DeleteIconButton

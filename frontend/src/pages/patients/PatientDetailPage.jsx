@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { patientService } from '../../services/patientService';
-import { AppLayout } from '../../components/layout/Sidebar';
-import { WILAYAS, COMMUNES_PAR_WILAYA } from './communesAlgerie';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { AppLayout } from '../../components/layout/Sidebar';
+import { patientService } from '../../services/patientService';
+import { COMMUNES_PAR_WILAYA, WILAYAS } from './communesAlgerie';
 
 // Après
 const MOBILE_APP_BASE_URL =
@@ -185,6 +185,27 @@ export default function PatientDetailPage() {
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState({});
   const [saving, setSaving]     = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleCreateCancer = () => {
+    navigate(`/diagnostics/nouveau?patient=${id}`);
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Confirmez-vous la suppression du patient ? Cette action est réversible uniquement en base.')) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      await patientService.delete(id);
+      toast.success('Patient supprimé avec succès.');
+      navigate('/patients');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Erreur lors de la suppression du patient.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     patientService.get(id)
@@ -264,14 +285,22 @@ export default function PatientDetailPage() {
       `}</style>
 
       {/* ── Header ── */}
+<<<<<<< HEAD
+      <div style={{ background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+=======
       <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ width: 56, height: 56, borderRadius: '50%', flexShrink: 0, background: patient.sexe === 'F' ? 'linear-gradient(135deg, rgba(245,101,196,0.2), rgba(245,101,196,0.1))' : 'linear-gradient(135deg, rgba(0,168,255,0.2), rgba(0,168,255,0.1))', border: '2px solid ' + (patient.sexe === 'F' ? 'rgba(245,101,196,0.3)' : 'rgba(0,168,255,0.3)'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: patient.sexe === 'F' ? 'rgba(245,101,196,0.9)' : 'rgba(0,168,255,0.9)' }}>
             {((patient.nom?.[0] || '') + (patient.prenom?.[0] || '')).toUpperCase()}
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
+<<<<<<< HEAD
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#1e293b' }}>
+=======
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#0f172a' }}>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
                 {patient.nom} {patient.prenom}
               </h2>
               <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color, border: '1px solid ' + sc.border }}>
@@ -294,11 +323,21 @@ export default function PatientDetailPage() {
         </div>
 
         {/* Boutons header */}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {!editMode ? (
             <>
+<<<<<<< HEAD
+              <button onClick={handleCreateCancer} style={{ padding: '9px 20px', background: 'linear-gradient(135deg, #00a8ff, #0080cc)', border: 'none', borderRadius: 'var(--radius-md)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+                Ajouter un cancer
+              </button>
+              <button onClick={handleEditMode} style={{ padding: '9px 20px', background: 'var(--accent)', border: 'none', borderRadius: 'var(--radius-md)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+=======
               <button onClick={handleEditMode} style={{ padding: '9px 20px', background: '#2563eb', border: 'none', borderRadius: '12px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
                 Modifier
+              </button>
+              <button onClick={handleDelete} disabled={deleting} style={{ padding: '9px 18px', background: deleting ? 'var(--border)' : 'rgba(255,77,106,0.12)', border: '1px solid rgba(255,77,106,0.3)', borderRadius: 'var(--radius-md)', color: '#ff4d6a', fontSize: 13, cursor: deleting ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)' }}>
+                {deleting ? 'Suppression...' : 'Supprimer'}
               </button>
               <Link to="/patients" style={{ textDecoration: 'none' }}>
                 <button style={{ padding: '9px 18px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px', color: '#64748b', fontSize: 13, cursor: 'pointer' }}>
@@ -330,7 +369,11 @@ export default function PatientDetailPage() {
       )}
 
       {/* ── Tabs ── */}
+<<<<<<< HEAD
+      <div style={{ display: 'flex', marginBottom: 16, background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+=======
       <div style={{ display: 'flex', marginBottom: 16, background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
         {TABS.map(t => (
           <button key={t.key} onClick={() => setActiveTab(t.key)} style={{ flex: 1, padding: '12px 6px', background: 'none', border: 'none', borderBottom: '2px solid ' + (activeTab === t.key ? '#2563eb' : 'transparent'), color: activeTab === t.key ? '#2563eb' : '#64748b', fontSize: 11.5, fontWeight: activeTab === t.key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}>
             {t.label}
@@ -339,7 +382,11 @@ export default function PatientDetailPage() {
       </div>
 
       {/* ── Contenu ── */}
+<<<<<<< HEAD
+      <div style={{ background: '#ffffff', border: '1px solid ' + (editMode && tabHasEdit ? 'rgba(245,166,35,0.25)' : 'var(--border-light)'), borderRadius: 'var(--radius-lg)', padding: '24px', transition: 'border-color 0.2s' }}>
+=======
       <div style={{ background: '#ffffff', border: '1px solid ' + (editMode && tabHasEdit ? 'rgba(245,166,35,0.25)' : 'rgba(37,99,235,0.08)'), borderRadius: '16px', padding: '24px', transition: 'border-color 0.2s' }}>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
 
         {/* ══ MODE LECTURE (tous onglets quand pas en edition, ou onglets sans edition) ══ */}
         {(!editMode || !tabHasEdit) && (

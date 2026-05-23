@@ -42,7 +42,11 @@ function DoublonCard({ paire, onVoir }) {
   const cs = CERTITUDE_STYLE[paire.certitude] || CERTITUDE_STYLE.faible;
   return (
     <div
+<<<<<<< HEAD
+      style={{ background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', transition: 'box-shadow 0.15s' }}
+=======
       style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', transition: 'box-shadow 0.15s' }}
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
       onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.12)'}
       onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
     >
@@ -133,9 +137,15 @@ export default function DoublonsPage() {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       {/* Header */}
+<<<<<<< HEAD
+      <div style={{ background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: '#1e293b', marginBottom: 6 }}>
+=======
       <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: '#0f172a', marginBottom: 6 }}>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
             Doublons detectes
           </h1>
           <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
@@ -169,10 +179,17 @@ export default function DoublonsPage() {
         ].map(f => (
           <button key={f.key} onClick={() => setFiltre(f.key)} style={{
             padding: '7px 14px',
+<<<<<<< HEAD
+            background: filtre === f.key ? '#ffffff' : 'var(--bg-elevated)',
+            border: '1px solid ' + (filtre === f.key ? f.color : 'var(--border)'),
+            borderRadius: 'var(--radius-md)', fontSize: 12, fontWeight: 500,
+            color: filtre === f.key ? f.color : 'var(--text-muted)',
+=======
             background: filtre === f.key ? '#ffffff' : '#f1f5f9',
             border: '1px solid ' + (filtre === f.key ? f.color : 'rgba(37,99,235,0.12)'),
             borderRadius: '12px', fontSize: 12, fontWeight: 500,
             color: filtre === f.key ? f.color : '#64748b',
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
             cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.15s',
           }}>
             {f.label}

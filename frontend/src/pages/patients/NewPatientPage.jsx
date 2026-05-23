@@ -183,7 +183,11 @@ export default function NewPatientPage() {
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
 
         {/* Stepper */}
+<<<<<<< HEAD
+        <div style={{ display: 'flex', marginBottom: 28, background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+=======
         <div style={{ display: 'flex', marginBottom: 28, background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
           {STEPS.map((s, i) => (
             <div key={i} onClick={() => i < step && setStep(i)} style={{
               flex: 1, padding: '14px 12px', textAlign: 'center',
@@ -198,7 +202,11 @@ export default function NewPatientPage() {
           ))}
         </div>
 
+<<<<<<< HEAD
+        <div style={{ background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '28px 32px' }}>
+=======
         <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '28px 32px' }}>
+>>>>>>> 0997e3a77655b6b374b3415fca2675beffe4b0ad
           <form onSubmit={handleSubmit(onStepSubmit)}>
 
             {/* ══ STEP 0 : Identité ══════════════════════════════════ */}
