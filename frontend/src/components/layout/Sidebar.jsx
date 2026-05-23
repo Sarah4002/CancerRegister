@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import useAuthStore from '../../hooks/useAuth';
 import usePermissions from '../../hooks/usePermissions';
-import NotificationBell from './NotificationBell';
+import usePreferences from '../../hooks/usePreferences';
 
 const SIDEBAR_WIDTH = 260;
 const MOBILE_BREAKPOINT = 1100;
@@ -34,9 +34,32 @@ const NAV_CONFIG = [
   },
   {
     section: 'Systeme',
-    items: [{ path: '/admin', label: 'Administration', icon: SettingsIcon, permission: 'manageUsers' }],
+    items: [
+      { path: '/aide', label: "Centre d'aide", labelKey: 'help', icon: HelpIcon },
+      { path: '/parametres-medecin', label: 'Parametres medecin', labelKey: 'doctorSettings', icon: DoctorSettingsIcon, roles: ['doctor'] },
+      { path: '/admin', label: 'Administration', icon: SettingsIcon, permission: 'manageUsers' },
+      { path: '/parametres', label: 'Parametres', icon: SlidersIcon, permission: 'manageUsers' },
+    ],
   },
 ];
+
+const UI_TEXT = {
+  fr: {
+    subtitle: 'Interface simple, lumineuse et centree sur le travail clinique',
+    help: "Centre d'aide",
+    doctorSettings: 'Parametres medecin',
+  },
+  en: {
+    subtitle: 'Simple, clear interface focused on clinical work',
+    help: 'Help center',
+    doctorSettings: 'Doctor settings',
+  },
+  ar: {
+    subtitle: 'واجهة بسيطة ومريحة للعمل الطبي',
+    help: 'مركز المساعدة',
+    doctorSettings: 'إعدادات الطبيب',
+  },
+};
 
 function isActivePath(path, pathname) {
   if (path === '/patients/doublons') return pathname.startsWith('/patients/doublons');
@@ -62,6 +85,9 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { logout } = useAuthStore();
   const { can, user, roleLabel, roleColor } = usePermissions();
+  const { theme, language } = usePreferences();
+  const t = UI_TEXT[language] || UI_TEXT.fr;
+  const dark = theme === 'dark';
 
   useEffect(() => {
     setMobileOpen(false);
@@ -72,7 +98,14 @@ export default function Sidebar() {
   }, [isMobile]);
 
   const filteredNav = NAV_CONFIG
-    .map((section) => ({ ...section, items: section.items.filter((item) => !item.permission || can[item.permission]) }))
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => {
+        const hasPermission = !item.permission || can[item.permission];
+        const hasRole = !item.roles || item.roles.includes(user?.role);
+        return hasPermission && hasRole;
+      }),
+    }))
     .filter((section) => section.items.length > 0);
 
   const profileName =
@@ -112,7 +145,7 @@ export default function Sidebar() {
         </button>
       )}
 
-      <aside style={{ ...sidebarStyle, ...sidebarPosition }}>
+      <aside style={{ ...sidebarStyle, ...(dark ? sidebarDarkStyle : {}), ...sidebarPosition }}>
         <div style={accentLineStyle} />
 
         <div style={brandWrapStyle}>
@@ -123,17 +156,17 @@ export default function Sidebar() {
             </svg>
           </div>
           <div>
-            <div style={brandTitleStyle}>RegistreCancer.dz</div>
-            <div style={brandSubtitleStyle}>Plateforme nationale oncologique</div>
+            <div style={{ ...brandTitleStyle, color: dark ? '#f8fafc' : '#0f172a' }}>RegistreCancer.dz</div>
+            <div style={{ ...brandSubtitleStyle, color: dark ? '#94a3b8' : '#64748b' }}>Plateforme nationale oncologique</div>
           </div>
         </div>
 
-        <div style={profileCardStyle}>
+        <div style={{ ...profileCardStyle, ...(dark ? profileCardDarkStyle : {}) }}>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
             <div style={avatarStyle}>{String(user?.first_name?.[0] || user?.username?.[0] || 'U').toUpperCase()}</div>
             <div style={{ minWidth: 0 }}>
-              <div style={profileNameStyle}>{profileName}</div>
-              <div style={profileCaptionStyle}>{user?.institution || user?.email || 'Compte connecte'}</div>
+              <div style={{ ...profileNameStyle, color: dark ? '#f8fafc' : '#0f172a' }}>{profileName}</div>
+              <div style={{ ...profileCaptionStyle, color: dark ? '#94a3b8' : '#64748b' }}>{user?.institution || user?.email || 'Compte connecte'}</div>
             </div>
           </div>
           <div
@@ -153,9 +186,10 @@ export default function Sidebar() {
           {filteredNav.map(({ section, items }) => (
             <div key={section} style={{ marginBottom: 10 }}>
               <div style={sectionTitleStyle}>{section}</div>
-              {items.map(({ path, label, icon: Icon }) => {
+              {items.map(({ path, label, icon: Icon, labelKey }) => {
                 const active = isActivePath(path, location.pathname);
                 const compact = path === '/patients/doublons';
+                const displayLabel = labelKey ? t[labelKey] : label;
                 return (
                   <Link key={path} to={path} style={{ textDecoration: 'none' }}>
                     <div
@@ -168,7 +202,7 @@ export default function Sidebar() {
                       <div style={{ ...navIconWrapStyle, ...(active ? navIconActiveStyle : {}) }}>
                         <Icon size={compact ? 13 : 15} />
                       </div>
-                      <span style={{ ...navLabelStyle, color: active ? '#fff' : '#334155' }}>{label}</span>
+                      <span style={{ ...navLabelStyle, color: active ? '#fff' : dark ? '#dbeafe' : '#334155' }}>{displayLabel}</span>
                       {active && <span style={activeDotStyle} />}
                     </div>
                   </Link>
@@ -191,9 +225,12 @@ export default function Sidebar() {
 
 export function AppLayout({ children, title }) {
   const isMobile = useIsMobile();
+  const { theme, language } = usePreferences();
+  const dark = theme === 'dark';
+  const t = UI_TEXT[language] || UI_TEXT.fr;
 
   return (
-    <div className="app-shell" style={{ display: 'flex', minHeight: '100vh', background: 'linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%)' }}>
+    <div className="app-shell" style={{ display: 'flex', minHeight: '100vh', background: dark ? '#0f172a' : 'linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%)' }}>
       <Sidebar />
       <div
         className="app-shell__main"
@@ -205,16 +242,13 @@ export function AppLayout({ children, title }) {
           flexDirection: 'column',
         }}
       >
-        <div style={topbarStyle}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+        <div style={{ ...topbarStyle, ...(dark ? topbarDarkStyle : {}) }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 3, height: 20, background: 'linear-gradient(180deg, #2563eb, #93c5fd)', borderRadius: 2 }} />
             <div>
-              <h1 style={pageTitleStyle}>{title}</h1>
-              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Interface simple, lumineuse et centree sur le travail clinique</div>
+              <h1 style={{ ...pageTitleStyle, color: dark ? '#f8fafc' : '#0f172a' }}>{title}</h1>
+              <div style={{ fontSize: 11, color: dark ? '#94a3b8' : '#64748b', marginTop: 2 }}>{t.subtitle}</div>
             </div>
-          </div>
-          <div style={{ marginLeft: 'auto' }}>
-            <NotificationBell />
           </div>
         </div>
         <div className="app-shell__content" style={{ padding: isMobile ? '18px 14px 24px' : '28px', flex: 1 }}>
@@ -245,6 +279,12 @@ const sidebarStyle = {
   borderRight: '1px solid rgba(59, 130, 246, 0.12)',
   boxShadow: '10px 0 36px rgba(15, 23, 42, 0.08)',
   overflow: 'hidden',
+};
+
+const sidebarDarkStyle = {
+  background: '#111827',
+  borderRight: '1px solid rgba(147, 197, 253, 0.16)',
+  boxShadow: '10px 0 36px rgba(0, 0, 0, 0.28)',
 };
 
 const brandWrapStyle = {
@@ -288,6 +328,11 @@ const profileCardStyle = {
   borderRadius: 12,
   background: 'linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%)',
   border: '1px solid rgba(37, 99, 235, 0.15)',
+};
+
+const profileCardDarkStyle = {
+  background: '#1e293b',
+  border: '1px solid rgba(147, 197, 253, 0.18)',
 };
 
 const avatarStyle = {
@@ -432,6 +477,11 @@ const topbarStyle = {
   zIndex: 80,
 };
 
+const topbarDarkStyle = {
+  background: 'rgba(17, 24, 39, 0.92)',
+  borderBottom: '1px solid rgba(147, 197, 253, 0.16)',
+};
+
 const pageTitleStyle = {
   fontSize: 17,
   fontFamily: 'var(--font-display)',
@@ -498,6 +548,15 @@ function CalendarIcon({ size = 16 }) {
 }
 function SettingsIcon({ size = 16 }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={1.8}><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>;
+}
+function SlidersIcon({ size = 16 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={1.8}><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h7M15 18h5"/><circle cx="16" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="13" cy="18" r="2"/></svg>;
+}
+function HelpIcon({ size = 16 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={1.8}><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M4 4.5A2.5 2.5 0 016.5 2H20v20H6.5A2.5 2.5 0 014 19.5z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>;
+}
+function DoctorSettingsIcon({ size = 16 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={1.8}><circle cx="12" cy="7" r="4"/><path d="M5 21a7 7 0 0114 0"/><path d="M18 4v6M15 7h6"/></svg>;
 }
 function LogoutIcon({ size = 16 }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={1.8}><path d="M16 17l5-5-5-5M21 12H9"/><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/></svg>;

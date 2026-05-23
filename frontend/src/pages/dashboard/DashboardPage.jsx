@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -39,6 +39,10 @@ const FILTER_TAG_LABELS = {
   dateFrom: v => `Du : ${v}`,
   dateTo:   v => `Au : ${v}`,
 };
+
+const CURRENT_YEAR = new Date().getFullYear();
+// FIX #1 : années générées dynamiquement jusqu'à l'année courante
+const YEAR_OPTIONS = Array.from({ length: 7 }, (_, i) => String(CURRENT_YEAR - i));
 
 const DEFAULT_FILTERS = {
   annee: '',
@@ -182,8 +186,11 @@ function FilterDate({ label, value, onChange }) {
   );
 }
 
-/* ── Filter Bar ── */
-function FilterBar({ filters, draft, setDraft, onApply, onReset }) {
+/* ── Filter Bar ──
+   FIX #3 : reçoit `wilayas` en prop pour une liste dynamique
+   FIX #4 : toutes les années sont des strings (cohérence avec draft.annee)
+*/
+function FilterBar({ filters, draft, setDraft, onApply, onReset, wilayas = [] }) {
   const [open, setOpen] = useState(false);
 
   const totalActive = Object.values(filters).filter((v) => v !== '').length;
@@ -222,21 +229,23 @@ function FilterBar({ filters, draft, setDraft, onApply, onReset }) {
           </svg>
         </button>
 
-        {/* Active tags */}
+        {/* Active filter tags */}
         {!open && totalActive > 0 && (
           <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-            {Object.entries(filters).filter(([,v]) => v).map(([k, v]) => (
-              <span key={k} style={{
-                display:'inline-flex', alignItems:'center', gap:4,
-                fontSize:11, padding:'3px 10px',
-                background:'rgba(37,99,235,0.07)',
-                color:'#2563eb', borderRadius:99,
-                border:'1px solid rgba(37,99,235,0.18)',
-                fontWeight:500,
-              }}>
-                {FILTER_TAG_LABELS[k]?.(v) ?? v}
-              </span>
-            ))}
+            {Object.entries(filters)
+              .filter(([, v]) => v && v !== 'all')
+              .map(([k, v]) => (
+                <span key={k} style={{
+                  display:'inline-flex', alignItems:'center', gap:4,
+                  fontSize:11, padding:'3px 10px',
+                  background:'rgba(37,99,235,0.07)',
+                  color:'#2563eb', borderRadius:99,
+                  border:'1px solid rgba(37,99,235,0.18)',
+                  fontWeight:500,
+                }}>
+                  {FILTER_TAG_LABELS[k]?.(v) ?? v}
+                </span>
+              ))}
             <button
               onClick={onReset}
               style={{
@@ -259,37 +268,43 @@ function FilterBar({ filters, draft, setDraft, onApply, onReset }) {
           borderRadius:14, padding:'18px 20px',
           boxShadow:'0 4px 20px rgba(15,23,42,0.08)',
         }}>
-          {/* Row 1 */}
           <div style={{ display:'flex', flexWrap:'wrap', gap:12, marginBottom:16 }}>
-            <FilterSelect label="Année" value={draft.annee} onChange={v => setDraft(d => ({ ...d, annee:v }))}>
+
+            {/* FIX #2 : toutes les valeurs d'année sont des strings */}
+            <FilterSelect label="Année" value={draft.annee} onChange={v => setDraft(d => ({ ...d, annee: v }))}>
               <option value="">Toutes les années</option>
-              {[2025,2024,2023,2022,2021,2020].map(y => <option key={y} value={y}>{y}</option>)}
+              {YEAR_OPTIONS.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
             </FilterSelect>
 
-            <FilterDate label="Du" value={draft.dateFrom} onChange={v => setDraft(d => ({ ...d, dateFrom:v }))} />
-            <FilterDate label="Au"  value={draft.dateTo}   onChange={v => setDraft(d => ({ ...d, dateTo:v }))} />
+            <FilterDate label="Du" value={draft.dateFrom} onChange={v => setDraft(d => ({ ...d, dateFrom: v }))} />
+            <FilterDate label="Au" value={draft.dateTo}   onChange={v => setDraft(d => ({ ...d, dateTo: v }))} />
 
             <div style={{ width:'0.5px', background:'rgba(37,99,235,0.1)', margin:'0 4px', alignSelf:'stretch' }} />
 
-            <FilterSelect label="Sexe" value={draft.sexe} onChange={v => setDraft(d => ({ ...d, sexe:v }))}>
+            <FilterSelect label="Sexe" value={draft.sexe} onChange={v => setDraft(d => ({ ...d, sexe: v }))}>
               <option value="">Tous</option>
               <option value="F">Femme</option>
               <option value="M">Homme</option>
             </FilterSelect>
 
-            <FilterSelect label="Statut" value={draft.statut} onChange={v => setDraft(d => ({ ...d, statut:v }))}>
+            <FilterSelect label="Statut" value={draft.statut} onChange={v => setDraft(d => ({ ...d, statut: v }))}>
               <option value="">Tous les statuts</option>
-              {Object.entries(STATUT_LABELS).map(([k,l]) => <option key={k} value={k}>{l}</option>)}
+              {Object.entries(STATUT_LABELS).map(([k, l]) => (
+                <option key={k} value={k}>{l}</option>
+              ))}
             </FilterSelect>
 
-            <FilterSelect label="Wilaya" value={draft.wilaya} onChange={v => setDraft(d => ({ ...d, wilaya:v }))}>
+            {/* FIX #3 : liste wilayas dynamique depuis les données réelles de l'API */}
+            <FilterSelect label="Wilaya" value={draft.wilaya} onChange={v => setDraft(d => ({ ...d, wilaya: v }))}>
               <option value="">Toutes</option>
-              {['Alger','Oran','Constantine','Annaba','Tlemcen','Sétif','Blida','Batna','Djelfa','Sidi Bel Abbès'].map(w => (
+              {wilayas.map(w => (
                 <option key={w} value={w}>{w}</option>
               ))}
             </FilterSelect>
 
-            <FilterSelect label="Stade" value={draft.stade} onChange={v => setDraft(d => ({ ...d, stade:v }))}>
+            <FilterSelect label="Stade" value={draft.stade} onChange={v => setDraft(d => ({ ...d, stade: v }))}>
               <option value="">Tous les stades</option>
               <option value="0">Stade 0</option>
               <option value="I">Stade I</option>
@@ -324,7 +339,7 @@ function FilterBar({ filters, draft, setDraft, onApply, onReset }) {
               Réinitialiser
             </button>
             <span style={{ fontSize:11, color:'#94a3b8', marginLeft:4 }}>
-              {Object.values(draft).filter(v => v).length} filtre(s) sélectionné(s)
+              {Object.values(draft).filter(v => v && v !== 'all').length} filtre(s) sélectionné(s)
             </span>
           </div>
         </div>
@@ -333,17 +348,22 @@ function FilterBar({ filters, draft, setDraft, onApply, onReset }) {
   );
 }
 
-/* ── Main ── */
+/* ══════════════════════════════════════════════
+   MAIN — DashboardPage
+   ══════════════════════════════════════════════ */
 export default function DashboardPage() {
   const [data,       setData]       = useState(null);
   const [alertes,    setAlertes]    = useState(null);
   const [loading,    setLoading]    = useState(true);
   const [lastUpdate, setLastUpdate] = useState(null);
 
-  /* Applied filters (trigger fetch) */
+  /* filters = appliqués → déclenchent le fetch
+     draft   = ce qui est dans le panneau avant "Appliquer" */
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  /* Draft = what's in the panel before clicking "Appliquer" */
   const [draft,   setDraft]   = useState(DEFAULT_FILTERS);
+
+  // FIX #6 : stabiliser la référence de `filters` pour useCallback
+  const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -361,8 +381,16 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const handleApply = () => setFilters({ ...draft });
-  const handleReset = () => { setDraft(DEFAULT_FILTERS); setFilters(DEFAULT_FILTERS); };
+  /* Appliquer : copie le draft dans filters → déclenche fetchData */
+  const handleApply = useCallback(() => {
+    setFilters({ ...draft });
+  }, [draft]);
+
+  /* Réinitialiser : remet draft ET filters à zéro */
+  const handleReset = useCallback(() => {
+    setDraft(DEFAULT_FILTERS);
+    setFilters(DEFAULT_FILTERS);
+  }, []);
 
   /* ── Loading ── */
   if (loading) return (
@@ -398,14 +426,15 @@ export default function DashboardPage() {
     traitements_types, reponses_chimio, activite_recente,
   } = data;
 
+  /* ── Data computed ── */
   const statutData = par_statut.map(s => ({
-    name: STATUT_LABELS[s.statut_dossier] || s.statut_dossier,
+    name:  STATUT_LABELS[s.statut_dossier] || s.statut_dossier,
     value: s.count,
     color: STATUT_COLORS[s.statut_dossier] || '#94a3b8',
   }));
 
   const stadeData = par_stade.filter(s => s.count > 0).map(s => ({
-    name: s.stade_ajcc === 'U' ? 'Inconnu' : `Stade ${s.stade_ajcc}`,
+    name:  s.stade_ajcc === 'U' ? 'Inconnu' : `Stade ${s.stade_ajcc}`,
     value: s.count,
     color: STADE_COLORS[s.stade_ajcc] || '#94a3b8',
   }));
@@ -417,11 +446,15 @@ export default function DashboardPage() {
 
   const maxCancer = Math.max(...(top_cancers || []).map(c => c.count), 1);
   const maxWilaya = Math.max(...(top_wilayas || []).map(w => w.count), 1);
+
+  // FIX #3 : liste wilayas extraite dynamiquement des données de l'API
+  const wilayaOptions = (top_wilayas || []).map(w => w.wilaya).filter(Boolean);
+
+  // FIX #7 : handleSelectWilaya via setters fonctionnels → pas de closure périmée
   const handleSelectWilaya = (wilaya) => {
     const nextWilaya = filters.wilaya === wilaya ? '' : wilaya;
-    const nextFilters = { ...filters, wilaya: nextWilaya };
-    setDraft(nextFilters);
-    setFilters(nextFilters);
+    setDraft(d => ({ ...d, wilaya: nextWilaya }));
+    setFilters(f => ({ ...f, wilaya: nextWilaya }));
   };
 
   return (
@@ -463,6 +496,7 @@ export default function DashboardPage() {
         setDraft={setDraft}
         onApply={handleApply}
         onReset={handleReset}
+        wilayas={wilayaOptions}
       />
 
       {/* ── KPIs — Patients ── */}
@@ -517,6 +551,7 @@ export default function DashboardPage() {
 
       {/* ── Pie row ── */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16, marginBottom:16 }}>
+
         {/* Sexe */}
         <ChartCard title="Répartition par sexe">
           <ResponsiveContainer width="100%" height={190}>
@@ -647,10 +682,11 @@ export default function DashboardPage() {
         </ChartCard>
       </div>
 
+      {/* ── Carte Algérie ── */}
       <div style={{ marginBottom:16 }}>
         <ChartCard
           title="Carte d'Algerie par wilaya"
-          sub="Degrade bleu selon le nombre de cas. Gris si aucun cas. Cliquez sur une wilaya pour filtrer le dashboard."
+          sub="Dégradé bleu selon le nombre de cas. Gris si aucun cas. Cliquez sur une wilaya pour filtrer le dashboard."
           span={2}
         >
           <AlgeriaHeatmap
