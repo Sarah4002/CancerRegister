@@ -20,9 +20,10 @@ const WILAYAS = [
 ];
 
 const ROLES = [
-  { value: 'doctor', label: 'Medecin Oncologue', icon: '??' },
-  { value: 'anapath', label: 'Medecin Anatomopathologiste', icon: '??' },
-  { value: 'epidemiologist', label: 'Epidemiologiste', icon: '??' },
+  { value: 'doctor', label: 'Medecin Oncologue', icon: '' },
+  { value: 'anapath', label: 'Medecin Anatomopathologiste', icon: '' },
+  { value: 'epidemiologist', label: 'Epidemiologiste', icon: '' },
+  { value: 'pharmacist', label: 'Pharmacien', icon: '' },
 ];
 
 const SPECIALITIES = [
@@ -111,7 +112,7 @@ function Step2({ onNext, onBack, saved }) {
       <InputField
         label="Confirmer le mot de passe *"
         type={showPass2 ? 'text' : 'password'}
-        placeholder="••••••••"
+        placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"
         error={errors.password_confirm?.message}
         suffix={<EyeBtn show={showPass2} toggle={() => setShowPass2((v) => !v)} />}
         {...register('password_confirm')}
@@ -135,6 +136,7 @@ function Step3({ onNext, onBack, saved, isLoading }) {
     doctor: { active: 'rgba(37,99,235,0.10)', border: 'rgba(37,99,235,0.26)', text: '#2563eb' },
     anapath: { active: 'rgba(59,130,246,0.10)', border: 'rgba(59,130,246,0.24)', text: '#2563eb' },
     epidemiologist: { active: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.30)', text: '#1d4ed8' },
+    pharmacist: { active: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.24)', text: '#d97706' },
   };
 
   return (

@@ -30,9 +30,10 @@ ROLE_ADMIN          = 'admin'
 ROLE_DOCTOR         = 'doctor'          # Médecin oncologue
 ROLE_ANAPATH        = 'anapath'         # Médecin anatomopathologiste
 ROLE_EPIDEMIOLOGIST = 'epidemiologist'  # Épidémiologiste
+ROLE_PHARMACIST     = 'pharmacist'      # Pharmacien
 ROLE_READONLY       = 'readonly'
 
-ALL_ROLES = [ROLE_ADMIN, ROLE_DOCTOR, ROLE_ANAPATH, ROLE_EPIDEMIOLOGIST, ROLE_READONLY]
+ALL_ROLES = [ROLE_ADMIN, ROLE_DOCTOR, ROLE_ANAPATH, ROLE_EPIDEMIOLOGIST, ROLE_PHARMACIST, ROLE_READONLY]
 
 
 # ── Helpers ────────────────────────────────────────────────────
@@ -48,7 +49,7 @@ def can_write_patient(user):
 
 def can_read_patient(user):
     """Voir les dossiers patients."""
-    return has_role(user, ROLE_ADMIN, ROLE_DOCTOR, ROLE_ANAPATH, ROLE_EPIDEMIOLOGIST)
+    return has_role(user, ROLE_ADMIN, ROLE_DOCTOR, ROLE_ANAPATH, ROLE_EPIDEMIOLOGIST, ROLE_PHARMACIST)
 
 def can_write_diagnostic(user):
     """Saisir ou modifier un diagnostic / morphologie."""
@@ -64,7 +65,7 @@ def can_write_treatment(user):
 
 def can_read_treatment(user):
     """Voir les traitements."""
-    return has_role(user, ROLE_ADMIN, ROLE_DOCTOR)
+    return has_role(user, ROLE_ADMIN, ROLE_DOCTOR, ROLE_PHARMACIST)
 
 def can_view_statistics(user):
     """Voir les statistiques."""

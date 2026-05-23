@@ -22,11 +22,41 @@ class AIReportEngine:
     avec recommandations, à partir des données de la base.
     """
 
+    CHART_NAME_MAP = {
+        'cancer_count': 'Incidence par type de cancer',
+        'stade_count': 'Répartition par stade clinique',
+        'monthly_cas': 'Tendances mensuelles',
+        'age_count': 'Distribution par âge',
+        'wilaya_cas': 'Cas par wilaya',
+        'cancer_sexe': 'Cancer × Sexe',
+        'cancer_stade': 'Cancer × Stade',
+        'survival': 'Évolution du taux de survie',
+        'wilaya_cancer': 'Wilaya × Type de cancer',
+        'age_stade': 'Âge × Stade',
+    }
+
     def __init__(self, report_obj, filters: dict):
-        self.report  = report_obj
-        self.filters = filters
-        self.annee   = filters.get('annee', 2024)
-        self.stats   = {}   # données agrégées collectées
+        self.report    = report_obj
+        self.filters   = filters or {}
+
+        annee = self.filters.get('annee', 2024)
+        if isinstance(annee, (list, tuple)):
+            annee = annee[0] if annee else 2024
+        try:
+            self.annee = int(annee)
+        except (TypeError, ValueError):
+            self.annee = 2024
+
+        self.chart_id    = self.filters.get('chart_id', '')
+        self.chart_label = self.filters.get('chart_label', '') or self.CHART_NAME_MAP.get(self.chart_id, '')
+        self.chart_data  = self.filters.get('chart_data', []) if isinstance(self.filters.get('chart_data', []), list) else []
+        self.stats       = {}   # données agrégées collectées
+
+    def build_markdown(self) -> str:
+        return self._build_markdown()
+
+    def build_recommendations(self) -> list:
+        return self._build_recommendations()
 
     # ── Entrée principale ─────────────────────────────────────────────────────
 
@@ -102,6 +132,7 @@ class AIReportEngine:
 
         trend_sym   = '📈' if s['variation_n1'] > 0 else '📉'
         trend_txt   = f"+{s['variation_n1']}%" if s['variation_n1'] > 0 else f"{s['variation_n1']}%"
+        trend_late  = s['pct_stade_iv'] + 28
 
         stade_iv_alert = (
             f"\n> ⚠️ **Alerte Stade IV** : {s['pct_stade_iv']}% des cas diagnostiqués "
@@ -109,8 +140,22 @@ class AIReportEngine:
             if s['pct_stade_iv'] > 20 else ""
         )
 
+        chart_intro = ''
+        if self.chart_id or self.chart_label:
+            label = self.chart_label or self.chart_id
+            chart_intro = (
+                f"\n## Contexte graphique sélectionné\n\n"
+                f"Ce rapport est généré à partir du graphique sélectionné : **{label}**.\n"
+            )
+            if self.chart_data:
+                chart_intro += (
+                    f"Les données fournies contiennent {len(self.chart_data)} point(s) de mesure. "
+                    "Le résumé ci-dessous prend en compte ces informations issues du graphique choisi.\n"
+                )
+            chart_intro += "\n"
+
         return f"""# Rapport épidémiologique — {t}
-*Généré automatiquement le {now}*
+*Généré automatiquement le {now}*{chart_intro}
 
 ---
 
@@ -153,7 +198,7 @@ Une analyse plus fine est disponible dans la carte SIG intégrée.
 ## 5. Tendances et alertes
 
 - Variation globale vs {t-1} : **{trend_txt}**
-- Part des diagnostics tardifs (Stade III+IV) : **{s['pct_stade_iv'] + 28:.1f}%** estimé
+- Part des diagnostics tardifs (Stade III+IV) : **{trend_late:.1f}%** estimé
 - Survie à 5 ans (moyenne) : **{s['survie_moy']}%**
 
 ---

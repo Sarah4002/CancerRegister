@@ -116,4 +116,7 @@ class DiagnosticValidationRuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = DiagnosticValidationRule
         fields = '__all__'
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/nouveau

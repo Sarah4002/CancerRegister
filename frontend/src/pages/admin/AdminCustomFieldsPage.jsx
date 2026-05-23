@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { AppLayout } from '../../components/layout/Sidebar';
 import { apiClient } from '../../services/apiClient';
+import { validationRulesService } from '../../services/validationRulesService';
 import toast from 'react-hot-toast';
 
 const MODULE_LABELS = {
@@ -38,6 +39,13 @@ const CHAMP_VIDE = {
 function ChampForm({ initial, onSave, onCancel, saving }) {
   const [form, setForm]           = useState({ ...CHAMP_VIDE, ...initial });
   const [newOption, setNewOption] = useState('');
+  const [ruleEnabled, setRuleEnabled] = useState(false);
+  const [ruleCode, setRuleCode] = useState('');
+  const [ruleLabel, setRuleLabel] = useState('');
+  const [ruleSeverity, setRuleSeverity] = useState('warning');
+  const [ruleDescription, setRuleDescription] = useState('');
+  const [ruleOperator, setRuleOperator] = useState('present');
+  const [ruleValue, setRuleValue] = useState('');
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -57,7 +65,21 @@ function ChampForm({ initial, onSave, onCancel, saving }) {
     if (form.type_champ === 'select' && (!form.options || form.options.length === 0)) {
       toast.error('Ajoutez au moins une option pour la liste déroulante.'); return;
     }
-    onSave(form);
+    if (ruleEnabled) {
+      if (!ruleLabel.trim()) { toast.error('Le libellé de la règle est requis.'); return; }
+      if (!ruleDescription.trim()) { toast.error('La description de la règle est requise.'); return; }
+      if (['equals', 'not_equals', 'contains', 'not_contains', 'greater_than', 'less_than'].includes(ruleOperator) && !ruleValue.trim()) {
+        toast.error('La valeur de la règle est requise pour cet opérateur.'); return;
+      }
+    }
+    onSave({ ...form, validationRule: ruleEnabled ? {
+      code: ruleCode,
+      label: ruleLabel,
+      description: ruleDescription,
+      severity: ruleSeverity,
+      operator: ruleOperator,
+      value: ruleValue,
+    } : null });
   };
 
   const input = {
@@ -184,6 +206,59 @@ function ChampForm({ initial, onSave, onCancel, saving }) {
             Champ obligatoire
           </label>
         </div>
+        <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13.5, color: '#0f172a' }}>
+            <input type="checkbox" checked={ruleEnabled} onChange={e => setRuleEnabled(e.target.checked)}
+              style={{ width: 15, height: 15, cursor: 'pointer' }} />
+            Ajouter une règle de validation pour ce champ
+          </label>
+        </div>
+        {ruleEnabled && (
+          <div style={{ marginBottom: 14, padding: 16, border: '1px solid rgba(37,99,235,0.12)', borderRadius: 12, background: '#f8fbff' }}>
+            <div style={{ marginBottom: 10, fontSize: 13, fontWeight: 600, color: '#0f172a' }}>Configuration de la règle</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+              <div style={{ marginBottom: 14 }}>
+                <Label>Libellé de la règle *</Label>
+                <input value={ruleLabel} onChange={e => setRuleLabel(e.target.value)} placeholder="Ex: Champ obligatoire" style={input} />
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <Label>Niveau *</Label>
+                <select value={ruleSeverity} onChange={e => setRuleSeverity(e.target.value)} style={{ ...input, cursor: 'pointer' }}>
+                  <option value="error">Erreur</option>
+                  <option value="warning">Avertissement</option>
+                  <option value="info">Information</option>
+                </select>
+              </div>
+              <div style={{ marginBottom: 14, gridColumn: '1 / -1' }}>
+                <Label>Description *</Label>
+                <input value={ruleDescription} onChange={e => setRuleDescription(e.target.value)} placeholder="Message affiché quand la règle est déclenchée" style={input} />
+              </div>
+              <div>
+                <Label>Opérateur *</Label>
+                <select value={ruleOperator} onChange={e => setRuleOperator(e.target.value)} style={{ ...input, cursor: 'pointer' }}>
+                  <option value="present">Est renseigné</option>
+                  <option value="blank">Est vide</option>
+                  <option value="equals">Égale à</option>
+                  <option value="not_equals">Différente de</option>
+                  <option value="contains">Contient</option>
+                  <option value="not_contains">Ne contient pas</option>
+                  <option value="greater_than">Supérieur à</option>
+                  <option value="less_than">Inférieur à</option>
+                </select>
+              </div>
+              {['equals', 'not_equals', 'contains', 'not_contains', 'greater_than', 'less_than'].includes(ruleOperator) && (
+                <div>
+                  <Label>Valeur</Label>
+                  <input value={ruleValue} onChange={e => setRuleValue(e.target.value)} placeholder="Valeur attendue" style={input} />
+                </div>
+              )}
+              <div style={{ gridColumn: '1 / -1' }}>
+                <Label>Code interne (optionnel)</Label>
+                <input value={ruleCode} onChange={e => setRuleCode(e.target.value)} placeholder="Ex: champ_obligatoire_her2" style={input} />
+              </div>
+            </div>
+          </div>
+        )}
         <div style={{ marginBottom: 14 }}>
           <Label>Ordre d'affichage</Label>
           <input type="number" value={form.ordre} onChange={e => set('ordre', parseInt(e.target.value) || 0)}
@@ -237,6 +312,14 @@ export default function AdminCustomFieldsPage() {
 
   useEffect(() => { fetchChamps(); }, []);
 
+  const slugify = (text) => text
+    .toString()
+    .normalize('NFKD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toLowerCase();
+
   const handleSave = async (form) => {
     setSaving(true);
     // Convertir les champs numériques vides en null pour éviter l'erreur Django
@@ -251,8 +334,30 @@ export default function AdminCustomFieldsPage() {
         await apiClient.patch(`/custom-fields/champs/${form.id}/`, payload);
         toast.success('Champ modifié avec succès.');
       } else {
-        await apiClient.post('/custom-fields/champs/', payload);
+        const { data } = await apiClient.post('/custom-fields/champs/', payload);
         toast.success('Champ créé avec succès.');
+        if (form.validationRule) {
+          const rulePayload = {
+            code: form.validationRule.code?.trim() || slugify(form.validationRule.label || `rule_${data.code}`),
+            label: form.validationRule.label,
+            description: form.validationRule.description,
+            severity: form.validationRule.severity,
+            active: true,
+            module: data.module,
+            field_name: data.code,
+            conditions: [{
+              field: data.code,
+              operator: form.validationRule.operator || 'present',
+              value: form.validationRule.value || '',
+            }],
+          };
+          try {
+            await validationRulesService.create(rulePayload);
+            toast.success('Règle de validation créée pour le champ.');
+          } catch {
+            toast.error('Le champ a été créé, mais la règle de validation n’a pas pu être ajoutée.');
+          }
+        }
       }
       setShowForm(false);
       setEditChamp(null);

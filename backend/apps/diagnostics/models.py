@@ -52,8 +52,17 @@ class DiagnosticValidationRule(models.Model):
         ('info', 'Information'),
     ]
 
+    MODULE_CHOICES = [
+        ('patient', 'Dossier patient'),
+        ('diagnostic', 'Diagnostic'),
+        ('traitement', 'Traitement'),
+        ('suivi', 'Suivi / Consultation'),
+    ]
+
     code = models.CharField(max_length=100, unique=True)
     label = models.CharField(max_length=200)
+    module = models.CharField(max_length=20, choices=MODULE_CHOICES, default='diagnostic')
+    field_name = models.CharField(max_length=100, blank=True)
     severity = models.CharField(max_length=10, choices=SEVERITY_CHOICES, default='warning')
     description = models.TextField(blank=True)
     conditions = models.JSONField(default=list, blank=True)

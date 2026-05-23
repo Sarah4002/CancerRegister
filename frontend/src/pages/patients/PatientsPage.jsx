@@ -87,10 +87,6 @@ function downloadCSV(rows, filename) {
 }
 
 function downloadXLSX(rows, filename) {
-  /* Pure-JS minimal XLSX — no library dependency.
-     Builds a workbook XML and wraps in a zip-like structure using
-     the xlsxjs-style trick: data URIs are NOT used (they hit size limits).
-     Instead we build a Blob with the Office Open XML structure.          */
   if (!rows.length) return;
   const keys     = Object.keys(rows[0]);
   const toXmlStr = v => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -134,7 +130,6 @@ function downloadXLSX(rows, filename) {
 <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
 </Types>`;
 
-  /* Fallback: if no zip capability, export as CSV */
   if (typeof window.JSZip === 'undefined') {
     downloadCSV(rows, filename.replace('.xlsx', '.csv'));
     toast('JSZip non disponible — export CSV utilisé', { icon: 'ℹ️' });
@@ -168,33 +163,165 @@ function triggerDownload(blob, filename) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   DELETE CONFIRM MODAL
+───────────────────────────────────────────────────────────────────────────── */
+function DeleteConfirmModal({ patient, onClose, onConfirm, loading }) {
+  const overlayRef = useRef(null);
+  const handleOverlay = e => { if (e.target === overlayRef.current) onClose(); };
+
+  return (
+    <div
+      ref={overlayRef}
+      onClick={handleOverlay}
+      style={{
+        position:'fixed', inset:0,
+        background:'rgba(15,23,42,0.6)',
+        backdropFilter:'blur(4px)',
+        zIndex:2000,
+        display:'flex', alignItems:'center', justifyContent:'center',
+        padding:16,
+        animation:'fadeIn .15s ease',
+      }}
+    >
+      <div style={{
+        background:'#fff',
+        borderRadius:18,
+        width:'100%',
+        maxWidth:420,
+        boxShadow:'0 24px 64px rgba(220,38,38,0.18)',
+        overflow:'hidden',
+        animation:'slideUp .2s ease',
+      }}>
+        <div style={{ height:4, background:'linear-gradient(90deg,#ef4444,#dc2626)' }} />
+
+        <div style={{ padding:'28px 28px 24px' }}>
+          <div style={{
+            width:52, height:52,
+            background:'rgba(220,38,38,0.08)',
+            borderRadius:14,
+            display:'flex', alignItems:'center', justifyContent:'center',
+            marginBottom:16,
+            border:'1px solid rgba(220,38,38,0.15)',
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/>
+              <path d="M14 11v6"/>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+          </div>
+
+          <div style={{ fontSize:17, fontWeight:800, color:'#0f172a', marginBottom:8 }}>
+            Supprimer ce patient ?
+          </div>
+          <div style={{ fontSize:13, color:'#64748b', lineHeight:1.6, marginBottom:6 }}>
+            Vous êtes sur le point de supprimer définitivement le dossier de :
+          </div>
+          <div style={{
+            padding:'10px 14px',
+            background:'rgba(220,38,38,0.05)',
+            border:'1px solid rgba(220,38,38,0.15)',
+            borderRadius:10,
+            marginBottom:16,
+          }}>
+            <div style={{ fontWeight:700, color:'#0f172a', fontSize:14 }}>{patient?.full_name}</div>
+            <div style={{ fontSize:11.5, color:'#64748b', marginTop:2, fontFamily:'monospace' }}>
+              {patient?.registration_number}
+            </div>
+          </div>
+          <div style={{
+            display:'flex', alignItems:'center', gap:7,
+            padding:'9px 12px',
+            background:'rgba(255,149,0,0.06)',
+            border:'1px solid rgba(255,149,0,0.2)',
+            borderRadius:8,
+            marginBottom:20,
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span style={{ fontSize:11.5, color:'#92400e', fontWeight:500 }}>
+              Cette action est irréversible. Toutes les données seront perdues.
+            </span>
+          </div>
+
+          <div style={{ display:'flex', gap:10 }}>
+            <button
+              onClick={onClose}
+              disabled={loading}
+              style={{
+                flex:1, padding:'11px', borderRadius:10,
+                border:'1px solid rgba(37,99,235,0.2)',
+                background:'transparent', color:'#64748b',
+                fontSize:13, fontWeight:600, cursor:'pointer',
+                opacity: loading ? .5 : 1,
+              }}
+            >
+              Annuler
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={loading}
+              style={{
+                flex:1, padding:'11px', borderRadius:10,
+                border:'none',
+                background: loading ? '#fca5a5' : 'linear-gradient(135deg,#ef4444,#dc2626)',
+                color:'#fff',
+                fontSize:13, fontWeight:700, cursor: loading ? 'not-allowed' : 'pointer',
+                display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+                boxShadow:'0 4px 12px rgba(220,38,38,0.3)',
+              }}
+            >
+              {loading ? (
+                <>
+                  <span style={{ width:13, height:13, border:'2px solid #ffffff44', borderTopColor:'#fff', borderRadius:'50%', animation:'spin .7s linear infinite', display:'inline-block' }} />
+                  Suppression…
+                </>
+              ) : (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                  </svg>
+                  Supprimer définitivement
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    EXPORT MODAL
 ───────────────────────────────────────────────────────────────────────────── */
 function ExportModal({ onClose, currentFilters }) {
-  /* ── state ── */
-  const [groupBy,      setGroupBy]      = useState('none');  // none | wilaya | cancer | age | stade | sexe | statut
-  const [format,       setFormat]       = useState('csv');   // csv | xlsx
+  const [groupBy,      setGroupBy]      = useState('none');
+  const [format,       setFormat]       = useState('csv');
   const [selCols,      setSelCols]      = useState(() => EXPORT_COLUMNS.filter(c => c.default).map(c => c.key));
   const [filterWilaya, setFilterWilaya] = useState(currentFilters?.wilaya || '');
   const [filterCancer, setFilterCancer] = useState(currentFilters?.cancer || '');
-  const [filterAge,    setFilterAge]    = useState('');      // AGE_GROUPS label
+  const [filterAge,    setFilterAge]    = useState('');
   const [filterStade,  setFilterStade]  = useState(currentFilters?.stade  || '');
   const [filterSexe,   setFilterSexe]   = useState(currentFilters?.sexe   || '');
   const [filterStatut, setFilterStatut] = useState(currentFilters?.statut || '');
   const [loading,      setLoading]      = useState(false);
-  const [preview,      setPreview]      = useState(null);   // {count, sample[]}
+  const [preview,      setPreview]      = useState(null);
   const overlayRef = useRef(null);
 
-  /* close on overlay click */
   const handleOverlay = e => { if (e.target === overlayRef.current) onClose(); };
 
-  /* ── preview fetch ── */
   useEffect(() => {
     let cancelled = false;
     async function fetchPreview() {
       try {
         const params = buildParams();
-        params.page     = 1;
+        params.page      = 1;
         params.page_size = 5;
         const { data } = await patientService.list(params);
         if (!cancelled) setPreview({ count: data.count ?? (data.results||data).length, sample: data.results || data });
@@ -219,7 +346,6 @@ function ExportModal({ onClose, currentFilters }) {
     return p;
   }
 
-  /* ── do export ── */
   async function handleExport() {
     setLoading(true);
     try {
@@ -227,7 +353,6 @@ function ExportModal({ onClose, currentFilters }) {
       const { data }  = await patientService.list(params);
       let   rawRows   = data.results || data;
 
-      /* group if needed */
       if (groupBy !== 'none') {
         rawRows = groupPatients(rawRows, groupBy);
       } else {
@@ -285,7 +410,6 @@ function ExportModal({ onClose, currentFilters }) {
     prev.includes(k) ? prev.filter(c => c !== k) : [...prev, k]
   );
 
-  /* ── styles ── */
   const S = {
     overlay: {
       position:'fixed', inset:0, background:'rgba(15,23,42,0.55)', backdropFilter:'blur(4px)',
@@ -328,21 +452,9 @@ function ExportModal({ onClose, currentFilters }) {
     }),
   };
 
-  const GROUP_OPTIONS = [
-    { id:'none',   label:'Aucun groupement',   icon:'≡', desc:'Liste complète individuelle' },
-    { id:'wilaya', label:'Par Wilaya',          icon:'📍', desc:'Total patients par wilaya'  },
-    { id:'cancer', label:'Par type de cancer',  icon:'🔬', desc:'Total par localisation tumorale' },
-    { id:'age',    label:'Par tranche d\'âge',  icon:'📊', desc:'Distribution par groupe d\'âge' },
-    { id:'stade',  label:'Par stade',           icon:'🎯', desc:'Répartition selon stade AJCC' },
-    { id:'sexe',   label:'Par sexe',            icon:'⚥', desc:'Hommes vs Femmes' },
-    { id:'statut', label:'Par statut',          icon:'🗂️', desc:'Répartition par statut dossier' },
-  ];
-
   return (
     <div ref={overlayRef} style={S.overlay} onClick={handleOverlay}>
       <div style={S.modal}>
-
-        {/* Header */}
         <div style={S.header}>
           <div>
             <div style={{ fontSize:17, fontWeight:800, color:'#0f172a', marginBottom:3 }}>
@@ -356,16 +468,12 @@ function ExportModal({ onClose, currentFilters }) {
         </div>
 
         <div style={S.body}>
-
-          {/* ── SECTION 1: Filtres de sélection ── */}
           <div>
-            <div style={{ fontSize:12, fontWeight:700, color:'#0f172a', marginBottom:12,
-              display:'flex', alignItems:'center', gap:6 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:'#0f172a', marginBottom:12, display:'flex', alignItems:'center', gap:6 }}>
               <span style={{ background:'#eff6ff', color:'#2563eb', borderRadius:6, padding:'2px 8px', fontSize:11 }}>1</span>
               Filtrer les patients à exporter
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
-
               <div>
                 <span style={S.label}>Wilaya</span>
                 <select style={S.select} value={filterWilaya} onChange={e => setFilterWilaya(e.target.value)}>
@@ -373,7 +481,6 @@ function ExportModal({ onClose, currentFilters }) {
                   {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
                 </select>
               </div>
-
               <div>
                 <span style={S.label}>Type de cancer</span>
                 <select style={S.select} value={filterCancer} onChange={e => setFilterCancer(e.target.value)}>
@@ -381,7 +488,6 @@ function ExportModal({ onClose, currentFilters }) {
                   {CANCER_TYPES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-
               <div>
                 <span style={S.label}>Tranche d'âge</span>
                 <select style={S.select} value={filterAge} onChange={e => setFilterAge(e.target.value)}>
@@ -389,7 +495,6 @@ function ExportModal({ onClose, currentFilters }) {
                   {AGE_GROUPS.map(a => <option key={a.label} value={a.label}>{a.label}</option>)}
                 </select>
               </div>
-
               <div>
                 <span style={S.label}>Stade</span>
                 <select style={S.select} value={filterStade} onChange={e => setFilterStade(e.target.value)}>
@@ -397,7 +502,6 @@ function ExportModal({ onClose, currentFilters }) {
                   {STADE_OPTIONS.map(s => <option key={s} value={s}>{s === 'U' ? 'Inconnu' : `Stade ${s}`}</option>)}
                 </select>
               </div>
-
               <div>
                 <span style={S.label}>Sexe</span>
                 <select style={S.select} value={filterSexe} onChange={e => setFilterSexe(e.target.value)}>
@@ -406,7 +510,6 @@ function ExportModal({ onClose, currentFilters }) {
                   <option value="M">Homme</option>
                 </select>
               </div>
-
               <div>
                 <span style={S.label}>Statut dossier</span>
                 <select style={S.select} value={filterStatut} onChange={e => setFilterStatut(e.target.value)}>
@@ -419,8 +522,6 @@ function ExportModal({ onClose, currentFilters }) {
                 </select>
               </div>
             </div>
-
-            {/* Reset filters */}
             {(filterWilaya||filterCancer||filterAge||filterStade||filterSexe||filterStatut) && (
               <button
                 onClick={() => { setFilterWilaya(''); setFilterCancer(''); setFilterAge(''); setFilterStade(''); setFilterSexe(''); setFilterStatut(''); }}
@@ -431,14 +532,9 @@ function ExportModal({ onClose, currentFilters }) {
             )}
           </div>
 
-          {/* ── SECTION 2: Groupement ── */}
-          
-
-          {/* ── SECTION 3: Colonnes (seulement si pas de groupement) ── */}
           {groupBy === 'none' && (
             <div>
-              <div style={{ fontSize:12, fontWeight:700, color:'#0f172a', marginBottom:12,
-                display:'flex', alignItems:'center', gap:6 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:'#0f172a', marginBottom:12, display:'flex', alignItems:'center', gap:6 }}>
                 <span style={{ background:'#eff6ff', color:'#2563eb', borderRadius:6, padding:'2px 8px', fontSize:11 }}>2</span>
                 Colonnes à inclure
                 <span style={{ fontSize:11, color:'#94a3b8', fontWeight:500 }}>({selCols.length}/{EXPORT_COLUMNS.length})</span>
@@ -456,10 +552,8 @@ function ExportModal({ onClose, currentFilters }) {
             </div>
           )}
 
-          {/* ── SECTION 4: Format ── */}
           <div>
-            <div style={{ fontSize:12, fontWeight:700, color:'#0f172a', marginBottom:10,
-              display:'flex', alignItems:'center', gap:6 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:'#0f172a', marginBottom:10, display:'flex', alignItems:'center', gap:6 }}>
               <span style={{ background:'#eff6ff', color:'#2563eb', borderRadius:6, padding:'2px 8px', fontSize:11 }}>
                 {groupBy === 'none' ? '4' : '3'}
               </span>
@@ -487,11 +581,8 @@ function ExportModal({ onClose, currentFilters }) {
               ))}
             </div>
           </div>
-
-         
         </div>
 
-        {/* Footer */}
         <div style={S.footer}>
           <button onClick={onClose} style={S.btn(false)} disabled={loading}>Annuler</button>
           <button
@@ -524,17 +615,60 @@ function StatusBadge({ statut, label }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   DELETE ICON BUTTON
+───────────────────────────────────────────────────────────────────────────── */
+function DeleteIconButton({ onClick }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      title="Supprimer ce patient"
+      style={{
+        width:30, height:30,
+        display:'flex', alignItems:'center', justifyContent:'center',
+        borderRadius:8,
+        border: hovered ? '1px solid rgba(220,38,38,0.3)' : '1px solid transparent',
+        background: hovered ? 'rgba(220,38,38,0.07)' : 'transparent',
+        cursor:'pointer',
+        transition:'all .15s',
+        flexShrink:0,
+      }}
+    >
+      <svg
+        width="14" height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={hovered ? '#dc2626' : '#94a3b8'}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ transition:'stroke .15s' }}
+      >
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+        <path d="M10 11v6"/><path d="M14 11v6"/>
+        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+      </svg>
+    </button>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    MAIN PAGE
 ───────────────────────────────────────────────────────────────────────────── */
 export default function PatientsPage() {
   const navigate = useNavigate();
-  const [patients,    setPatients]    = useState([]);
-  const [stats,       setStats]       = useState(null);
-  const [loading,     setLoading]     = useState(true);
-  const [search,      setSearch]      = useState('');
-  const [filters,     setFilters]     = useState({ sexe:'', statut_dossier:'', wilaya:'' });
-  const [pagination,  setPagination]  = useState({ count:0, next:null, previous:null, page:1 });
-  const [showExport,  setShowExport]  = useState(false);
+  const [patients,       setPatients]       = useState([]);
+  const [stats,          setStats]          = useState(null);
+  const [loading,        setLoading]        = useState(true);
+  const [search,         setSearch]         = useState('');
+  const [filters,        setFilters]        = useState({ sexe:'', statut_dossier:'', wilaya:'' });
+  const [pagination,     setPagination]     = useState({ count:0, next:null, previous:null, page:1 });
+  const [showExport,     setShowExport]     = useState(false);
+  const [deleteTarget,   setDeleteTarget]   = useState(null);
+  const [deleteLoading,  setDeleteLoading]  = useState(false);
 
   const fetchPatients = useCallback(async () => {
     setLoading(true);
@@ -564,11 +698,31 @@ export default function PatientsPage() {
   useEffect(() => {
     const t = setTimeout(() => fetchPatients(), 400);
     return () => clearTimeout(t);
-  }, [search]);  // eslint-disable-line
+  }, [search]); // eslint-disable-line
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    try {
+      await patientService.delete(deleteTarget.id);
+      toast.success(`Patient ${deleteTarget.registration_number} supprimé avec succès`);
+      setDeleteTarget(null);
+      fetchPatients();
+      patientService.stats().then(({ data }) => setStats(data)).catch(() => {});
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Erreur lors de la suppression');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   return (
     <AppLayout title="Gestion des Patients">
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin    { to { transform: rotate(360deg); } }
+        @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
+        @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+      `}</style>
 
       {/* Stats strip */}
       {stats && (
@@ -612,7 +766,7 @@ export default function PatientsPage() {
           </svg>
           <input
             value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher par nom, N° dossier, téléphone..."
+            placeholder="Nom, N° dossier, tél, date de naiss. (JJ/MM/AAAA), période (2022-2025)..."
             style={{ background:'none', border:'none', outline:'none', flex:1, fontSize:13, color:'#0f172a', fontFamily:'var(--font-body)' }}
           />
           {search && (
@@ -639,7 +793,6 @@ export default function PatientsPage() {
         ))}
 
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
-          {/* ── Export button ── */}
           <button
             onClick={() => setShowExport(true)}
             style={{
@@ -669,10 +822,8 @@ export default function PatientsPage() {
             )}
           </button>
 
-          {/* CanReg5 Import/Export */}
           <CanRegImportExport onImportDone={() => fetchPatients()} />
 
-          {/* Nouveau patient */}
           <Link to="/patients/nouveau" style={{ textDecoration:'none' }}>
             <button style={{
               padding:'9px 18px',
@@ -709,8 +860,8 @@ export default function PatientsPage() {
           <table style={{ width:'100%', borderCollapse:'collapse' }}>
             <thead>
               <tr style={{ background:'var(--bg-elevated)' }}>
-                {['N° Dossier','Patient','Sexe','Âge','Wilaya','Statut','Médecin','Enregistré le',''].map(h => (
-                  <th key={h} style={{
+                {['N° Dossier','Patient','Sexe','Âge','Wilaya','Statut','Médecin','Enregistré le','',''].map((h,idx) => (
+                  <th key={idx} style={{
                     padding:'10px 14px', textAlign:'left',
                     fontSize:11, fontWeight:600, letterSpacing:.5,
                     color:'#94a3b8', textTransform:'uppercase',
@@ -750,12 +901,17 @@ export default function PatientsPage() {
                   <td style={{ padding:'12px 14px', fontSize:11, color:'#64748b', fontFamily:'var(--font-mono)' }}>
                     {new Date(p.date_enregistrement).toLocaleDateString('fr-DZ')}
                   </td>
-                  <td style={{ padding:'12px 14px' }} onClick={e => e.stopPropagation()}>
+                  <td style={{ padding:'12px 8px 12px 14px' }} onClick={e => e.stopPropagation()}>
                     <Link to={`/patients/${p.id}`} style={{ textDecoration:'none' }}>
                       <button style={{ padding:'5px 12px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:6, color:'#334155', fontSize:11.5, cursor:'pointer' }}>
                         Voir
                       </button>
                     </Link>
+                  </td>
+                  <td style={{ padding:'12px 14px 12px 4px' }} onClick={e => e.stopPropagation()}>
+                    <DeleteIconButton
+                      onClick={() => setDeleteTarget(p)}
+                    />
                   </td>
                 </tr>
               ))}
@@ -788,6 +944,16 @@ export default function PatientsPage() {
         <ExportModal
           onClose={() => setShowExport(false)}
           currentFilters={filters}
+        />
+      )}
+
+      {/* Delete Confirm Modal */}
+      {deleteTarget && (
+        <DeleteConfirmModal
+          patient={deleteTarget}
+          loading={deleteLoading}
+          onClose={() => !deleteLoading && setDeleteTarget(null)}
+          onConfirm={handleDeleteConfirm}
         />
       )}
     </AppLayout>

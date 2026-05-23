@@ -75,8 +75,10 @@ export default function RCPSallePage() {
   });
   const [submittingDecision, setSubmittingDecision] = useState(false);
   const [votes, setVotes] = useState({});
-  
+  const [medecins, setMedecins] = useState([]);
+  const [loadingMedecins, setLoadingMedecins] = useState(false);
 
+  // Chrono
   useEffect(() => {
     let interval;
     if (chronoRunning) interval = setInterval(() => setChrono(c => c + 1), 1000);
@@ -136,10 +138,13 @@ export default function RCPSallePage() {
 
   const ajouterMedecinPresence = async (medecinId) => {
     try {
+      const medecin = medecins.find(m => m.id == medecinId);
+      if (!medecin) { toast.error('Médecin introuvable'); return; }
       await rcpService.reunions.ajouterPresence(id, {
         medecin: medecinId,
-        specialite: 'onco',
-        present: true,
+        specialite: medecin.role === 'anapath' ? 'anapath' : 'onco',
+        role: medecin.role,
+        present: true
       });
       toast.success('Medecin ajoute');
       reload();
@@ -387,12 +392,10 @@ export default function RCPSallePage() {
 
         {/* ── TAB: PRESENCES ── */}
         {activeTab === 'presences' && (
-          <PresencesTab
-  data={data}
-  onAjouter={() => setShowAjouterMedecinModal(true)}
-  quorumOk={quorumOk}
-  specialitesPresentes={specialitesPresentes}
-/>
+          <PresencesTab data={data} medecins={medecins} loadingMedecins={loadingMedecins}
+            onAjouter={() => setShowAjouterMedecinModal(true)}
+            quorumOk={quorumOk} specialitesPresentes={specialitesPresentes}
+          />
         )}
 
         {/* ── TAB: COMPTE RENDU ── */}
@@ -675,8 +678,8 @@ function DossierExpandedDetail({ dossierId, onMarkRealise }) {
   );
 }
 
-// ─── PresencesTab ─────────────────────────────────────────────────────────────
-function PresencesTab({ data, onAjouter, quorumOk, specialitesPresentes }) {
+// ─── PresencesTab ────────────────────────────────────────────────────────────
+function PresencesTab({ data, medecins, loadingMedecins, onAjouter, quorumOk, specialitesPresentes }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
       {/* Quorum Banner */}
@@ -758,14 +761,8 @@ function PresencesTab({ data, onAjouter, quorumOk, specialitesPresentes }) {
 // ─── CompteRenduTab ────────────────────────────────────────────────────────────
 function CompteRenduTab({ data, onPrint, reload }) {
   const [editing, setEditing] = useState(false);
-  const [crText, setCrText]   = useState(data.compte_rendu || '');
-  const [saving, setSaving]   = useState(false);
-
-  useEffect(() => {
-    if (!editing) {
-      setCrText(data.compte_rendu || '');
-    }
-  }, [data.compte_rendu]);
+  const [crText, setCrText] = useState(data.compte_rendu || '');
+  const [saving, setSaving] = useState(false);
 
   const saveCR = async () => {
     setSaving(true);
@@ -1080,8 +1077,8 @@ Reponds en francais, de facon structuree et professionnelle. Cite les guidelines
         }),
       });
       const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content || 'Aucune reponse.';
-      setMessages(prev => [...prev, { role:'assistant', content:reply }]);
+      const reply = data.choices?.[0]?.message?.content || 'Aucune réponse.';
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch {
       setMessages(prev => [...prev, { role:'assistant', content:'Erreur de connexion. Veuillez reessayer.' }]);
     } finally { setLoading(false); }
@@ -1149,114 +1146,168 @@ Reponds en francais, de facon structuree et professionnelle. Cite les guidelines
   );
 }
 
+// ─── CompteRenduModal ─────────────────────────────────────────────────────────
+function CompteRenduModal({ data, onClose, onPrint, reload }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 700, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>📄 Compte Rendu RCP</div>
+          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+        </div>
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          <CompteRenduTab data={data} onPrint={onPrint} reload={reload} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
+// ─── AjouterMedecinModal ──────────────────────────────────────────────────────
+function AjouterMedecinModal({ isOpen, onClose, onAjouter, medecins, loading, dejaPresents = [] }) {
+  const [query, setQuery] = useState('');
+  const [selectedMedecin, setSelectedMedecin] = useState('');
 
-// ─── UploadFichierModal ───────────────────────────────────────────────────────
-function UploadFichierModal({ dossierId, onClose, onSuccess }) {
-  const [file, setFile]         = useState(null);
-  const [typeFichier, setType]  = useState('autre');
-  const [description, setDesc]  = useState('');
-  const [uploading, setUploading] = useState(false);
-  const inputRef = useRef(null);
+  useEffect(() => {
+    if (!isOpen) {
+      setQuery('');
+      setSelectedMedecin('');
+    }
+  }, [isOpen]);
 
-  const handleSubmit = async () => {
-    if (!file) { toast.error('Selectionnez un fichier'); return; }
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('fichier', file);
-      formData.append('type_fichier', typeFichier);
-      formData.append('description', description);
-      await rcpService.dossiers.uploadFichier(dossierId, formData);
-      onSuccess();
-    } catch (err) {
-      toast.error('Erreur de telechargement');
-    } finally { setUploading(false); }
-  };
+  if (!isOpen) return null;
 
-  const isDicom = file && (file.name.toLowerCase().endsWith('.dcm') || file.name.toLowerCase().endsWith('.dicom'));
+  const presentIds = new Set((dejaPresents || []).map(String));
+  const filtered = (medecins || []).filter(m => !presentIds.has(String(m.id)));
+
+  const normalizedQ = query.trim().toLowerCase();
+  const visible = !normalizedQ
+    ? filtered
+    : filtered.filter(m => {
+        const full = (m.full_name || '').toLowerCase();
+        const role = (m.role || '').toLowerCase();
+        const email = (m.email || '').toLowerCase();
+        const inst = (m.institution || '').toLowerCase();
+        const spec = (m.speciality || '').toLowerCase();
+        return full.includes(normalizedQ) || role.includes(normalizedQ) || email.includes(normalizedQ) || inst.includes(normalizedQ) || spec.includes(normalizedQ);
+      });
 
   return (
-    <Modal onClose={onClose} maxWidth={480}>
-      <ModalTitle>Ajouter un fichier au dossier</ModalTitle>
-      <div style={{ display:'grid', gap:14, marginBottom:20 }}>
-        {/* Zone de drop */}
-        <div
-          onClick={() => inputRef.current?.click()}
-          style={{ border:`2px dashed ${file?'#16a34a':'var(--border)'}`, borderRadius:10, padding:'24px', textAlign:'center', cursor:'pointer', background:file?'rgba(22,163,74,0.04)':'var(--bg-elevated)', transition:'all 0.15s' }}
-          onMouseEnter={e => { if (!file) e.currentTarget.style.borderColor='rgba(37,99,235,0.4)'; }}
-          onMouseLeave={e => { if (!file) e.currentTarget.style.borderColor='var(--border)'; }}
-          onDragOver={e => e.preventDefault()}
-          onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) setFile(f); }}
-        >
-          <input ref={inputRef} type="file" style={{ display:'none' }} onChange={e => setFile(e.target.files[0])} />
-          {file ? (
-            <div>
-              <div style={{ fontSize:13, fontWeight:700, color:'#16a34a', marginBottom:4 }}>{file.name}</div>
-              <div style={{ fontSize:11, color:'var(--text-muted)' }}>{(file.size / 1024).toFixed(0)} Ko</div>
-              {isDicom && <div style={{ marginTop:6, fontSize:11, padding:'3px 10px', background:'rgba(37,99,235,0.08)', color:'#2563eb', borderRadius:6, display:'inline-block', fontWeight:600 }}>Fichier DICOM detecte</div>}
+    <Modal onClose={onClose} maxWidth={520}>
+      <ModalTitle icon="👤">Ajouter un médecin à la présence</ModalTitle>
+
+      <div style={{ display: 'grid', gap: 12, marginBottom: 6 }}>
+        <div>
+          <Label>Recherche</Label>
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Nom, email, spécialité, institution…"
+            style={modalInputSt}
+          />
+        </div>
+
+        <div style={{
+          border: '1px solid var(--border)',
+          borderRadius: 10,
+          overflow: 'hidden',
+          background: 'var(--bg-elevated)',
+          maxHeight: 320,
+        }}>
+          {loading ? (
+            <div style={{ padding: 14, color: 'var(--text-muted)', fontSize: 12 }}>Chargement…</div>
+          ) : !visible.length ? (
+            <div style={{ padding: 14, color: 'var(--text-muted)', fontSize: 12 }}>
+              {filtered.length === 0 ? 'Aucun médecin disponible (tous déjà présents).' : 'Aucun résultat pour votre recherche.'}
             </div>
           ) : (
-            <div>
-              <div style={{ marginBottom:8 }}>
-                <UploadIcon />
-              </div>
-              <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:4 }}>Cliquez ou deposez un fichier ici</div>
-              <div style={{ fontSize:11, color:'var(--text-muted)' }}>DICOM (.dcm), Images (JPG, PNG), PDF, etc.</div>
-            </div>
+            visible.map(m => {
+              const label = m.full_name || m.email || `${m.first_name || ''} ${m.last_name || ''}`.trim() || '—';
+              const sub = [m.speciality, m.institution].filter(Boolean).join(' · ') || m.role;
+              const isSelected = String(m.id) === String(selectedMedecin);
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setSelectedMedecin(m.id)}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 12px',
+                    border: 'none',
+                    borderBottom: '1px solid var(--border)',
+                    background: isSelected ? 'rgba(0,119,204,0.10)' : 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    gap: 10,
+                    alignItems: 'center',
+                  }}
+                >
+                  <div style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: '50%',
+                    background: 'rgba(0,119,204,0.12)',
+                    border: '1px solid rgba(0,119,204,0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: '#0077cc',
+                    flexShrink: 0,
+                  }}>
+                    {(label || '?').charAt(0).toUpperCase()}
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 800, fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</div>
+                  </div>
+
+                  {isSelected && <div style={{ fontSize: 12, fontWeight: 900, color: '#0077cc', flexShrink: 0 }}>✓</div>}
+                </button>
+              );
+            })
           )}
-        </div>
-
-        <div>
-          <Label>Type de document</Label>
-          <select value={typeFichier} onChange={e => setType(e.target.value)} style={modalSelSt}>
-            {FICHIER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-          </select>
-        </div>
-
-        <div>
-          <Label>Description (optionnel)</Label>
-          <input value={description} onChange={e => setDesc(e.target.value)} placeholder="Ex: Scanner thoracique du 15/05/2026..." style={modalInputSt} />
         </div>
       </div>
 
-      <div style={{ display:'flex', gap:10 }}>
-        <button onClick={onClose} style={{ flex:'0 0 100px', padding:'10px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:8, color:'var(--text-secondary)', fontSize:13, cursor:'pointer' }}>Annuler</button>
-        <button onClick={handleSubmit} disabled={!file || uploading}
-          style={{ flex:1, padding:'10px', background:!file||uploading?'var(--bg-elevated)':'linear-gradient(135deg,#0891b2,#0e7490)', border:'none', borderRadius:8, color:!file||uploading?'var(--text-muted)':'#fff', fontSize:13, fontWeight:700, cursor:!file||uploading?'not-allowed':'pointer' }}>
-          {uploading ? 'Envoi en cours...' : 'Envoyer le fichier'}
+      <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+        <button
+          onClick={onClose}
+          style={{ flex: 1, padding: '10px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}
+        >
+          Annuler
+        </button>
+        <button
+          onClick={() => {
+            if (!selectedMedecin) return;
+            onAjouter(selectedMedecin);
+            setSelectedMedecin('');
+            onClose();
+          }}
+          disabled={!selectedMedecin || loading}
+          style={{
+            flex: 1,
+            padding: '10px',
+            background: selectedMedecin ? 'linear-gradient(135deg, #0077cc, #005fa3)' : 'var(--bg-elevated)',
+            border: 'none',
+            borderRadius: 8,
+            color: selectedMedecin ? '#fff' : 'var(--text-muted)',
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: selectedMedecin ? 'pointer' : 'not-allowed',
+          }}
+        >
+          Ajouter
         </button>
       </div>
     </Modal>
   );
 }
 
-// ─── VoteResults ───────────────────────────────────────────────────────────────
-function VoteResults({ votes }) {
-  const total = Object.values(votes).reduce((a, b) => a + b, 0);
-  const colors = { pour:'#16a34a', contre:'#dc2626', abstention:'#9ca3af', info_comp:'#d97706' };
-  const labels = { pour:'Pour', contre:'Contre', abstention:'Abstention', info_comp:'Infos comp.' };
-  return (
-    <div style={{ padding:'12px', background:'var(--bg-elevated)', borderRadius:8, border:'1px solid var(--border)' }}>
-      <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>Resultats actuels</div>
-      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-        {Object.entries(votes).map(([k, n]) => (
-          <div key={k}>
-            <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--text-secondary)', marginBottom:3 }}>
-              <span style={{ color:colors[k]||'#9ca3af', fontWeight:600 }}>{labels[k]||k}</span>
-              <span style={{ fontWeight:700 }}>{n} / {total}</span>
-            </div>
-            <div style={{ height:4, background:'var(--bg-deep, #f1f5f9)', borderRadius:2, overflow:'hidden' }}>
-              <div style={{ height:'100%', width:`${(n/total)*100}%`, background:colors[k]||'#9ca3af', borderRadius:2, transition:'width 0.5s ease' }} />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── SidePanel ────────────────────────────────────────────────────────────────
+// ─── Primitives ──────────────────────────────────────────────────────────────
 function SidePanel({ children, onClose, title, subtitle, color }) {
   return (
     <>
