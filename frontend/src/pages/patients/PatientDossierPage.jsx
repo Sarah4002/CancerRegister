@@ -182,10 +182,21 @@ export default function PatientDossierPage() {
   const [dossierEditMode, setDossierEditMode] = useState(false);
   const [dossierForm, setDossierForm] = useState({});
 
-  useEffect(() => { loadAllData(); }, [id, navigate]);
+useEffect(() => {
+  const invalid = id === undefined || id === null || id === '' || id === 'undefined';
+  if (invalid) {
+    console.warn('[PatientDossierPage] invalid route param id:', id);
+    toast.error('Identifiant patient manquant');
+    navigate('/patients');
+    return;
+  }
 
-  const loadAllData = async () => {
-    setLoading(true);
+  loadAllData();
+}, [id, navigate]);
+
+const loadAllData = async () => {
+  if (id === undefined || id === null || id === '' || id === 'undefined') return;
+  setLoading(true);
     try {
       const [ resPatient, resDossier, resExamens, resDiag, resTrt, resSuiv ] = await Promise.all([
         patientService.get(id).catch(e => { toast.error('Patient introuvable'); navigate('/patients'); throw e; }),
