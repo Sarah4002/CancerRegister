@@ -5,8 +5,9 @@ import { AppLayout } from '../../components/layout/Sidebar';
 import { WILAYAS, COMMUNES_PAR_WILAYA } from './communesAlgerie';
 import toast from 'react-hot-toast';
 
+// Après
 const MOBILE_APP_BASE_URL =
-  import.meta.env.VITE_MOBILE_APP_URL || 'https://votre-app-mobile.com/patient';
+  import.meta.env.VITE_MOBILE_APP_URL || 'https://patientlifestyleform.vercel.app/patient';
 
 const ANTECEDENT_LABELS = {
   cancer_sein:         'Cancer du sein',

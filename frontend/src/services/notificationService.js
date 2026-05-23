@@ -1,3 +1,4 @@
+import api from './api';
 // notificationService.js — correct avec votre api.js
 export const notificationService = {
   list:            (params) => api.get('/notifications/notifications/', { params }),

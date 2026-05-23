@@ -136,22 +136,19 @@ export default function RCPSallePage() {
   };
 
   const ajouterMedecinPresence = async (medecinId) => {
-    try {
-      const medecin = medecins.find(m => m.id == medecinId);
-      if (!medecin) { toast.error('Médecin introuvable'); return; }
-      await rcpService.reunions.ajouterPresence(id, {
-        medecin: medecinId,
-        specialite: medecin.role === 'anapath' ? 'anapath' : 'onco',
-        role: medecin.role,
-        present: true
-      });
-      toast.success('Medecin ajoute');
-      reload();
-    } catch (err) {
-      const msg = err.response?.data?.error || 'Erreur lors de l\'ajout';
-      toast.error(msg);
-    }
-  };
+  try {
+    await rcpService.reunions.ajouterPresence(id, {
+      medecin: medecinId,
+      specialite: 'onco',  // valeur valide dans les choix
+      present: true,
+    });
+    toast.success('Medecin ajoute');
+    reload();
+  } catch (err) {
+    const msg = err.response?.data?.error || 'Erreur lors de l\'ajout';
+    toast.error(msg);
+  }
+};
 
 
   const handleVote = (dossierId, vote) => {
@@ -391,7 +388,7 @@ export default function RCPSallePage() {
 
         {/* ── TAB: PRESENCES ── */}
         {activeTab === 'presences' && (
-          <PresencesTab data={data} medecins={medecins} loadingMedecins={loadingMedecins}
+          <PresencesTab data={data} 
             onAjouter={() => setShowAjouterMedecinModal(true)}
             quorumOk={quorumOk} specialitesPresentes={specialitesPresentes}
           />
