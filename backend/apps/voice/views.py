@@ -48,6 +48,7 @@ Réponds UNIQUEMENT avec le JSON.""",
 def get_groq_client():
     """Create and return Groq client with proper error handling."""
     import groq
+    import httpx
     
     api_key = getattr(settings, 'GROQ_API_KEY', None)
     
@@ -57,7 +58,7 @@ def get_groq_client():
     if not api_key.strip():
         raise ValueError("GROQ_API_KEY est vide. Veuillez configurer une clé API Groq valide.")
     
-    return groq.Groq(api_key=api_key)
+    return groq.Groq(api_key=api_key, http_client=httpx.Client())
 
 
 @api_view(['POST'])

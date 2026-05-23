@@ -39,7 +39,7 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
-    default='localhost,127.0.0.1,rnc-registre-nationale-de-cancer-1.onrender.com'
+    default='localhost,127.0.0.1,.github.dev,.app.github.dev,rnc-registre-nationale-de-cancer-1.onrender.com'
 ).split(',')
 
 # ─────────────────────────────────────────────
@@ -194,8 +194,8 @@ SIMPLE_JWT = {
 _CORS_DEFAULTS = ','.join([
     'http://localhost:3000',
     'http://localhost:5173',
-    # ── App mobile Vercel (formulaire habitudes de vie QR code) ──
     'https://patientlifestyleform.vercel.app',
+    'https://devona-copasetic-chieko.ngrok-free.dev',
     'https://registredecancer.vercel.app',
     'https://registrecancer.vercel.app',
 ])
@@ -210,6 +210,9 @@ CORS_ALLOWED_ORIGINS = config(
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r'^https://patientlifestyleform[a-zA-Z0-9\-]*\.vercel\.app$',
 ]
+
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_CREDENTIALS = True
 

@@ -68,3 +68,18 @@ class PopulationCommuneSerializer(serializers.ModelSerializer):
         model = PopulationCommune
         fields = ['id', 'wilaya', 'commune', 'annee', 'population']
         read_only_fields = ['id']
+
+
+class MapCardSerializer(serializers.ModelSerializer):
+    cree_par = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = None
+        # set model dynamically to avoid circular imports in module load
+        fields = ['id', 'nom', 'description', 'cree_par', 'wilaya', 'commune', 'zones', 'pois', 'filters', 'est_actif', 'date_creation', 'date_modification']
+        read_only_fields = ['id', 'cree_par', 'date_creation', 'date_modification']
+
+    def __init__(self, *args, **kwargs):
+        from .models import MapCard
+        super().__init__(*args, **kwargs)
+        self.Meta.model = MapCard

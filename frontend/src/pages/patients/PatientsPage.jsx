@@ -309,7 +309,7 @@ function ExportModal({ onClose, currentFilters }) {
   const [filterAge,    setFilterAge]    = useState('');
   const [filterStade,  setFilterStade]  = useState(currentFilters?.stade  || '');
   const [filterSexe,   setFilterSexe]   = useState(currentFilters?.sexe   || '');
-  const [filterStatut, setFilterStatut] = useState(currentFilters?.statut || '');
+  const [filterStatut, setFilterStatut] = useState(currentFilters?.statut_dossier || '');
   const [loading,      setLoading]      = useState(false);
   const [preview,      setPreview]      = useState(null);
   const overlayRef = useRef(null);
@@ -664,8 +664,10 @@ export default function PatientsPage() {
   const [stats,          setStats]          = useState(null);
   const [loading,        setLoading]        = useState(true);
   const [search,         setSearch]         = useState('');
-  const [filters,        setFilters]        = useState({ sexe:'', statut_dossier:'', wilaya:'' });
-  const [pagination,     setPagination]     = useState({ count:0, next:null, previous:null, page:1 });
+  const [dateNaissance,  setDateNaissance]  = useState('');
+  const [filters,        setFilters]        = useState({ sexe:'', statut_dossier:'', wilaya:'', commune:'' });
+  const [pagination,     setPagination]     = useState({ count:0, next:null, previous:null });
+  const [page,           setPage]           = useState(1);
   const [showExport,     setShowExport]     = useState(false);
   const [deleteTarget,   setDeleteTarget]   = useState(null);
   const [deleteLoading,  setDeleteLoading]  = useState(false);
@@ -673,32 +675,56 @@ export default function PatientsPage() {
   const fetchPatients = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { page: pagination.page, search };
-      if (filters.sexe)           params.sexe           = filters.sexe;
-      if (filters.statut_dossier) params.statut_dossier = filters.statut_dossier;
-      if (filters.wilaya)         params.wilaya         = filters.wilaya;
+      const listParams = {
+        page,
+        search: search || undefined,
+        sexe: filters.sexe || undefined,
+        statut_dossier: filters.statut_dossier || undefined,
+        wilaya: filters.wilaya || undefined,
+      };
+      const advancedParams = {
+        page,
+        q: search || undefined,
+        date_naissance: dateNaissance || undefined,
+        sexe: filters.sexe || undefined,
+        statut_dossier: filters.statut_dossier || undefined,
+        wilaya: filters.wilaya || undefined,
+        commune: filters.commune || undefined,
+      };
+      const hasExplicitFilters = !!(
+        dateNaissance || filters.sexe || filters.statut_dossier || filters.wilaya || filters.commune
+      );
 
-      const { data } = await patientService.list(params);
+      const { data } = hasExplicitFilters
+        ? await patientService.searchAdvanced(advancedParams)
+        : await patientService.list(listParams);
+
       setPatients(data.results || data);
-      if (data.count !== undefined)
-        setPagination(p => ({ ...p, count:data.count, next:data.next, previous:data.previous }));
-    } catch {
+      setPagination(prev => ({
+        ...prev,
+        count: data.count ?? (Array.isArray(data.results) ? data.results.length : Array.isArray(data) ? data.length : 0),
+        next: data.next ?? null,
+        previous: data.previous ?? null,
+      }));
+    } catch (err) {
       toast.error('Erreur lors du chargement des patients');
     } finally {
       setLoading(false);
     }
-  }, [search, filters, pagination.page]);
-
-  useEffect(() => { fetchPatients(); }, [fetchPatients]);
+  }, [search, dateNaissance, filters, page]);
 
   useEffect(() => {
     patientService.stats().then(({ data }) => setStats(data)).catch(() => {});
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => fetchPatients(), 400);
-    return () => clearTimeout(t);
-  }, [search]); // eslint-disable-line
+    const timer = setTimeout(fetchPatients, 400);
+    return () => clearTimeout(timer);
+  }, [fetchPatients]);
+
+  useEffect(() => {
+    if (page !== 1) setPage(1);
+  }, [search, dateNaissance, filters]);
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
@@ -926,12 +952,12 @@ export default function PatientsPage() {
             <div style={{ display:'flex', gap:8 }}>
               <button
                 disabled={!pagination.previous}
-                onClick={() => setPagination(p => ({ ...p, page:p.page-1 }))}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
                 style={{ padding:'6px 14px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:6, color:'#334155', fontSize:12, cursor:pagination.previous?'pointer':'not-allowed', opacity:pagination.previous?1:.4 }}
               >← Précédent</button>
               <button
                 disabled={!pagination.next}
-                onClick={() => setPagination(p => ({ ...p, page:p.page+1 }))}
+                onClick={() => setPage(p => p + 1)}
                 style={{ padding:'6px 14px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:6, color:'#334155', fontSize:12, cursor:pagination.next?'pointer':'not-allowed', opacity:pagination.next?1:.4 }}
               >Suivant →</button>
             </div>
