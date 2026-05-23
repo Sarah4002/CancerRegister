@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { rcpService } from '../../services/rcpService';
 import { accountsService } from '../../services/accountsService';
 import { AppLayout } from '../../components/layout/Sidebar';
+import AjouterMedecinModal from './AjouterMedecinModal';
 import toast from 'react-hot-toast';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -74,8 +75,7 @@ export default function RCPSallePage() {
   });
   const [submittingDecision, setSubmittingDecision] = useState(false);
   const [votes, setVotes] = useState({});
-  const [medecins, setMedecins] = useState([]);
-  const [loadingMedecins, setLoadingMedecins] = useState(false);
+  
 
   useEffect(() => {
     let interval;
@@ -101,13 +101,7 @@ export default function RCPSallePage() {
 
   useEffect(() => { reload(); }, [reload]);
 
-  useEffect(() => {
-    setLoadingMedecins(true);
-    accountsService.medecins()
-      .then(({ data }) => setMedecins(data.medecins || []))
-      .catch(() => {})
-      .finally(() => setLoadingMedecins(false));
-  }, []);
+  
 
   const changerStatut = async (statut) => {
     try {
@@ -142,12 +136,9 @@ export default function RCPSallePage() {
 
   const ajouterMedecinPresence = async (medecinId) => {
     try {
-      const medecin = medecins.find(m => m.id == medecinId);
-      if (!medecin) { toast.error('Medecin introuvable'); return; }
       await rcpService.reunions.ajouterPresence(id, {
         medecin: medecinId,
-        specialite: medecin.role === 'anapath' ? 'anapath' : 'onco',
-        role: medecin.role || '',
+        specialite: 'onco',
         present: true,
       });
       toast.success('Medecin ajoute');
@@ -157,6 +148,7 @@ export default function RCPSallePage() {
       toast.error(msg);
     }
   };
+
 
   const handleVote = (dossierId, vote) => {
     setVotes(prev => {
@@ -396,13 +388,11 @@ export default function RCPSallePage() {
         {/* ── TAB: PRESENCES ── */}
         {activeTab === 'presences' && (
           <PresencesTab
-            data={data}
-            medecins={medecins}
-            loadingMedecins={loadingMedecins}
-            onAjouter={() => setShowAjouterMedecinModal(true)}
-            quorumOk={quorumOk}
-            specialitesPresentes={specialitesPresentes}
-          />
+  data={data}
+  onAjouter={() => setShowAjouterMedecinModal(true)}
+  quorumOk={quorumOk}
+  specialitesPresentes={specialitesPresentes}
+/>
         )}
 
         {/* ── TAB: COMPTE RENDU ── */}
@@ -492,11 +482,10 @@ export default function RCPSallePage() {
         <AjouterMedecinModal
           onClose={() => setShowAjouterMedecinModal(false)}
           onAjouter={ajouterMedecinPresence}
-          medecins={medecins}
-          loading={loadingMedecins}
           dejaPresents={(data?.presences || []).map(p => p.medecin)}
         />
       )}
+
 
       {/* ── MODAL: Compte rendu rapide ── */}
       {showCRModal && (
@@ -687,7 +676,7 @@ function DossierExpandedDetail({ dossierId, onMarkRealise }) {
 }
 
 // ─── PresencesTab ─────────────────────────────────────────────────────────────
-function PresencesTab({ data, medecins, loadingMedecins, onAjouter, quorumOk, specialitesPresentes }) {
+function PresencesTab({ data, onAjouter, quorumOk, specialitesPresentes }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
       {/* Quorum Banner */}
@@ -771,6 +760,12 @@ function CompteRenduTab({ data, onPrint, reload }) {
   const [editing, setEditing] = useState(false);
   const [crText, setCrText]   = useState(data.compte_rendu || '');
   const [saving, setSaving]   = useState(false);
+
+  useEffect(() => {
+    if (!editing) {
+      setCrText(data.compte_rendu || '');
+    }
+  }, [data.compte_rendu]);
 
   const saveCR = async () => {
     setSaving(true);
@@ -1085,7 +1080,7 @@ Reponds en francais, de facon structuree et professionnelle. Cite les guidelines
         }),
       });
       const data = await res.json();
-      const reply = data.content?.map(b => b.text || '').join('') || 'Aucune reponse.';
+      const reply = data.choices?.[0]?.message?.content || 'Aucune reponse.';
       setMessages(prev => [...prev, { role:'assistant', content:reply }]);
     } catch {
       setMessages(prev => [...prev, { role:'assistant', content:'Erreur de connexion. Veuillez reessayer.' }]);
@@ -1154,84 +1149,7 @@ Reponds en francais, de facon structuree et professionnelle. Cite les guidelines
   );
 }
 
-// ─── AjouterMedecinModal ──────────────────────────────────────────────────────
-function AjouterMedecinModal({ onClose, onAjouter, medecins, loading, dejaPresents = [] }) {
-  const [query, setQuery]               = useState('');
-  const [selectedMedecin, setSelected]  = useState('');
 
-  const presentIds = new Set((dejaPresents || []).filter(Boolean).map(String));
-  const available  = (medecins || []).filter(m => !presentIds.has(String(m.id)));
-
-  const normalizedQ = query.trim().toLowerCase();
-  const visible = !normalizedQ
-    ? available
-    : available.filter(m => {
-        const full  = (m.full_name || '').toLowerCase();
-        const role  = (m.role || '').toLowerCase();
-        const email = (m.email || '').toLowerCase();
-        return full.includes(normalizedQ) || role.includes(normalizedQ) || email.includes(normalizedQ);
-      });
-
-  return (
-    <Modal onClose={onClose} maxWidth={520}>
-      <ModalTitle>Ajouter un medecin a la presence</ModalTitle>
-      <div style={{ marginBottom:8 }}>
-        <Label>Rechercher</Label>
-        <input
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Nom, email, specialite..."
-          style={modalInputSt}
-          autoFocus
-        />
-      </div>
-      <div style={{ border:'1px solid var(--border)', borderRadius:10, overflow:'hidden', background:'var(--bg-elevated)', maxHeight:320, overflowY:'auto', marginBottom:16 }}>
-        {loading ? (
-          <div style={{ padding:14, color:'var(--text-muted)', fontSize:12 }}>Chargement...</div>
-        ) : !available.length ? (
-          <div style={{ padding:14, color:'var(--text-muted)', fontSize:12 }}>Tous les medecins disponibles sont deja presents dans cette RCP.</div>
-        ) : !visible.length ? (
-          <div style={{ padding:14, color:'var(--text-muted)', fontSize:12 }}>Aucun resultat pour votre recherche.</div>
-        ) : visible.map(m => {
-          const label = m.full_name || `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email || '—';
-          const sub   = [m.speciality, m.institution].filter(Boolean).join(' · ') || m.role || '';
-          const isSelected = String(m.id) === String(selectedMedecin);
-          return (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setSelected(m.id)}
-              style={{
-                width:'100%', textAlign:'left', padding:'10px 14px',
-                border:'none', borderBottom:'1px solid var(--border)',
-                background:isSelected?'rgba(37,99,235,0.08)':'transparent',
-                cursor:'pointer', display:'flex', gap:12, alignItems:'center',
-              }}
-            >
-              <div style={{ width:32, height:32, borderRadius:'50%', background:'rgba(37,99,235,0.1)', border:'1px solid rgba(37,99,235,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#2563eb', flexShrink:0 }}>
-                {(label || '?').charAt(0).toUpperCase()}
-              </div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontWeight:700, fontSize:13, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{label}</div>
-                {sub && <div style={{ fontSize:11, color:'var(--text-muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{sub}</div>}
-              </div>
-              {isSelected && <div style={{ fontSize:12, fontWeight:900, color:'#2563eb', flexShrink:0 }}>Selectionne</div>}
-            </button>
-          );
-        })}
-      </div>
-      <div style={{ display:'flex', gap:10 }}>
-        <button onClick={onClose} style={{ flex:1, padding:'10px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:8, color:'var(--text-secondary)', fontSize:13, cursor:'pointer' }}>Annuler</button>
-        <button
-          onClick={() => { if (!selectedMedecin) return; onAjouter(selectedMedecin); onClose(); }}
-          disabled={!selectedMedecin || loading}
-          style={{ flex:1, padding:'10px', background:selectedMedecin?'linear-gradient(135deg,#2563eb,#1d4ed8)':'var(--bg-elevated)', border:'none', borderRadius:8, color:selectedMedecin?'#fff':'var(--text-muted)', fontSize:13, fontWeight:700, cursor:selectedMedecin?'pointer':'not-allowed' }}>
-          Ajouter
-        </button>
-      </div>
-    </Modal>
-  );
-}
 
 // ─── UploadFichierModal ───────────────────────────────────────────────────────
 function UploadFichierModal({ dossierId, onClose, onSuccess }) {
