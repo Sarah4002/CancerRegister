@@ -20,7 +20,7 @@ import { useState } from 'react';
 // Configuration
 // ─────────────────────────────────────────────────────────────────────────────
 
-const BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:8000';
+const BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Utilitaires internes
@@ -100,7 +100,7 @@ export const statsApi = {
    */
   async getKPI(filters = {}) {
     const qs = toQS(filters);
-    return apiFetch(`/api/stats/kpi/${qs ? '?' + qs : ''}`);
+    return apiFetch(`/stats/kpi/${qs ? '?' + qs : ''}`);
   },
 
   // ── Chart Data (point d'entrée principal pour ChartCard) ───────────────────
@@ -119,7 +119,7 @@ export const statsApi = {
    */
   async getChartData(source, filters = {}) {
     const qs = toQS(filters);
-    return apiFetch(`/api/stats/chart-data/${source}/${qs ? '?' + qs : ''}`);
+    return apiFetch(`/stats/chart-data/${source}/${qs ? '?' + qs : ''}`);
   },
 
   // ── Shortcuts pratiques (optionnels — utilisez getChartData en priorité) ───
@@ -162,7 +162,7 @@ export const statsApi = {
    * @returns {{ id, status: 'pending'|'done', titre, contenu_md?, recommandations? }}
    */
   async generateReport(payload) {
-    return apiFetch('/api/stats/ai/report/', {
+    return apiFetch('/stats/ai/report/', {
       method: 'POST',
       body:   JSON.stringify(payload),
     });
@@ -174,12 +174,12 @@ export const statsApi = {
    * @returns {{ id, status, titre, contenu_md, recommandations }}
    */
   async getReport(id) {
-    return apiFetch(`/api/stats/ai/report/${id}/`);
+    return apiFetch(`/stats/ai/report/${id}/`);
   },
 
   /** Liste les rapports de l'utilisateur courant. */
   async listReports() {
-    return apiFetch('/api/stats/ai/report/');
+    return apiFetch('/stats/ai/report/');
   },
 
   // ── Suggestions IA ─────────────────────────────────────────────────────────
@@ -189,12 +189,12 @@ export const statsApi = {
    */
   async suggestCharts(filters = {}) {
     const qs = toQS(filters);
-    return apiFetch(`/api/stats/ai/suggest-charts/${qs ? '?' + qs : ''}`);
+    return apiFetch(`/stats/ai/suggest-charts/${qs ? '?' + qs : ''}`);
   },
 
   // ── Recherche ──────────────────────────────────────────────────────────────
   async search(q, limit = 10) {
-    return apiFetch(`/api/search/?q=${encodeURIComponent(q)}&limit=${limit}`);
+    return apiFetch(`/search/?q=${encodeURIComponent(q)}&limit=${limit}`);
   },
 };
 
