@@ -6,6 +6,17 @@ import { AppLayout } from '../../components/layout/Sidebar';
 import AjouterMedecinModal from './AjouterMedecinModal';
 import toast from 'react-hot-toast';
 
+const ADMIN_CARD = {
+  background: '#ffffff',
+  border: '1px solid rgba(37,99,235,0.08)',
+  borderRadius: '12px',
+};
+
+const ADMIN_ELEVATED = {
+  background: '#f8fafc',
+  border: '1px solid rgba(37,99,235,0.10)',
+};
+
 // ─── Constantes ───────────────────────────────────────────────────────────────
 const STATUT_CFG = {
   planifiee: { color: '#2563eb', label: 'Planifiée' },
@@ -232,14 +243,19 @@ export default function RCPSallePage() {
 
   return (
     <AppLayout title="Salle RCP">
-      <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+      <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
 
         {/* ── HEADER ── */}
-        <div style={{ background:'var(--bg-card)', border:`1px solid ${sc.color}20`, borderRadius:'var(--radius-lg)', padding:'20px 24px', position:'relative', overflow:'hidden' }}>
-          <div style={{ position:'absolute', right:-30, top:-30, width:140, height:140, borderRadius:'50%', background:sc.color+'06', pointerEvents:'none' }} />
-
+        <div style={{ ...ADMIN_CARD, padding:'20px 24px', boxShadow:'0 10px 30px rgba(15,23,42,0.04)' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:14 }}>
             <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12 }}>
+                <div style={{ width:42, height:42, borderRadius:12, background:'rgba(37,99,235,0.12)', border:'1px solid rgba(37,99,235,0.20)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#2563eb' }}>RCP</div>
+                <div>
+                  <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:800, color:'#0f172a', marginBottom:2 }}>Salle RCP</h2>
+                  <p style={{ fontSize:11, color:'#64748b' }}>Coordination pluridisciplinaire - Dossiers - Presences - Compte rendu</p>
+                </div>
+              </div>
               {/* Fil d'Ariane + titre */}
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
                 <button
@@ -269,14 +285,7 @@ export default function RCPSallePage() {
                 </span>
               </div>
 
-              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, flexWrap:'wrap' }}>
-                <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:900, color:'var(--text-primary)', margin:0 }}>{data.titre}</h2>
-                <StatutBadge statut={data.statut} label={sc.label} color={sc.color} pulse={sc.pulse} />
-                <span style={{ padding:'2px 8px', borderRadius:6, fontSize:10, color:'var(--text-muted)', background:'var(--bg-elevated)', border:'1px solid var(--border)' }}>
-                  {data.type_label}
-                </span>
-                <QuorumBadge ok={quorumOk} count={specialitesPresentes.length} />
-              </div>
+             
 
               <div style={{ display:'flex', gap:14, flexWrap:'wrap' }}>
                 <InfoPill label="Date" val={new Date(data.date_reunion).toLocaleDateString('fr-DZ', { weekday:'long', day:'numeric', month:'long', year:'numeric' })} />
@@ -289,7 +298,7 @@ export default function RCPSallePage() {
 
             <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:10 }}>
               {/* Chrono */}
-              <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:10 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', background:'#f8fafc', border:'1px solid rgba(37,99,235,0.10)', borderRadius:10 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 <span style={{ fontFamily:'var(--font-mono)', fontSize:15, fontWeight:700, color:chronoRunning?'#16a34a':'var(--text-muted)', minWidth:60 }}>
                   {fmtTime(chrono)}
@@ -302,50 +311,23 @@ export default function RCPSallePage() {
               </div>
 
               {/* Actions statut */}
-              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                {data.statut === 'planifiee' && <ActionBtn label="Demarrer la reunion" color="#16a34a" onClick={() => changerStatut('en_cours')} />}
-                {data.statut === 'en_cours'  && <ActionBtn label="Terminer" color="#6b7280" onClick={() => changerStatut('terminee')} />}
-                {(data.statut === 'planifiee' || data.statut === 'en_cours') && (
-                  <ActionBtn label="Suspendre" color="#d97706" onClick={() => changerStatut('reportee')} />
-                )}
-                <button onClick={() => setShowCRModal(true)} style={btnSecondary}>Compte Rendu</button>
-                <button onClick={handlePrintCR} style={btnSecondary}>Imprimer</button>
-              </div>
+              
             </div>
           </div>
 
           {/* Metriques rapides */}
-          <div style={{ display:'flex', gap:24, marginTop:16, paddingTop:14, borderTop:'1px solid var(--border)', flexWrap:'wrap' }}>
-            {[
-              { label:'Dossiers',          val:data.nombre_dossiers,          color:'#7c3aed' },
-              { label:'Membres presents',  val:data.nombre_membres_presents,  color:'#2563eb' },
-              { label:'Decisions prises',  val:totalDecisions,                color:'#16a34a' },
-              { label:'Dossiers prevus',   val:data.nombre_dossiers_prevus,   color:'#d97706' },
-            ].map(m => (
-              <div key={m.label} style={{ display:'flex', flexDirection:'column', gap:1 }}>
-                <span style={{ fontSize:24, fontWeight:900, fontFamily:'var(--font-display)', color:m.color, lineHeight:1 }}>{m.val}</span>
-                <span style={{ fontSize:9, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5 }}>{m.label}</span>
-              </div>
-            ))}
-            {data.objectif && (
-              <div style={{ flex:1, minWidth:200, padding:'6px 14px', background:'rgba(124,58,237,0.05)', borderRadius:8, border:'1px solid rgba(124,58,237,0.15)' }}>
-                <div style={{ fontSize:9, color:'#7c3aed', textTransform:'uppercase', fontWeight:700, letterSpacing:0.5, marginBottom:2 }}>Ordre du jour</div>
-                <div style={{ fontSize:11.5, color:'var(--text-secondary)', lineHeight:1.5 }}>{data.objectif.slice(0,140)}{data.objectif.length>140?'…':''}</div>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* ── TABS ── */}
-        <div style={{ display:'flex', background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', overflow:'hidden' }}>
+        <div style={{ display:'flex', background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', overflow:'hidden' }}>
           {[
-            { key:'dossiers',  label:`Dossiers (${data.nombre_dossiers})`,          color:'#7c3aed' },
+            { key:'dossiers',  label:`Dossiers (${data.nombre_dossiers})`,          color:'#2563eb' },
             { key:'presences', label:`Presences (${data.nombre_membres_presents})`, color:'#2563eb' },
             { key:'cr',        label:'Compte Rendu',                                color:'#16a34a' },
             { key:'suivi',     label:`Suivi (${totalDecisions})`,                   color:'#d97706' },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              style={{ flex:1, padding:'13px 8px', background:'none', border:'none', borderBottom:`2px solid ${activeTab===t.key?t.color:'transparent'}`, color:activeTab===t.key?t.color:'var(--text-muted)', fontSize:12, fontWeight:activeTab===t.key?700:400, cursor:'pointer', fontFamily:'var(--font-body)', transition:'all 0.15s', whiteSpace:'nowrap' }}>
+              style={{ flex:1, padding:'13px 8px', background:'none', border:'none', borderBottom:`2px solid ${activeTab===t.key?t.color:'transparent'}`, color:activeTab===t.key?t.color:'#64748b', fontSize:12, fontWeight:activeTab===t.key?700:400, cursor:'pointer', fontFamily:'var(--font-body)', transition:'all 0.15s', whiteSpace:'nowrap' }}>
               {t.label}
             </button>
           ))}
@@ -520,10 +502,10 @@ export default function RCPSallePage() {
 function DossierCard({ d, index, votes, isExpanded, onToggleExpand, onAddDecision, onOpenChat, onVote, onAIAssist, onMarkRealise, onUploadFichier }) {
   const voteCount = Object.values(votes).reduce((a, b) => a + b, 0);
   return (
-    <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', overflow:'hidden', animation:`fadeUp 0.3s ease ${index*0.05}s both` }}>
-      <div style={{ padding:'14px 18px', background:'var(--bg-elevated)', display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid var(--border)', flexWrap:'wrap', gap:10 }}>
+    <div style={{ ...ADMIN_CARD, overflow:'hidden', animation:`fadeUp 0.3s ease ${index*0.05}s both`, boxShadow:'0 8px 24px rgba(15,23,42,0.03)' }}>
+      <div style={{ padding:'14px 18px', background:'#f8fafc', display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid rgba(37,99,235,0.08)', flexWrap:'wrap', gap:10 }}>
         <div style={{ display:'flex', alignItems:'center', gap:12, flex:1, minWidth:0 }}>
-          <span style={{ fontFamily:'var(--font-mono)', fontSize:11, padding:'2px 8px', borderRadius:6, background:'rgba(124,58,237,0.1)', color:'#7c3aed', border:'1px solid rgba(124,58,237,0.2)', flexShrink:0, fontWeight:700 }}>#{d.ordre_passage}</span>
+          <span style={{ fontFamily:'var(--font-mono)', fontSize:11, padding:'2px 8px', borderRadius:6, background:'rgba(37,99,235,0.08)', color:'#2563eb', border:'1px solid rgba(37,99,235,0.18)', flexShrink:0, fontWeight:700 }}>#{d.ordre_passage}</span>
           <div style={{ minWidth:0 }}>
             <div style={{ fontWeight:700, fontSize:14, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.patient_nom}</div>
             <div style={{ fontSize:10, color:'#2563eb', fontFamily:'var(--font-mono)', marginTop:1 }}>{d.patient_numero}</div>
@@ -532,7 +514,7 @@ function DossierCard({ d, index, votes, isExpanded, onToggleExpand, onAddDecisio
           <DossierStatutBadge statut={d.statut} label={d.statut_label} />
           {d.presenteur_nom && <span style={{ fontSize:11, color:'var(--text-muted)', flexShrink:0 }}>{d.presenteur_nom}</span>}
           {(d.nb_fichiers > 0) && (
-            <span style={{ fontSize:10, padding:'2px 7px', borderRadius:6, background:'rgba(8,145,178,0.08)', color:'#0891b2', border:'1px solid rgba(8,145,178,0.18)' }}>
+            <span style={{ fontSize:10, padding:'2px 7px', borderRadius:6, background:'rgba(37,99,235,0.06)', color:'#2563eb', border:'1px solid rgba(37,99,235,0.14)' }}>
               {d.nb_fichiers} fichier{d.nb_fichiers > 1 ? 's' : ''}
             </span>
           )}
@@ -540,25 +522,24 @@ function DossierCard({ d, index, votes, isExpanded, onToggleExpand, onAddDecisio
         <div style={{ display:'flex', gap:6, flexShrink:0, flexWrap:'wrap' }}>
           <SmallBtn label={`Voter${voteCount > 0 ? ` (${voteCount})` : ''}`} color="#d97706" onClick={onVote} />
           <SmallBtn label="Chat" color="#2563eb" onClick={onOpenChat} />
-          <SmallBtn label="IA" color="#7c3aed" onClick={onAIAssist} />
-          <SmallBtn label="Fichier" color="#0891b2" onClick={onUploadFichier} />
+          <SmallBtn label="IA" color="#2563eb" onClick={onAIAssist} />
           <SmallBtn label="+ Decision" color="#16a34a" onClick={onAddDecision} />
           <button onClick={onToggleExpand}
-            style={{ padding:'5px 10px', background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:8, color:'var(--text-muted)', fontSize:11, cursor:'pointer', fontWeight:700 }}>
+            style={{ padding:'5px 10px', background:'#ffffff', border:'1px solid rgba(37,99,235,0.12)', borderRadius:8, color:'var(--text-muted)', fontSize:11, cursor:'pointer', fontWeight:700 }}>
             {isExpanded ? 'Reduire' : 'Voir'}
           </button>
         </div>
       </div>
 
       {d.question_posee && (
-        <div style={{ padding:'10px 18px', borderBottom:'1px solid var(--border)', background:'rgba(217,119,6,0.03)', display:'flex', alignItems:'flex-start', gap:8 }}>
-          <span style={{ fontSize:10, color:'#d97706', fontWeight:800, textTransform:'uppercase', letterSpacing:0.5, flexShrink:0, marginTop:1 }}>Question RCP</span>
+        <div style={{ padding:'10px 18px', borderBottom:'1px solid rgba(37,99,235,0.08)', background:'rgba(37,99,235,0.03)', display:'flex', alignItems:'flex-start', gap:8 }}>
+          <span style={{ fontSize:10, color:'#2563eb', fontWeight:800, textTransform:'uppercase', letterSpacing:0.5, flexShrink:0, marginTop:1 }}>Question RCP</span>
           <span style={{ fontSize:12, color:'var(--text-secondary)', lineHeight:1.5 }}>{d.question_posee}</span>
         </div>
       )}
 
       {voteCount > 0 && (
-        <div style={{ padding:'8px 18px', borderBottom:'1px solid var(--border)', display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
+        <div style={{ padding:'8px 18px', borderBottom:'1px solid rgba(37,99,235,0.08)', display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
           <span style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600 }}>Votes ({voteCount}) :</span>
           {Object.entries(votes).map(([k, n]) => {
             const colors = { pour:'#16a34a', contre:'#dc2626', abstention:'#9ca3af', info_comp:'#d97706' };
@@ -573,7 +554,7 @@ function DossierCard({ d, index, votes, isExpanded, onToggleExpand, onAddDecisio
       )}
 
       {d.nb_decisions > 0 && (
-        <div style={{ padding:'8px 18px', display:'flex', gap:8, flexWrap:'wrap', alignItems:'center', borderBottom:isExpanded?'1px solid var(--border)':'none' }}>
+        <div style={{ padding:'8px 18px', display:'flex', gap:8, flexWrap:'wrap', alignItems:'center', borderBottom:isExpanded?'1px solid rgba(37,99,235,0.08)':'none' }}>
           <span style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 }}>Decisions :</span>
           <span style={{ fontSize:10, color:'#16a34a', padding:'2px 10px', borderRadius:12, background:'rgba(22,163,74,0.08)', border:'1px solid rgba(22,163,74,0.2)', fontWeight:600 }}>
             {d.nb_decisions} decision{d.nb_decisions > 1 ? 's' : ''} enregistree{d.nb_decisions > 1 ? 's' : ''}
@@ -601,7 +582,7 @@ function DossierExpandedDetail({ dossierId, onMarkRealise }) {
   if (!detail) return null;
 
   return (
-    <div style={{ padding:'16px 20px', background:'rgba(0,0,0,0.03)', borderTop:'1px solid var(--border)' }}>
+    <div style={{ padding:'16px 20px', background:'#ffffff', borderTop:'1px solid rgba(37,99,235,0.08)' }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
         {detail.resume_clinique && (
           <div>
@@ -616,7 +597,7 @@ function DossierExpandedDetail({ dossierId, onMarkRealise }) {
               {detail.decisions.map(dec => {
                 const col = DECISION_COLORS[dec.type_decision] || '#9ca3af';
                 return (
-                  <div key={dec.id} style={{ padding:'10px 14px', background:'var(--bg-card)', border:`1px solid ${col}20`, borderRadius:8, borderLeft:`3px solid ${col}` }}>
+                  <div key={dec.id} style={{ padding:'10px 14px', background:'#ffffff', border:`1px solid ${col}18`, borderRadius:8, borderLeft:`3px solid ${col}` }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8 }}>
                       <div style={{ flex:1 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4, flexWrap:'wrap' }}>
@@ -654,8 +635,8 @@ function DossierExpandedDetail({ dossierId, onMarkRealise }) {
           <SectionTitle>Fichiers et imagerie ({detail.fichiers.length})</SectionTitle>
           <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
             {detail.fichiers.map(f => (
-              <a key={f.id} href={f.url} target="_blank" rel="noreferrer"
-                style={{ padding:'8px 12px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:8, textDecoration:'none', display:'flex', alignItems:'center', gap:8, minWidth:180 }}>
+                <a key={f.id} href={f.url} target="_blank" rel="noreferrer"
+                style={{ padding:'8px 12px', background:'#f8fafc', border:'1px solid rgba(37,99,235,0.10)', borderRadius:8, textDecoration:'none', display:'flex', alignItems:'center', gap:8, minWidth:180 }}>
                 <FileTypeIcon type={f.type_fichier} />
                 <div>
                   <div style={{ fontSize:11.5, fontWeight:600, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:140 }}>{f.nom_original}</div>
@@ -678,32 +659,14 @@ function DossierExpandedDetail({ dossierId, onMarkRealise }) {
 function PresencesTab({ data, onAjouter, quorumOk, specialitesPresentes }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-      {/* Quorum Banner */}
-      <div style={{ padding:'12px 18px', borderRadius:'var(--radius-md)', background:quorumOk?'rgba(22,163,74,0.06)':'rgba(220,38,38,0.06)', border:`1px solid ${quorumOk?'rgba(22,163,74,0.25)':'rgba(220,38,38,0.25)'}`, display:'flex', alignItems:'center', gap:12 }}>
-        <div style={{ flex:1 }}>
-          <div style={{ fontSize:13, fontWeight:700, color:quorumOk?'#16a34a':'#dc2626', marginBottom:2 }}>
-            {quorumOk
-              ? `Quorum valide — ${specialitesPresentes.length} specialites presentes`
-              : `Quorum insuffisant — ${specialitesPresentes.length}/3 specialites requises`
-            }
-          </div>
-          <div style={{ fontSize:11, color:'var(--text-muted)' }}>
-            {quorumOk ? 'La reunion RCP peut se tenir conformement aux recommandations.' : 'La RCP necessite au minimum 3 specialites medicales differentes.'}
-          </div>
-        </div>
-        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-          {specialitesPresentes.map(s => (
-            <span key={s} style={{ padding:'2px 8px', borderRadius:12, fontSize:10, background:'rgba(37,99,235,0.08)', color:'#2563eb', border:'1px solid rgba(37,99,235,0.2)', fontWeight:600 }}>{s}</span>
-          ))}
-        </div>
-      </div>
-
+    
+      
       {/* Table */}
-      <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', overflow:'hidden' }}>
-        <div style={{ padding:'12px 18px', background:'var(--bg-elevated)', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <div style={{ ...ADMIN_CARD, overflow:'hidden' }}>
+        <div style={{ padding:'12px 18px', background:'#f8fafc', borderBottom:'1px solid rgba(37,99,235,0.08)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <span style={{ fontSize:12, fontWeight:700, color:'var(--text-secondary)' }}>Membres de la RCP</span>
           <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-            <span style={{ fontSize:11, color:'var(--text-muted)', background:'var(--bg-card)', padding:'3px 10px', borderRadius:12, border:'1px solid var(--border)' }}>{data.nombre_membres_presents} present(s)</span>
+            <span style={{ fontSize:11, color:'#2563eb', background:'rgba(37,99,235,0.06)', padding:'3px 10px', borderRadius:12, border:'1px solid rgba(37,99,235,0.14)' }}>{data.nombre_membres_presents} present(s)</span>
             <button onClick={onAjouter} style={{ padding:'7px 14px', background:'linear-gradient(135deg,#2563eb,#1d4ed8)', border:'none', borderRadius:8, color:'#fff', fontSize:11, fontWeight:700, cursor:'pointer' }}>
               + Ajouter medecin
             </button>
@@ -714,7 +677,7 @@ function PresencesTab({ data, onAjouter, quorumOk, specialitesPresentes }) {
         ) : (
           <table style={{ width:'100%', borderCollapse:'collapse' }}>
             <thead>
-              <tr style={{ background:'var(--bg-elevated)' }}>
+                <tr style={{ background:'#f8fafc' }}>
                 {['Medecin','Specialite','Role','Presence'].map(h => (
                   <th key={h} style={{ padding:'10px 16px', textAlign:'left', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.6, borderBottom:'1px solid var(--border)' }}>{h}</th>
                 ))}
@@ -724,7 +687,7 @@ function PresencesTab({ data, onAjouter, quorumOk, specialitesPresentes }) {
               {data.presences.map((p, i) => {
                 const rc = ROLE_COLORS[p.specialite] || '#9ca3af';
                 return (
-                  <tr key={p.id} style={{ borderBottom:'1px solid var(--border)', background:i%2===0?'transparent':'rgba(0,0,0,0.01)' }}>
+                  <tr key={p.id} style={{ borderBottom:'1px solid rgba(37,99,235,0.08)', background:i%2===0?'transparent':'rgba(37,99,235,0.01)' }}>
                     <td style={{ padding:'12px 16px' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                         <div style={{ width:32, height:32, borderRadius:'50%', background:rc+'15', border:`1px solid ${rc}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:rc, flexShrink:0 }}>
@@ -796,23 +759,23 @@ Fait le ${new Date().toLocaleDateString('fr-DZ')}`);
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
       {data.objectif && (
-        <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', padding:'16px 20px' }}>
-          <SectionTitle color="#7c3aed">Ordre du jour</SectionTitle>
+        <div style={{ ...ADMIN_CARD, padding:'16px 20px' }}>
+          <SectionTitle color="#2563eb">Ordre du jour</SectionTitle>
           <p style={{ fontSize:13, color:'var(--text-secondary)', lineHeight:1.8, whiteSpace:'pre-wrap', margin:0 }}>{data.objectif}</p>
         </div>
       )}
-      <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)', overflow:'hidden' }}>
-        <div style={{ padding:'12px 18px', background:'var(--bg-elevated)', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <SectionTitle color="#16a34a">Compte rendu de reunion</SectionTitle>
+      <div style={{ ...ADMIN_CARD, overflow:'hidden' }}>
+        <div style={{ padding:'12px 18px', background:'#f8fafc', borderBottom:'1px solid rgba(37,99,235,0.08)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <SectionTitle color="#2563eb">Compte rendu de reunion</SectionTitle>
           <div style={{ display:'flex', gap:8 }}>
             {!editing && (
-              <button onClick={genAutoCR} style={{ padding:'6px 12px', background:'rgba(124,58,237,0.08)', border:'1px solid rgba(124,58,237,0.2)', borderRadius:8, color:'#7c3aed', fontSize:11, cursor:'pointer', fontWeight:600 }}>Generer brouillon</button>
+              <button onClick={genAutoCR} style={{ padding:'6px 12px', background:'rgba(37,99,235,0.08)', border:'1px solid rgba(37,99,235,0.18)', borderRadius:8, color:'#2563eb', fontSize:11, cursor:'pointer', fontWeight:600 }}>Generer brouillon</button>
             )}
             {!editing ? (
               <button onClick={() => setEditing(true)} style={{ padding:'6px 12px', background:'rgba(37,99,235,0.08)', border:'1px solid rgba(37,99,235,0.2)', borderRadius:8, color:'#2563eb', fontSize:11, cursor:'pointer', fontWeight:600 }}>Rediger</button>
             ) : (
               <>
-                <button onClick={() => setEditing(false)} style={{ padding:'6px 12px', background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:8, color:'var(--text-muted)', fontSize:11, cursor:'pointer' }}>Annuler</button>
+                <button onClick={() => setEditing(false)} style={{ padding:'6px 12px', background:'#ffffff', border:'1px solid rgba(37,99,235,0.12)', borderRadius:8, color:'var(--text-muted)', fontSize:11, cursor:'pointer' }}>Annuler</button>
                 <button onClick={saveCR} disabled={saving} style={{ padding:'6px 14px', background:'#16a34a', border:'none', borderRadius:8, color:'#fff', fontSize:11, fontWeight:700, cursor:'pointer' }}>{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
               </>
             )}
@@ -873,14 +836,14 @@ function SuiviDecisions({ dossiers, onMarkRealise, reload }) {
 
   return (
     <div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:14 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:14 }}>
         {[
-          { k:'all',     l:'Toutes',     n:counts.all,     c:'#7c3aed' },
+          { k:'all',     l:'Toutes',     n:counts.all,     c:'#2563eb' },
           { k:'pending', l:'En attente', n:counts.pending, c:'#d97706' },
           { k:'done',    l:'Realisees',  n:counts.done,    c:'#16a34a' },
         ].map(f => (
           <button key={f.k} onClick={() => setFilter(f.k)}
-            style={{ padding:'10px', background:filter===f.k?f.c+'12':'var(--bg-card)', border:`1px solid ${filter===f.k?f.c+'35':'var(--border-light)'}`, borderRadius:'var(--radius-md)', cursor:'pointer', textAlign:'left', transition:'all 0.15s' }}>
+            style={{ padding:'10px', background:filter===f.k?f.c+'12':'#ffffff', border:`1px solid ${filter===f.k?f.c+'35':'rgba(37,99,235,0.08)'}`, borderRadius:'12px', cursor:'pointer', textAlign:'left', transition:'all 0.15s' }}>
             <div style={{ fontSize:22, fontWeight:900, color:f.c, fontFamily:'var(--font-display)' }}>{f.n}</div>
             <div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5 }}>{f.l}</div>
           </button>
@@ -894,7 +857,7 @@ function SuiviDecisions({ dossiers, onMarkRealise, reload }) {
             const col = DECISION_COLORS[dec.type_decision] || '#9ca3af';
             const pc  = PRIORITE_COLORS[dec.priorite] || '#9ca3af';
             return (
-              <div key={dec.id} style={{ background:'var(--bg-card)', border:`1px solid ${col}18`, borderRadius:'var(--radius-md)', padding:'14px 18px', borderLeft:`3px solid ${col}`, display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12, flexWrap:'wrap' }}>
+              <div key={dec.id} style={{ background:'#ffffff', border:`1px solid ${col}18`, borderRadius:'12px', padding:'14px 18px', borderLeft:`3px solid ${col}`, display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12, flexWrap:'wrap' }}>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, flexWrap:'wrap' }}>
                     <span style={{ fontSize:12.5, fontWeight:700, color:col }}>{dec.type_label||DECISION_LABELS[dec.type_decision]}</span>
@@ -928,9 +891,11 @@ function SuiviDecisions({ dossiers, onMarkRealise, reload }) {
 function ChatPanel({ reunionId, dossier, onClose }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput]       = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
   const [loadingMsg, setLoadingMsg] = useState(false);
   const [lastId, setLastId]     = useState(0);
   const endRef  = useRef(null);
+  const fileInputRef = useRef(null);
   const pollRef = useRef(null);
 
   const fetchMessages = useCallback(async (sinceId = 0) => {
@@ -956,25 +921,71 @@ function ChatPanel({ reunionId, dossier, onClose }) {
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior:'smooth' }); }, [messages]);
 
+  const openVideoCall = () => {
+    const roomName = `rnc-rcp-${reunionId}-${dossier.id}`;
+    const url = `https://meet.jit.si/${encodeURIComponent(roomName)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+    toast.success('Salle video ouverte');
+  };
+
   const sendMessage = async () => {
     const txt = input.trim();
-    if (!txt || loadingMsg) return;
+    if ((!txt && !selectedFile) || loadingMsg) return;
     setLoadingMsg(true);
+    const fileToSend = selectedFile;
     setInput('');
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
     try {
-      await rcpService.reunions.envoyerMessage(reunionId, {
-        dossier: dossier.id,
-        contenu: txt,
-      });
+      const formData = new FormData();
+      formData.append('dossier', dossier.id);
+      formData.append('contenu', txt);
+      if (fileToSend) {
+        formData.append('piece_jointe', fileToSend);
+      }
+
+      await rcpService.reunions.envoyerMessage(reunionId, formData);
       await fetchMessages(lastId);
-    } catch { toast.error('Erreur envoi'); setInput(txt); }
-    finally { setLoadingMsg(false); }
+    } catch {
+      toast.error('Erreur envoi');
+      setInput(txt);
+      setSelectedFile(fileToSend);
+    } finally {
+      setLoadingMsg(false);
+    }
   };
 
   const handleKey = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
 
   return (
-    <SidePanel onClose={onClose} title={`Discussion — ${dossier.patient_nom}`} subtitle={dossier.patient_numero} color="#2563eb">
+    <SidePanel
+      onClose={onClose}
+      title={`Discussion — ${dossier.patient_nom}`}
+      subtitle={dossier.patient_numero}
+      color="#2563eb"
+      actions={(
+        <button
+          type="button"
+          onClick={openVideoCall}
+          style={{
+            padding:'6px 12px',
+            background:'rgba(37,99,235,0.1)',
+            border:'1px solid rgba(37,99,235,0.2)',
+            borderRadius:8,
+            color:'#2563eb',
+            fontSize:11,
+            fontWeight:700,
+            cursor:'pointer',
+            display:'inline-flex',
+            alignItems:'center',
+            gap:6,
+          }}
+        >
+          <VideoCallIcon />
+          Appel video
+        </button>
+      )}
+    >
       <div style={{ flex:1, overflowY:'auto', padding:'14px', display:'flex', flexDirection:'column', gap:10 }}>
         {!messages.length ? (
           <div style={{ textAlign:'center', padding:50, color:'var(--text-muted)' }}>
@@ -995,7 +1006,18 @@ function ChatPanel({ reunionId, dossier, onClose }) {
                 </span>
               </div>
               <div style={{ marginLeft:33, padding:'9px 13px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'0 10px 10px 10px', fontSize:12.5, color:'var(--text-secondary)', lineHeight:1.7, whiteSpace:'pre-wrap' }}>
-                {msg.contenu}
+                {msg.contenu || (!msg.piece_jointe_url ? 'Message sans texte' : null)}
+                {msg.piece_jointe_url && (
+                  <div style={{ marginTop:10, padding:'10px 12px', borderRadius:8, background:'rgba(37,99,235,0.05)', border:'1px solid rgba(37,99,235,0.14)', display:'flex', alignItems:'center', gap:10 }}>
+                    <AttachmentIcon />
+                    <div style={{ minWidth:0, flex:1 }}>
+                      <div style={{ fontSize:11.5, fontWeight:700, color:'var(--text-primary)', marginBottom:2 }}>Piece jointe</div>
+                      <a href={msg.piece_jointe_url} target="_blank" rel="noreferrer" style={{ fontSize:11.5, color:'#2563eb', textDecoration:'none', wordBreak:'break-word' }}>
+                        {msg.piece_jointe_nom || 'Telecharger le fichier'}
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -1016,6 +1038,35 @@ function ChatPanel({ reunionId, dossier, onClose }) {
           placeholder="Saisissez votre message... (Entree pour envoyer)"
           disabled={loadingMsg}
           style={{ flex:1, padding:'9px 12px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:8, color:'var(--text-primary)', fontSize:12.5, outline:'none', resize:'none', fontFamily:'var(--font-body)', lineHeight:1.5, opacity:loadingMsg?0.6:1 }} />
+        <input
+          ref={fileInputRef}
+          type="file"
+          onChange={e => setSelectedFile(e.target.files?.[0] || null)}
+          style={{ display:'none' }}
+        />
+        <div style={{ display:'flex', flexDirection:'column', gap:6, minWidth:0 }}>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loadingMsg}
+            style={{ padding:'8px 12px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:8, color:'var(--text-secondary)', fontSize:11, cursor:loadingMsg?'not-allowed':'pointer', fontWeight:600, display:'inline-flex', alignItems:'center', gap:6 }}
+          >
+            <PaperclipIcon />
+            Fichier
+          </button>
+          {selectedFile && (
+            <div style={{ maxWidth:160, padding:'6px 8px', borderRadius:8, background:'rgba(37,99,235,0.06)', border:'1px solid rgba(37,99,235,0.14)', color:'var(--text-secondary)', fontSize:10.5, lineHeight:1.4 }}>
+              <div style={{ fontWeight:700, color:'var(--text-primary)', wordBreak:'break-word' }}>{selectedFile.name}</div>
+              <button
+                type="button"
+                onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                style={{ marginTop:4, padding:0, border:'none', background:'none', color:'#dc2626', fontSize:10, cursor:'pointer' }}
+              >
+                Retirer
+              </button>
+            </div>
+          )}
+        </div>
         <button onClick={sendMessage} disabled={loadingMsg}
           style={{ padding:'9px 16px', background:'linear-gradient(135deg,#2563eb,#1d4ed8)', border:'none', borderRadius:8, color:'#fff', fontSize:13, cursor:loadingMsg?'not-allowed':'pointer', alignSelf:'flex-end', fontWeight:700, opacity:loadingMsg?0.7:1 }}>
           Envoyer
@@ -1162,17 +1213,20 @@ function CompteRenduModal({ data, onClose, onPrint, reload }) {
 
 
 // ─── Primitives ──────────────────────────────────────────────────────────────
-function SidePanel({ children, onClose, title, subtitle, color }) {
+function SidePanel({ children, onClose, title, subtitle, color, actions }) {
   return (
     <>
       <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:998 }} />
       <div style={{ position:'fixed', right:0, top:0, bottom:0, width:Math.min(500, window.innerWidth), background:'var(--bg-card)', borderLeft:`2px solid ${color}25`, zIndex:999, display:'flex', flexDirection:'column', boxShadow:'-12px 0 40px rgba(0,0,0,0.25)' }}>
         <div style={{ padding:'14px 18px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center', background:'var(--bg-elevated)', flexShrink:0 }}>
-          <div>
-            <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>{title}</div>
-            {subtitle && <div style={{ fontSize:10, color, fontFamily:'var(--font-mono)', marginTop:2, fontWeight:600 }}>{subtitle}</div>}
+          <div style={{ minWidth:0 }}>
+            <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', fontFamily:'var(--font-display)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title}</div>
+            {subtitle && <div style={{ fontSize:10, color, fontFamily:'var(--font-mono)', marginTop:2, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{subtitle}</div>}
           </div>
-          <button onClick={onClose} style={{ width:30, height:30, borderRadius:'50%', background:'var(--bg-card)', border:'1px solid var(--border)', color:'var(--text-muted)', fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700 }}>x</button>
+          <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+            {actions}
+            <button onClick={onClose} style={{ width:30, height:30, borderRadius:'50%', background:'var(--bg-card)', border:'1px solid var(--border)', color:'var(--text-muted)', fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700 }}>x</button>
+          </div>
         </div>
         {children}
       </div>
@@ -1307,6 +1361,31 @@ function UploadIcon() {
       <polyline points="16 16 12 12 8 16" />
       <line x1="12" y1="12" x2="12" y2="21" />
       <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
+    </svg>
+  );
+}
+
+function PaperclipIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21.44 11.05l-8.49 8.49a5.5 5.5 0 0 1-7.78-7.78l8.49-8.49a3.5 3.5 0 1 1 4.95 4.95l-8.5 8.49a1.5 1.5 0 0 1-2.12-2.12l7.78-7.78" />
+    </svg>
+  );
+}
+
+function VideoCallIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 10l4.55-2.27A1 1 0 0 1 21 8.62v6.76a1 1 0 0 1-1.45.89L15 14" />
+      <rect x="3" y="6" width="12" height="12" rx="2" ry="2" />
+    </svg>
+  );
+}
+
+function AttachmentIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
+      <path d="M21.44 11.05l-8.49 8.49a5.5 5.5 0 0 1-7.78-7.78l8.49-8.49a3.5 3.5 0 1 1 4.95 4.95l-8.5 8.49a1.5 1.5 0 0 1-2.12-2.12l7.78-7.78" />
     </svg>
   );
 }
