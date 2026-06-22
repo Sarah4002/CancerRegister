@@ -32,7 +32,7 @@ urlpatterns = [
     # → /api/search/
     # → /api/ai/...
     # ==============================
-    path('api/v1/', include('apps.stats.urls')),
+    path('api/v1/api/', include('apps.stats.urls')),
 
     # ==============================
     # API Documentation
