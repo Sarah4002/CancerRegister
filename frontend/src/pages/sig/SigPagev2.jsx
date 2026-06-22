@@ -10,12 +10,12 @@ const STYLES = `
   .sig-title { font-size: 1.3rem; font-weight: 700; color: #0f172a; margin: 0; font-family: var(--font-display, sans-serif); }
   .sig-subtitle { font-size: 0.85rem; color: #64748b; margin: 6px 0 0; font-weight: 500; }
 
-  .sig-container { display: grid; grid-template-columns: 280px 1fr 350px; gap: 0; flex: 1; overflow: hidden; }
+  .sig-container { display: grid; grid-template-columns: minmax(0, 70%) minmax(0, 30%); gap: 0; flex: 1; overflow: hidden; }
   .sig-map-section { display: flex; flex-direction: column; border-right: 1px solid rgba(37,99,235,0.08); position: relative; background: #fff; }
   #sig-map { flex: 1; min-height: 0; }
 
   .sig-side-panel { display: flex; flex-direction: column; background: #ffffff; overflow: hidden; border-right: 1px solid rgba(37,99,235,0.08); }
-  .sig-side-panel.right { border-right: none; border-left: 1px solid rgba(37,99,235,0.08); width: 350px; }
+  .sig-side-panel.right { border-right: none; border-left: 1px solid rgba(37,99,235,0.08); width: auto; min-width: 0; }
 
   .ss-tabs { display: flex; border-bottom: 1px solid rgba(37,99,235,0.08); background: #f8fafc; }
   .ss-tab { flex: 1; padding: 12px; background: none; border: none; color: #64748b; font-size: 0.8rem;
@@ -68,6 +68,290 @@ const STYLES = `
   @media(max-width:1100px) { .sig-container { grid-template-columns: 1fr; } .sig-side-panel.right { width: 100%; max-height: 350px; border-top: 1px solid rgba(37,99,235,0.08); border-left: none; } }
 `;
 
+const SIG_FILTER_TAG_LABELS = {
+  type_cancer: (v) => `Cancer : ${v}`,
+  age_min: (v) => `Age min : ${v}`,
+  age_max: (v) => `Age max : ${v}`,
+};
+
+function getPolygonCentroid(points, fallback = null) {
+  if (!Array.isArray(points) || points.length === 0) return fallback;
+  const total = points.reduce((acc, pt) => {
+    const lat = Array.isArray(pt) ? Number(pt[0]) : Number(pt?.lat);
+    const lng = Array.isArray(pt) ? Number(pt[1]) : Number(pt?.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return acc;
+    acc.lat += lat;
+    acc.lng += lng;
+    acc.count += 1;
+    return acc;
+  }, { lat: 0, lng: 0, count: 0 });
+  if (!total.count) return fallback;
+  return { lat: total.lat / total.count, lng: total.lng / total.count };
+}
+
+function getPolygonApproxRadiusMeters(points, fallback = 0) {
+  if (!Array.isArray(points) || points.length < 2 || !window?.L) return fallback;
+  const centroid = getPolygonCentroid(points);
+  if (!centroid) return fallback;
+  const center = window.L.latLng(centroid.lat, centroid.lng);
+  let maxDistance = 0;
+  points.forEach((pt) => {
+    const lat = Array.isArray(pt) ? Number(pt[0]) : Number(pt?.lat);
+    const lng = Array.isArray(pt) ? Number(pt[1]) : Number(pt?.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    maxDistance = Math.max(maxDistance, center.distanceTo(window.L.latLng(lat, lng)));
+  });
+  return maxDistance || fallback;
+}
+
+function SigFilterBar({ filters, draft, setDraft, onApply, onReset, wilayaOptions }) {
+  const [open, setOpen] = useState(false);
+  const totalActive = Object.values(filters).filter((v) => v && v !== 'all' && v !== '').length;
+  const setDraftField = (key, value) => setDraft((prev) => ({ ...prev, [key]: value }));
+
+  return (
+    <div style={{
+      marginTop: 18,
+      background: 'rgba(255,255,255,0.92)',
+      border: '1px solid rgba(37,99,235,0.10)',
+      borderRadius: 16,
+      padding: 16,
+      boxShadow: '0 8px 30px rgba(15,23,42,0.06)',
+      backdropFilter: 'blur(10px)',
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        flexWrap: 'wrap',
+        marginBottom: open || totalActive > 0 ? 12 : 0,
+      }}>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '9px 16px',
+            background: open ? '#eff6ff' : '#fff',
+            border: '1px solid rgba(37,99,235,0.2)',
+            borderRadius: 10,
+            color: '#2563eb',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+            boxShadow: '0 2px 6px rgba(15,23,42,0.06)',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+            <line x1="4" y1="6" x2="20" y2="6" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+            <line x1="10" y1="18" x2="14" y2="18" />
+          </svg>
+          Filtres SIG
+          {totalActive > 0 && (
+            <span style={{
+              background: '#2563eb',
+              color: '#fff',
+              borderRadius: 99,
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '1px 7px',
+              lineHeight: '16px',
+            }}>
+              {totalActive}
+            </span>
+          )}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+            style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+
+        {!open && totalActive > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+            {Object.entries(filters)
+              .filter(([, value]) => value && value !== 'all' && value !== '')
+              .map(([key, value]) => (
+                <span key={key} style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 11,
+                  padding: '3px 10px',
+                  background: 'rgba(37,99,235,0.07)',
+                  color: '#2563eb',
+                  borderRadius: 99,
+                  border: '1px solid rgba(37,99,235,0.18)',
+                  fontWeight: 500,
+                }}>
+                  {SIG_FILTER_TAG_LABELS[key]?.(value) ?? value}
+                </span>
+              ))}
+            <button
+              type="button"
+              onClick={onReset}
+              style={{
+                fontSize: 11,
+                padding: '3px 10px',
+                background: 'transparent',
+                color: '#94a3b8',
+                border: '1px solid rgba(148,163,184,0.3)',
+                borderRadius: 99,
+                cursor: 'pointer',
+              }}
+            >
+              Effacer tout
+            </button>
+          </div>
+        )}
+      </div>
+
+      {open && (
+        <div style={{
+          background: '#fff',
+          border: '1px solid rgba(37,99,235,0.1)',
+          borderRadius: 14,
+          padding: '18px 20px',
+          boxShadow: '0 4px 20px rgba(15,23,42,0.08)',
+        }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>Wilaya</span>
+              <select
+                value={draft.wilaya}
+                onChange={(e) => setDraftField('wilaya', e.target.value)}
+                style={{
+                  height: 38,
+                  padding: '0 12px',
+                  background: '#fff',
+                  border: '1px solid rgba(37,99,235,0.18)',
+                  borderRadius: 8,
+                  color: draft.wilaya ? '#334155' : '#94a3b8',
+                  fontSize: 12,
+                  outline: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="">— Toutes les wilayas —</option>
+                {wilayaOptions.map((wilaya) => (
+                  <option key={wilaya} value={wilaya}>{wilaya}</option>
+                ))}
+              </select>
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>Type de cancer</span>
+              <input
+                type="text"
+                value={draft.type_cancer}
+                onChange={(e) => setDraftField('type_cancer', e.target.value)}
+                placeholder="Ex : Sein"
+                style={{
+                  height: 38,
+                  padding: '0 12px',
+                  background: '#fff',
+                  border: '1px solid rgba(37,99,235,0.18)',
+                  borderRadius: 8,
+                  color: '#334155',
+                  fontSize: 12,
+                  outline: 'none',
+                }}
+              />
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>Age minimum</span>
+              <input
+                type="number"
+                min="0"
+                value={draft.age_min}
+                onChange={(e) => setDraftField('age_min', e.target.value)}
+                placeholder="0"
+                style={{
+                  height: 38,
+                  padding: '0 12px',
+                  background: '#fff',
+                  border: '1px solid rgba(37,99,235,0.18)',
+                  borderRadius: 8,
+                  color: '#334155',
+                  fontSize: 12,
+                  outline: 'none',
+                }}
+              />
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>Age maximum</span>
+              <input
+                type="number"
+                min="0"
+                value={draft.age_max}
+                onChange={(e) => setDraftField('age_max', e.target.value)}
+                placeholder="120"
+                style={{
+                  height: 38,
+                  padding: '0 12px',
+                  background: '#fff',
+                  border: '1px solid rgba(37,99,235,0.18)',
+                  borderRadius: 8,
+                  color: '#334155',
+                  fontSize: 12,
+                  outline: 'none',
+                }}
+              />
+            </label>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            gap: 8,
+            alignItems: 'center',
+            borderTop: '1px solid rgba(37,99,235,0.08)',
+            paddingTop: 14,
+            flexWrap: 'wrap',
+          }}>
+            <button
+              type="button"
+              onClick={() => { onApply(); setOpen(false); }}
+              style={{
+                padding: '9px 22px',
+                background: 'linear-gradient(135deg,#3b82f6,#2563eb)',
+                border: 'none',
+                borderRadius: 10,
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(37,99,235,0.25)',
+              }}
+            >
+              Appliquer les filtres
+            </button>
+            <button
+              type="button"
+              onClick={() => { onReset(); setOpen(false); }}
+              style={{
+                padding: '9px 18px',
+                background: 'transparent',
+                border: '1px solid rgba(37,99,235,0.2)',
+                borderRadius: 10,
+                color: '#64748b',
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
+              Réinitialiser
+            </button>
+            <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
+              {Object.values(draft).filter((v) => v && v !== 'all' && v !== '').length} filtre(s) sélectionné(s)
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SigPageV2() {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
@@ -89,20 +373,28 @@ function SigPageV2() {
 
   // FIX : draft séparé pour les filtres — l'utilisateur édite le draft,
   // "Appliquer" copie le draft dans appliedFilters qui déclenche fetchData.
-  const [draftFilters, setDraftFilters] = useState({ type_cancer: '', age_min: '', age_max: '' });
-  const [appliedFilters, setAppliedFilters] = useState({ type_cancer: '', age_min: '', age_max: '' });
+  const [draftFilters, setDraftFilters] = useState({ type_cancer: '', age_min: '', age_max: '', wilaya: '' });
+  const [appliedFilters, setAppliedFilters] = useState({ type_cancer: '', age_min: '', age_max: '', wilaya: '' });
 
   const [selectedCommune, setSelectedCommune] = useState('');
   const [selectedCommuneId, setSelectedCommuneId] = useState(null);
   const [communes, setCommunes] = useState([]);
+
+  const wilayaOptions = useMemo(() => {
+    if (!Array.isArray(mapDataAll)) return [];
+    return [...new Set(mapDataAll.map((w) => w.name).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+  }, [mapDataAll]);
   
   const zoneLayerRef = useRef(null);
   const edgeMarkerRef = useRef(null);
   const centerMarkerRef = useRef(null);
+  const draftPolygonLayerRef = useRef(null);
+  const draftPolygonVertexLayerRef = useRef(null);
   
   const [savingZone, setSavingZone] = useState(false);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const isDrawingRef = useRef(isDrawing);
+  const [drawingMode, setDrawingMode] = useState(null);
+  const drawingModeRef = useRef(drawingMode);
+  const [polygonPoints, setPolygonPoints] = useState([]);
   const [zoneRadius, setZoneRadius] = useState(50000);
   const [zoneCenter, setZoneCenter] = useState(null);
   const [thermalEnabled, setThermalEnabled] = useState(true);
@@ -126,6 +418,11 @@ function SigPageV2() {
       .map((item) => ({ ...item, percentage: Math.round((item.count / totalDiagnostics) * 1000) / 10 }));
   }, [wilayasData]);
 
+  const selectedCommuneCancerData = useMemo(
+    () => COMMUNES_RISK_ANALYSIS.find((commune) => commune.id === selectedCommuneId) || null,
+    [selectedCommuneId]
+  );
+
   const toggleZoneSelection = (zone) => {
     const id = zone.id;
     const isSelected = selectedZoneIds.includes(id);
@@ -135,25 +432,49 @@ function SigPageV2() {
 
   const toFiniteNumber = (value) => { const num = Number(value); return Number.isFinite(num) ? num : null; };
 
+  const normalizeZonePolygon = (zone) => {
+    const directPolygon = Array.isArray(zone?.polygon) ? zone.polygon : null;
+    const nestedPolygon = Array.isArray(zone?.zones?.[0]?.polygon) ? zone.zones[0].polygon : null;
+    const polygon = directPolygon || nestedPolygon || null;
+    if (!polygon) return null;
+    return polygon
+      .map((point) => {
+        const lat = Array.isArray(point) ? toFiniteNumber(point[0]) : toFiniteNumber(point?.lat);
+        const lng = Array.isArray(point) ? toFiniteNumber(point[1]) : toFiniteNumber(point?.lng);
+        if (lat === null || lng === null) return null;
+        return [lat, lng];
+      })
+      .filter(Boolean);
+  };
+
   const normalizeZoneCenter = (zone) => {
     const directLat = toFiniteNumber(zone?.center_lat ?? zone?.latitude ?? zone?.lat);
     const directLng = toFiniteNumber(zone?.center_lng ?? zone?.longitude ?? zone?.lng);
+    const polygon = normalizeZonePolygon(zone);
+    const polygonCenter = polygon?.length ? getPolygonCentroid(polygon) : null;
     const nestedCenter = zone?.zones?.[0]?.center;
     const nestedLat = Array.isArray(nestedCenter) ? toFiniteNumber(nestedCenter[0]) : toFiniteNumber(nestedCenter?.lat);
     const nestedLng = Array.isArray(nestedCenter) ? toFiniteNumber(nestedCenter[1]) : toFiniteNumber(nestedCenter?.lng);
-    return { lat: directLat ?? nestedLat ?? null, lng: directLng ?? nestedLng ?? null };
+    return {
+      lat: directLat ?? polygonCenter?.lat ?? nestedLat ?? null,
+      lng: directLng ?? polygonCenter?.lng ?? nestedLng ?? null,
+    };
   };
 
   const normalizeZoneRadius = (zone, fallbackRadius = 0) => {
     const directRadius = toFiniteNumber(zone?.radius ?? zone?.rayon ?? zone?.r);
     const nestedRadius = toFiniteNumber(zone?.zones?.[0]?.radius ?? zone?.zones?.[0]?.rayon ?? zone?.zones?.[0]?.r);
+    const polygon = normalizeZonePolygon(zone);
+    const polygonRadius = polygon?.length >= 3 ? getPolygonApproxRadiusMeters(polygon, 0) : 0;
     let radius = directRadius ?? nestedRadius ?? fallbackRadius;
+    if (polygonRadius > 0) radius = polygonRadius;
     if (!Number.isFinite(radius)) radius = fallbackRadius;
     if (radius > 0 && radius < 1000) radius *= 1000;
     return radius;
   };
 
   const formatZoneRadiusKm = (zone) => {
+    if (normalizeZonePolygon(zone)?.length >= 3) return 'Polygone';
     const radius = normalizeZoneRadius(zone);
     if (!radius || radius <= 0) return 0;
     return Math.round(radius / 1000);
@@ -176,7 +497,7 @@ function SigPageV2() {
     return { overlap: overlap > 0, distance: Math.round(distance / 1000), status: overlap > 0 ? "Zones Intersectées" : "Zones Disjointes" };
   }, [selectedZoneIds, savedZones]);
 
-  useEffect(() => { isDrawingRef.current = isDrawing; }, [isDrawing]);
+  useEffect(() => { drawingModeRef.current = drawingMode; }, [drawingMode]);
 
   const calculateEdgePoint = (center, radius) => {
     if (!mapInstance.current) return center;
@@ -191,14 +512,30 @@ function SigPageV2() {
     zoneLayerRef.current.bindPopup(`<b>Zone d'analyse</b><br/>Rayon: ${Math.round(currentRadius / 1000)} km`).openPopup();
   };
 
+  const clearDraftZone = () => {
+    if (!mapInstance.current) return;
+    const map = mapInstance.current;
+    [zoneLayerRef.current, edgeMarkerRef.current, centerMarkerRef.current, draftPolygonLayerRef.current, draftPolygonVertexLayerRef.current]
+      .forEach((layer) => {
+        if (layer) map.removeLayer(layer);
+      });
+    zoneLayerRef.current = null;
+    edgeMarkerRef.current = null;
+    centerMarkerRef.current = null;
+    draftPolygonLayerRef.current = null;
+    draftPolygonVertexLayerRef.current = null;
+    setZoneCenter(null);
+    setZoneRadius(50000);
+    setPolygonPoints([]);
+    setDrawingMode(null);
+  };
+
   const initInteractiveZone = (center, radius) => {
     if (!mapInstance.current || !window.L) return;
     const map = mapInstance.current;
+    clearDraftZone();
     setZoneCenter(center);
     setZoneRadius(radius);
-    if (zoneLayerRef.current) map.removeLayer(zoneLayerRef.current);
-    if (edgeMarkerRef.current) map.removeLayer(edgeMarkerRef.current);
-    if (centerMarkerRef.current) map.removeLayer(centerMarkerRef.current);
     zoneLayerRef.current = window.L.circle(center, { radius, color: '#e11d48', fillOpacity: 0.1, weight: 2 }).addTo(map);
     centerMarkerRef.current = window.L.marker(center, {
       draggable: true, zIndexOffset: 1000,
@@ -226,9 +563,35 @@ function SigPageV2() {
     updateZonePopup();
   };
 
-  const startDrawing = () => {
-    setIsDrawing(true);
+  const startCircleDrawing = () => {
+    clearDraftZone();
+    setDrawingMode('circle');
     toast.success("Cliquez sur la carte pour placer le centre de la zone.");
+  };
+
+  const startPolygonDrawing = () => {
+    clearDraftZone();
+    setDrawingMode('polygon');
+    setPolygonPoints([]);
+    toast.success("Cliquez sur la carte pour dessiner le polygone, puis validez.");
+  };
+
+  const addPolygonPoint = (latlng) => {
+    if (!latlng) return;
+    setPolygonPoints((prev) => [...prev, { lat: latlng.lat, lng: latlng.lng }]);
+  };
+
+  const finishPolygonDrawing = () => {
+    if (polygonPoints.length < 3) {
+      toast.error('Ajoutez au moins 3 points pour créer un polygone.');
+      return;
+    }
+    toast.success('Polygone prêt. Vous pouvez maintenant enregistrer la zone.');
+  };
+
+  const cancelDrawing = () => {
+    clearDraftZone();
+    toast.success('Zone annulée.');
   };
 
   const renderSelectedZones = () => {
@@ -236,6 +599,13 @@ function SigPageV2() {
     selectedZonesLayerRef.current.clearLayers();
     const zonesToRender = savedZones.filter(z => selectedZoneIds.includes(z.id));
     zonesToRender.forEach(zone => {
+      const polygon = normalizeZonePolygon(zone);
+      if (polygon?.length >= 3) {
+        window.L.polygon(polygon, { color: '#2563eb', fillOpacity: 0.08, weight: 2, dashArray: '5, 5', interactive: false })
+          .bindTooltip(zone.nom, { permanent: false, direction: 'center', className: 'zone-tooltip' })
+          .addTo(selectedZonesLayerRef.current);
+        return;
+      }
       const { lat, lng } = normalizeZoneCenter(zone);
       const radius = normalizeZoneRadius(zone);
       if (lat === null || lng === null || radius <= 0) return;
@@ -243,6 +613,61 @@ function SigPageV2() {
         .bindTooltip(zone.nom, { permanent: false, direction: 'center', className: 'zone-tooltip' })
         .addTo(selectedZonesLayerRef.current);
     });
+  };
+
+  const renderCancerChart = (items, max, color = '#2563eb') => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {items.map((item) => {
+        const pct = max > 0 ? Math.max(6, (item.value / max) * 100) : 0;
+        return (
+          <div key={item.type} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+              <span style={{ fontSize: 12, color: '#334155', fontWeight: 600 }}>{item.type}</span>
+              <span style={{ fontSize: 12, color, fontWeight: 700 }}>{item.value}</span>
+            </div>
+            <div style={{ height: 6, background: '#f1f5f9', borderRadius: 999, overflow: 'hidden' }}>
+              <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${color}99, ${color})`, borderRadius: 999 }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const renderDraftZone = () => {
+    if (!mapInstance.current || !window.L) return;
+    const map = mapInstance.current;
+
+    if (draftPolygonLayerRef.current) {
+      map.removeLayer(draftPolygonLayerRef.current);
+      draftPolygonLayerRef.current = null;
+    }
+    if (draftPolygonVertexLayerRef.current) {
+      map.removeLayer(draftPolygonVertexLayerRef.current);
+      draftPolygonVertexLayerRef.current = null;
+    }
+
+    if (drawingMode === 'polygon' && polygonPoints.length > 0) {
+      const latLngs = polygonPoints.map((pt) => [pt.lat, pt.lng]);
+      draftPolygonVertexLayerRef.current = window.L.layerGroup().addTo(map);
+      polygonPoints.forEach((pt) => {
+        window.L.circleMarker([pt.lat, pt.lng], {
+          radius: 5,
+          color: '#2563eb',
+          weight: 2,
+          fillColor: '#ffffff',
+          fillOpacity: 1,
+        }).addTo(draftPolygonVertexLayerRef.current);
+      });
+      if (polygonPoints.length >= 2) {
+        draftPolygonLayerRef.current = window.L.polygon(latLngs, {
+          color: '#2563eb',
+          weight: 2,
+          fillOpacity: 0.08,
+          dashArray: '6, 6',
+        }).addTo(map);
+      }
+    }
   };
 
   // fetchData : UN seul appel vers /sig/stats/ avec les noms exacts
@@ -292,18 +717,22 @@ function SigPageV2() {
     if (leafletReady && heatmapReady) {
       fetchData(appliedFilters, selectedWilaya, selectedCommune);
     }
-  }, [appliedFilters]);
+  }, [appliedFilters, leafletReady, heatmapReady]);
 
   // FIX : handler du bouton Appliquer — copie le draft dans appliedFilters
   const handleApplyFilters = () => {
     setAppliedFilters({ ...draftFilters });
+    setSelectedWilaya(draftFilters.wilaya || null);
   };
 
   // FIX : reset complet
   const handleResetFilters = () => {
-    const empty = { type_cancer: '', age_min: '', age_max: '' };
+    const empty = { type_cancer: '', age_min: '', age_max: '', wilaya: '' };
     setDraftFilters(empty);
     setAppliedFilters(empty);
+    setSelectedWilaya(null);
+    setSelectedCommune('');
+    setSelectedCommuneId(null);
   };
 
   useEffect(() => {
@@ -314,9 +743,14 @@ function SigPageV2() {
     communeMarkersLayerRef.current = window.L.layerGroup().addTo(map);
     selectedZonesLayerRef.current = window.L.layerGroup().addTo(map);
     const handleMapClick = (event) => {
-      if (!isDrawingRef.current) return;
-      initInteractiveZone(event.latlng, zoneRadius);
-      setIsDrawing(false);
+      if (drawingModeRef.current === 'circle') {
+        initInteractiveZone(event.latlng, zoneRadius);
+        setDrawingMode(null);
+        return;
+      }
+      if (drawingModeRef.current === 'polygon') {
+        addPolygonPoint(event.latlng);
+      }
     };
     map.on('click', handleMapClick);
     mapInstance.current = map;
@@ -327,6 +761,8 @@ function SigPageV2() {
       if (communeMarkersLayerRef.current) map.removeLayer(communeMarkersLayerRef.current);
       if (edgeMarkerRef.current) map.removeLayer(edgeMarkerRef.current);
       if (centerMarkerRef.current) map.removeLayer(centerMarkerRef.current);
+      if (draftPolygonLayerRef.current) map.removeLayer(draftPolygonLayerRef.current);
+      if (draftPolygonVertexLayerRef.current) map.removeLayer(draftPolygonVertexLayerRef.current);
       map.remove();
       mapInstance.current = null;
     };
@@ -367,6 +803,7 @@ function SigPageV2() {
   useEffect(() => { renderHeatmap(); renderBasicMarkers(); }, [mapDataAll, thermalEnabled, topWilaya]);
   useEffect(() => { renderCommuneMarkers(); }, [selectedCommuneId, leafletReady, heatmapReady]);
   useEffect(() => { renderSelectedZones(); }, [selectedZoneIds, savedZones, leafletReady]);
+  useEffect(() => { renderDraftZone(); }, [drawingMode, polygonPoints, zoneCenter, zoneRadius, leafletReady]);
   useEffect(() => { loadCommunesForWilaya(selectedWilaya); }, [selectedWilaya]);
 
   const renderHeatmap = () => {
@@ -399,6 +836,15 @@ function SigPageV2() {
       });
       const content = `<div style="text-align:center"><b style="color:${isTop ? '#ef4444' : '#1e293b'}">${isTop ? '🏆 ' : ''}${w.name}</b><br/><span style="font-size:1.1em; font-weight:bold">${w.cases} cas</span></div>`;
       marker.bindTooltip(content, { permanent: isTop, direction: 'top', offset: [0, -10] });
+      marker.on('click', () => {
+        setSelectedWilaya(w.name);
+        setAppliedFilters((prev) => ({ ...prev, wilaya: w.name }));
+        setDraftFilters((prev) => ({ ...prev, wilaya: w.name }));
+        setSelectedCommune('');
+        setSelectedCommuneId(null);
+        setTab('overview');
+        mapInstance.current.flyTo([lat, lon], 10, { animate: true, duration: 1.1 });
+      });
       marker.addTo(markersLayerRef.current);
     });
   };
@@ -414,7 +860,11 @@ function SigPageV2() {
         color: isSelected ? '#ffffff' : 'rgba(255,255,255,0.5)', weight: isSelected ? 3 : 1, fillOpacity: isSelected ? 0.95 : 0.75,
       });
       marker.bindTooltip(`<div style="text-align:center"><b>${commune.commune}</b><br/>Incidence ${commune.incidenceRate}/100k</div>`, { direction: 'top' });
-      marker.on('click', () => { setSelectedCommuneId(commune.id); setTab('ai'); mapInstance.current.flyTo(commune.coords, 11, { animate: true, duration: 1.1 }); });
+      marker.on('click', () => {
+        setSelectedCommuneId(commune.id);
+        setTab('cancers');
+        mapInstance.current.flyTo(commune.coords, 11, { animate: true, duration: 1.1 });
+      });
       marker.addTo(communeMarkersLayerRef.current);
     });
   };
@@ -422,20 +872,41 @@ function SigPageV2() {
   const toggleThermalView = () => setThermalEnabled(!thermalEnabled);
 
   const saveInteractiveZone = async () => {
-    if (!zoneCenter) { toast.error("Veuillez d'abord dessiner une zone."); return; }
+    const isPolygon = drawingMode === 'polygon' || polygonPoints.length >= 3;
+    if (!zoneCenter && !isPolygon) { toast.error("Veuillez d'abord dessiner une zone."); return; }
+    if (isPolygon && polygonPoints.length < 3) {
+      toast.error("Le polygone doit contenir au moins 3 points.");
+      return;
+    }
     const zoneName = window.prompt("Entrez un nom pour cette nouvelle zone d'analyse :");
     if (!zoneName || !zoneName.trim()) return;
     try {
       setSavingZone(true);
-      const payload = { nom: zoneName.trim().substring(0, 50), zones: [{ center: [zoneCenter.lat, zoneCenter.lng], radius: zoneRadius }], filters: { is_thermal: thermalEnabled } };
+      const trimmedName = zoneName.trim().substring(0, 50);
+      const payload = isPolygon
+        ? {
+            nom: trimmedName,
+            zones: [{
+              name: trimmedName,
+              polygon: polygonPoints.map((pt) => [pt.lat, pt.lng]),
+              center: [getPolygonCentroid(polygonPoints)?.lat ?? polygonPoints[0].lat, getPolygonCentroid(polygonPoints)?.lng ?? polygonPoints[0].lng],
+              radius: getPolygonApproxRadiusMeters(polygonPoints, zoneRadius),
+            }],
+            filters: { is_thermal: thermalEnabled },
+          }
+        : {
+            nom: trimmedName,
+            zones: [{ name: trimmedName, center: [zoneCenter.lat, zoneCenter.lng], radius: zoneRadius }],
+            filters: { is_thermal: thermalEnabled },
+          };
       await sigService.createMapCard(payload);
       toast.success(`Zone "${zoneName.trim()}" enregistrée avec succès.`);
-      if (edgeMarkerRef.current) mapInstance.current.removeLayer(edgeMarkerRef.current);
-      if (centerMarkerRef.current) mapInstance.current.removeLayer(centerMarkerRef.current);
-      setZoneCenter(null);
+      clearDraftZone();
       await fetchSavedZones();
     } catch (error) {
-      toast.error("Erreur technique lors de l'enregistrement de la zone.");
+      const detail = error?.response?.data?.detail || error?.response?.data?.non_field_errors?.[0] || error?.message || '';
+      console.error('Erreur sauvegarde zone:', error?.response?.data || error);
+      toast.error(detail ? `Erreur technique lors de l'enregistrement de la zone: ${detail}` : "Erreur technique lors de l'enregistrement de la zone.");
     } finally { setSavingZone(false); }
   };
 
@@ -460,6 +931,13 @@ function SigPageV2() {
 
   const zoomToZone = (zone) => {
     if (!mapInstance.current) return;
+    const polygon = normalizeZonePolygon(zone);
+    if (polygon?.length >= 3) {
+      clearDraftZone();
+      const bounds = window.L.latLngBounds(polygon);
+      mapInstance.current.fitBounds(bounds.pad(0.15), { animate: true });
+      return;
+    }
     const { lat, lng } = normalizeZoneCenter(zone);
     const radius = normalizeZoneRadius(zone, 50000);
     if (lat === null || lng === null) return;
@@ -482,6 +960,7 @@ function SigPageV2() {
 
   const loadCommunesForWilaya = async (wilaya) => {
     setSelectedCommune('');
+    setSelectedCommuneId(null);
     if (!wilaya) { setCommunes([]); return; }
     try {
       const res = await sigService.getPatientsData(wilaya);
@@ -505,7 +984,7 @@ function SigPageV2() {
 
   // Indicateur visuel : y a-t-il des filtres actifs non encore appliqués ?
   const hasPendingChanges = JSON.stringify(draftFilters) !== JSON.stringify(appliedFilters);
-  const hasActiveFilters = Object.values(appliedFilters).some(v => v !== '');
+  const hasActiveFilters = Object.values(appliedFilters).some(v => v !== '') || Boolean(selectedWilaya || selectedCommune);
 
   return (
     <AppLayout>
@@ -517,87 +996,19 @@ function SigPageV2() {
             Total Filtré : {wilayasData?.total_patients || 0} patients | {wilayasData?.total_diagnostics || 0} diagnostics
             {hasActiveFilters && <span style={{ marginLeft: 8, background: 'rgba(37,99,235,0.1)', color: '#2563eb', padding: '1px 8px', borderRadius: 99, fontSize: '0.75rem', fontWeight: 700 }}>Filtres actifs</span>}
           </p>
+          <SigFilterBar
+            filters={appliedFilters}
+            draft={draftFilters}
+            setDraft={setDraftFilters}
+            onApply={handleApplyFilters}
+            onReset={handleResetFilters}
+            wilayaOptions={wilayaOptions}
+          />
         </div>
 
         <div className="sig-container">
           {/* ── Panel gauche ── */}
-          <div className="sig-side-panel">
-            <div className="ss-body" style={{ borderBottom: '1px solid rgba(37,99,235,0.08)', flex: 'none', background: '#f8fafc' }}>
-              <div className="sc-title">Filtres Avancés</div>
-              <div style={{ display: 'grid', gap: '10px', marginBottom: '12px' }}>
-                <input
-                  type="text"
-                  placeholder="Type de cancer (ex: Sein)..."
-                  style={{ padding: '9px 12px', width: '100%', borderRadius: '9px', border: '1px solid rgba(37,99,235,0.15)', background: '#fff', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }}
-                  value={draftFilters.type_cancer}
-                  onChange={e => setDraftFilters(d => ({ ...d, type_cancer: e.target.value }))}
-                  onKeyDown={e => e.key === 'Enter' && handleApplyFilters()}
-                />
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="number" placeholder="Âge min" min="0" max="120"
-                    style={{ width: '50%', padding: '9px 12px', borderRadius: '9px', border: '1px solid rgba(37,99,235,0.15)', background: '#fff', fontSize: '0.85rem', outline: 'none' }}
-                    value={draftFilters.age_min}
-                    onChange={e => setDraftFilters(d => ({ ...d, age_min: e.target.value }))}
-                  />
-                  <input
-                    type="number" placeholder="Âge max" min="0" max="120"
-                    style={{ width: '50%', padding: '9px 12px', borderRadius: '9px', border: '1px solid rgba(37,99,235,0.15)', background: '#fff', fontSize: '0.85rem', outline: 'none' }}
-                    value={draftFilters.age_max}
-                    onChange={e => setDraftFilters(d => ({ ...d, age_max: e.target.value }))}
-                  />
-                </div>
-
-                {/* FIX : Appliquer copie le draft → déclenche useEffect → fetchData */}
-                <button
-                  onClick={handleApplyFilters}
-                  style={{
-                    width: '100%', padding: '10px 14px',
-                    background: hasPendingChanges ? '#1d4ed8' : '#2563eb',
-                    color: '#fff', border: 'none', borderRadius: '9px',
-                    fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer',
-                    boxShadow: hasPendingChanges ? '0 4px 12px rgba(37,99,235,0.4)' : '0 2px 6px rgba(37,99,235,0.2)',
-                    transition: 'all 0.2s',
-                    outline: hasPendingChanges ? '2px solid rgba(37,99,235,0.4)' : 'none',
-                    outlineOffset: 2,
-                  }}
-                >
-                  {hasPendingChanges ? '⚡ Appliquer les filtres' : 'Appliquer les filtres'}
-                </button>
-
-                {hasActiveFilters && (
-                  <button
-                    onClick={handleResetFilters}
-                    style={{ width: '100%', padding: '8px 14px', background: 'transparent', color: '#64748b', border: '1px solid rgba(100,116,139,0.25)', borderRadius: '9px', fontSize: '0.75rem', fontWeight: '500', cursor: 'pointer' }}
-                  >
-                    Réinitialiser les filtres
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div style={{ padding: '16px', borderBottom: '1px solid rgba(37,99,235,0.08)', background: '#f8fafc' }}>
-              <div className="sc-title" style={{ margin: 0 }}>Vue nationale</div>
-              <div className="sig-subtitle">Cliquez sur une wilaya pour zoomer</div>
-            </div>
-            <div className="ss-body" style={{ background: '#ffffff' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {mapDataAll.slice(0, 15).map((wilaya) => (
-                  <div
-                    key={wilaya.code}
-                    className="zone-item"
-                    style={{ borderLeft: selectedWilaya === wilaya.name ? '3px solid #2563eb' : '', cursor: 'pointer' }}
-                    onClick={() => zoomToWilaya(wilaya.name)}
-                  >
-                    <div className="zone-info">
-                      <div className="zone-name">{wilaya.name}</div>
-                      <div className="zone-meta">{wilaya.cases} cas détectés</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+         
 
           {/* ── Carte centrale ── */}
           <div className="sig-map-section">
@@ -621,12 +1032,30 @@ function SigPageV2() {
                 {thermalEnabled ? 'Masquer thermique' : 'Afficher thermique'}
               </button>
               {!zoneCenter ? (
-                <button className="sig-map-action" onClick={startDrawing} style={{ background: isDrawing ? '#dbeafe' : '#ffffff' }}>
-                  {isDrawing ? 'Cliquez sur la carte...' : 'Nouvelle Zone'}
+                <button className="sig-map-action" onClick={startCircleDrawing} style={{ background: drawingMode === 'circle' ? '#dbeafe' : '#ffffff' }}>
+                  {drawingMode === 'circle' ? 'Cliquez sur la carte...' : 'Nouvelle zone cercle'}
                 </button>
               ) : (
                 <button className="sig-map-action" onClick={saveInteractiveZone} disabled={savingZone} style={{ background: '#10b981', color: '#fff', borderColor: '#10b981' }}>
                   {savingZone ? 'Enregistrement...' : '✓ Confirmer & Sauvegarder'}
+                </button>
+              )}
+              <button className="sig-map-action" onClick={startPolygonDrawing} style={{ background: drawingMode === 'polygon' ? '#dbeafe' : '#ffffff' }}>
+                {drawingMode === 'polygon' ? `Polygon: ${polygonPoints.length} points` : 'Nouvelle zone polygone'}
+              </button>
+              {drawingMode === 'polygon' && (
+                <button className="sig-map-action" onClick={finishPolygonDrawing} style={{ background: '#ffffff' }}>
+                  Terminer le polygone
+                </button>
+              )}
+              {(drawingMode || zoneCenter || polygonPoints.length > 0) && (
+                <button className="sig-map-action" onClick={cancelDrawing} style={{ background: '#ffffff' }}>
+                  Annuler
+                </button>
+              )}
+              {polygonPoints.length >= 3 && (
+                <button className="sig-map-action" onClick={saveInteractiveZone} disabled={savingZone} style={{ background: '#10b981', color: '#fff', borderColor: '#10b981' }}>
+                  {savingZone ? 'Enregistrement...' : 'Confirmer & Sauvegarder'}
                 </button>
               )}
             </div>
@@ -640,7 +1069,7 @@ function SigPageV2() {
               <button className={`ss-tab${tab === 'ai' ? ' active' : ''}`} onClick={() => setTab('ai')}>IA</button>
             </div>
 
-            <div className="ss-body">
+            <div className="ss-body" style={tab === 'ai' ? { padding: 0 } : undefined}>
               {loading ? (
                 <div className="loading"><div className="loader" /></div>
               ) : (
@@ -661,7 +1090,7 @@ function SigPageV2() {
                       <div className="sc-title">Mes zones sauvegardées</div>
                       <div className="sig-subtitle" style={{ marginBottom: '10px' }}>Sélectionnez 2 zones pour comparer</div>
                       {savedZones.length === 0 ? (
-                        <p className="sig-subtitle">Aucune zone. Utilisez "Nouvelle Zone" sur la carte.</p>
+                        <p className="sig-subtitle">Aucune zone. Utilisez les boutons de zone sur la carte.</p>
                       ) : (
                         savedZones.map(zone => (
                           <div
@@ -700,10 +1129,27 @@ function SigPageV2() {
                     </div>
                   )}
 
-                  {tab === 'cancers' && aggregatedCancerStats.length > 0 && (
+                  {tab === 'cancers' && (selectedCommuneCancerData || aggregatedCancerStats.length > 0) && (
                     <div>
-                      <div className="sc-title" style={{ marginBottom: 12 }}>Cancers renseignés</div>
-                      {aggregatedCancerStats.map((cancer, idx) => (
+                      <div className="sc-title" style={{ marginBottom: 12 }}>
+                        {selectedCommuneCancerData ? `Cancers de ${selectedCommuneCancerData.commune}` : 'Cancers renseignés'}
+                      </div>
+                      {selectedCommuneCancerData && (
+                        <div className="hypothesis-card" style={{ marginBottom: 14 }}>
+                          <div className="ht-title">Commune sélectionnée : {selectedCommuneCancerData.commune}</div>
+                          <div className="ht-text" style={{ marginBottom: 10 }}>
+                            Incidence: <b>{selectedCommuneCancerData.incidenceRate}/100k</b><br />
+                            Niveau de risque: <b>{selectedCommuneCancerData.globalRisk}</b><br />
+                            Cancer dominant: <b>{selectedCommuneCancerData.dominantCancer?.type || '—'}</b>
+                          </div>
+                          {renderCancerChart(
+                            selectedCommuneCancerData.chartData,
+                            Math.max(...selectedCommuneCancerData.chartData.map((c) => c.value), 1),
+                            '#dc2626'
+                          )}
+                        </div>
+                      )}
+                      {selectedCommuneCancerData ? null : aggregatedCancerStats.map((cancer, idx) => (
                         <div key={idx} className="cancer-item">
                           <div className="ci-name">
                             {cancer.name && cancer.code && cancer.name !== cancer.code
@@ -723,9 +1169,7 @@ function SigPageV2() {
                   )}
 
                   {tab === 'ai' && (
-                    <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                      <SigAiAnalysisPanel selectedCommuneId={selectedCommuneId} onCommuneChange={setSelectedCommuneId} />
-                    </div>
+                    <SigAiAnalysisPanel selectedCommuneId={selectedCommuneId} onCommuneChange={setSelectedCommuneId} />
                   )}
                 </>
               )}
