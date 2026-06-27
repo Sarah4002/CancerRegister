@@ -28,11 +28,11 @@ urlpatterns = [
 
     # ==============================
     # Stats & IA
-    # → /api/stats/...
-    # → /api/search/
-    # → /api/ai/...
+    # → /api/v1/stats/...
+    # → /api/v1/search/
+    # → /api/v1/ai/...
     # ==============================
-    path('api/v1/api/', include('apps.stats.urls')),
+    path('api/v1/', include('apps.stats.urls')),
 
     # ==============================
     # API Documentation
