@@ -231,7 +231,7 @@ export default function HelpCenterPage() {
     openSearchResult(best);
   };
 
-  const handleVideo = () => window.open('/videos/video1.mp4', '_blank', 'noopener,noreferrer');
+  const handleVideo = () => window.open('https://app.heygen.com/videos/national-cancer-registry-platform-tutorial-a4f7264b4ab34677ae77a656f9d9da4c', '_blank', 'noopener,noreferrer');
   const activeTutorial = TUTORIALS.find((item) => item.title === selectedTutorial) || TUTORIALS[0];
 
   return (
