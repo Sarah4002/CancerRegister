@@ -364,10 +364,18 @@ export default function HelpCenterPage() {
             <SectionTitle icon={MonitorPlay} title="Video tutoriel" subtitle="Un parcours court : login, patient, statistiques et export." />
             <div style={videoPanelStyle}>
               <div style={videoPreviewStyle}>
-                <video controls preload="metadata" style={videoPlayerStyle} aria-label="Video de demonstration RegistreCancer.dz">
-                  <source src="/videos/video1.mp4" type="video/mp4" />
-                  Votre navigateur ne peut pas lire cette video.
-                </video>
+                <video
+  controls
+  preload="metadata"
+  style={videoPlayerStyle}
+  aria-label="Vidéo de démonstration RegistreCancer.dz"
+>
+  <source
+    src="https://app.heygen.com/videos/national-cancer-registry-platform-tutorial-a4f7264b4ab34677ae77a656f9d9da4c"
+    type="video/mp4"
+  />
+  Votre navigateur ne peut pas lire cette vidéo.
+</video>
               </div>
               <div style={videoTextStyle}>
                 <h3 style={panelTitleStyle}>Regarder la video de demonstration</h3>
