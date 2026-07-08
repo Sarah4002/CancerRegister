@@ -231,7 +231,8 @@ export default function HelpCenterPage() {
     openSearchResult(best);
   };
 
-  const handleVideo = () => window.open('https://app.heygen.com/videos/national-cancer-registry-platform-tutorial-a4f7264b4ab34677ae77a656f9d9da4c', '_blank', 'noopener,noreferrer');
+  const videoUrl = 'https://drive.google.com/uc?export=download&id=1UoaEDf4n5j-pQGTSC3UrJOc7MxAoWV4d';
+  const handleVideo = () => window.open(videoUrl, '_blank', 'noopener,noreferrer');
   const activeTutorial = TUTORIALS.find((item) => item.title === selectedTutorial) || TUTORIALS[0];
 
   return (
@@ -365,17 +366,15 @@ export default function HelpCenterPage() {
             <div style={videoPanelStyle}>
               <div style={videoPreviewStyle}>
                 <video
-  controls
-  preload="metadata"
-  style={videoPlayerStyle}
-  aria-label="Vidéo de démonstration RegistreCancer.dz"
->
-  <source
-    src="https://drive.google.com/file/d/1UoaEDf4n5j-pQGTSC3UrJOc7MxAoWV4d/view?usp=sharing"
-    type="video/mp4"
-  />
-  Votre navigateur ne peut pas lire cette vidéo.
-</video>
+                  controls
+                  preload="metadata"
+                  style={videoPlayerStyle}
+                  aria-label="Vidéo de démonstration RegistreCancer.dz"
+                  onError={handleVideo}
+                >
+                  <source src={videoUrl} type="video/mp4" />
+                  Votre navigateur ne peut pas lire cette vidéo.
+                </video>
               </div>
               <div style={videoTextStyle}>
                 <h3 style={panelTitleStyle}>Regarder la video de demonstration</h3>
