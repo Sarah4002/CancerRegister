@@ -183,7 +183,7 @@ async function fetchPatientDetail(id, fallback) {
 
 /* Génère un document imprimable (à enregistrer en PDF via la boîte de dialogue
    d'impression du navigateur) pour le dossier d'un seul patient. */
-function printPatientDossier(p) {
+function printPatientDossier(p, full = false) {
   const win = window.open('', '_blank', 'width=850,height=1000');
   if (!win) {
     toast.error('Veuillez autoriser les fenêtres popup pour générer le PDF.');
@@ -196,12 +196,53 @@ function printPatientDossier(p) {
     const d = new Date(v);
     return Number.isNaN(d.getTime()) ? v : d.toLocaleDateString('fr-DZ');
   };
+  const formatValue = v => {
+    if (v === null || v === undefined || v === '') return '—';
+    if (typeof v === 'object') return JSON.stringify(v);
+    return String(v);
+  };
+  const addIfPresent = (rows, label, value) => {
+    if (value === null || value === undefined || value === '') return rows;
+    rows.push([label, formatValue(value)]);
+    return rows;
+  };
+  const labelize = key => key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+  const infoRows = [];
+  addIfPresent(infoRows, 'Nom complet', p.full_name);
+  addIfPresent(infoRows, 'Sexe', p.sexe_label || p.sexe);
+  addIfPresent(infoRows, 'Date de naissance', fmtDate(p.date_naissance));
+  addIfPresent(infoRows, 'Âge', p.age != null ? `${p.age} ans` : null);
+  addIfPresent(infoRows, 'Wilaya', p.wilaya);
+  addIfPresent(infoRows, 'Commune', p.commune);
+  addIfPresent(infoRows, 'Téléphone', p.telephone || p.phone || p.tel);
+  addIfPresent(infoRows, 'Email', p.email);
+  addIfPresent(infoRows, 'Adresse', p.adresse || p.address);
+
+  const diagnosticRows = [];
+  addIfPresent(diagnosticRows, 'Type de cancer', p.cancer_type);
+  addIfPresent(diagnosticRows, 'Stade', p.stade);
+  addIfPresent(diagnosticRows, 'Date de diagnostic', fmtDate(p.date_diagnostic));
+  addIfPresent(diagnosticRows, 'Topographie', p.topographie);
+  addIfPresent(diagnosticRows, 'Morphologie', p.morphologie);
+
+  const suiviRows = [];
+  addIfPresent(suiviRows, 'Statut du dossier', p.statut_label || p.statut_dossier);
+  addIfPresent(suiviRows, 'Traitement', p.traitement_type);
+  addIfPresent(suiviRows, 'Médecin référent', p.medecin_nom);
+  addIfPresent(suiviRows, 'Date d’enregistrement', fmtDate(p.date_enregistrement));
+  addIfPresent(suiviRows, 'Date de dernière mise à jour', fmtDate(p.date_modification || p.updated_at || p.modified_at));
+  addIfPresent(suiviRows, 'Notes', p.notes || p.observations);
+
+  const extraRows = Object.entries(p || {})
+    .filter(([key, value]) => !['id','registration_number','full_name','sexe','sexe_label','date_naissance','age','wilaya','commune','telephone','phone','tel','email','adresse','address','cancer_type','stade','date_diagnostic','topographie','morphologie','statut_dossier','statut_label','traitement_type','medecin_nom','date_enregistrement','date_modification','updated_at','modified_at','notes','observations'].includes(key) && value !== null && value !== undefined && value !== '')
+    .map(([key, value]) => [labelize(key), formatValue(value)]);
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
-<title>Dossier patient - ${p.registration_number || ''}</title>
+<title>${full ? 'Dossier complet' : 'Dossier patient'} - ${p.registration_number || ''}</title>
 <style>
   * { box-sizing: border-box; }
   body { font-family: Arial, Helvetica, sans-serif; color: #0f172a; padding: 36px; }
@@ -218,34 +259,26 @@ function printPatientDossier(p) {
 </style>
 </head>
 <body>
-  <h1>Dossier Patient — RegistreCancer.dz</h1>
+  <h1>${full ? 'Dossier Complet' : 'Dossier Patient'} — RegistreCancer.dz</h1>
   <div class="sub">Document généré le ${new Date().toLocaleDateString('fr-DZ')} à ${new Date().toLocaleTimeString('fr-DZ')}</div>
   <div class="badge">${p.registration_number || 'N° non renseigné'}</div>
 
   <h2>Identification</h2>
   <table>
-    ${row('Nom complet', p.full_name)}
-    ${row('Sexe', p.sexe_label || p.sexe)}
-    ${row('Date de naissance', fmtDate(p.date_naissance))}
-    ${row('Âge', p.age != null ? `${p.age} ans` : null)}
-    ${row('Wilaya', p.wilaya)}
-    ${row('Commune', p.commune)}
+    ${infoRows.map(([label, value]) => row(label, value)).join('')}
   </table>
 
   <h2>Diagnostic</h2>
   <table>
-    ${row('Type de cancer', p.cancer_type)}
-    ${row('Stade', p.stade)}
-    ${row('Date de diagnostic', fmtDate(p.date_diagnostic))}
+    ${diagnosticRows.map(([label, value]) => row(label, value)).join('')}
   </table>
 
   <h2>Suivi</h2>
   <table>
-    ${row('Statut du dossier', p.statut_label || p.statut_dossier)}
-    ${row('Traitement', p.traitement_type)}
-    ${row('Médecin référent', p.medecin_nom)}
-    ${row('Date d’enregistrement', fmtDate(p.date_enregistrement))}
+    ${suiviRows.map(([label, value]) => row(label, value)).join('')}
   </table>
+
+  ${extraRows.length ? `<h2>Informations complémentaires</h2><table>${extraRows.map(([label, value]) => row(label, value)).join('')}</table>` : ''}
 
   <footer>Document confidentiel — usage médical uniquement. RegistreCancer.dz</footer>
 
@@ -770,9 +803,10 @@ function ExportSingleButton({ onExport }) {
   }, [open]);
 
   const options = [
-    ['pdf',  'Imprimer / PDF'],
-    ['csv',  'Export CSV'],
-    ['xlsx', 'Export Excel'],
+    ['complete', 'Dossier complet'],
+    ['pdf',      'Imprimer / PDF'],
+    ['csv',      'Export CSV'],
+    ['xlsx',     'Export Excel'],
   ];
 
   return (
@@ -922,8 +956,8 @@ export default function PatientsPage() {
   const handleSingleExport = async (patient, format) => {
     const detail = await fetchPatientDetail(patient.id, patient);
 
-    if (format === 'pdf') {
-      printPatientDossier(detail);
+    if (format === 'pdf' || format === 'complete') {
+      printPatientDossier(detail, format === 'complete');
       return;
     }
 
