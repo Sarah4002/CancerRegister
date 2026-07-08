@@ -231,8 +231,15 @@ export default function HelpCenterPage() {
     openSearchResult(best);
   };
 
-  const videoUrl = 'https://drive.google.com/uc?export=download&id=1UoaEDf4n5j-pQGTSC3UrJOc7MxAoWV4d';
-  const handleVideo = () => window.open(videoUrl, '_blank', 'noopener,noreferrer');
+  // --- Video Google Drive : on utilise le lien /preview dans un iframe.
+  // Le lien "uc?export=download" ne fonctionne pas de façon fiable avec <video>
+  // car Google Drive renvoie parfois une page HTML intermédiaire (scan antivirus)
+  // au lieu du flux vidéo brut. Le mode /preview est conçu pour être intégré en iframe.
+  const videoFileId = '1UoaEDf4n5j-pQGTSC3UrJOc7MxAoWV4d';
+  const videoEmbedUrl = `https://drive.google.com/file/d/${videoFileId}/preview`;
+  const videoOpenUrl = `https://drive.google.com/file/d/${videoFileId}/view`;
+  const handleVideo = () => window.open(videoOpenUrl, '_blank', 'noopener,noreferrer');
+
   const activeTutorial = TUTORIALS.find((item) => item.title === selectedTutorial) || TUTORIALS[0];
 
   return (
@@ -365,21 +372,18 @@ export default function HelpCenterPage() {
             <SectionTitle icon={MonitorPlay} title="Video tutoriel" subtitle="Un parcours court : login, patient, statistiques et export." />
             <div style={videoPanelStyle}>
               <div style={videoPreviewStyle}>
-                <video
-                  controls
-                  preload="metadata"
+                <iframe
+                  src={videoEmbedUrl}
                   style={videoPlayerStyle}
-                  aria-label="Vidéo de démonstration RegistreCancer.dz"
-                  onError={handleVideo}
-                >
-                  <source src={videoUrl} type="video/mp4" />
-                  Votre navigateur ne peut pas lire cette vidéo.
-                </video>
+                  title="Vidéo de démonstration RegistreCancer.dz"
+                  allow="autoplay"
+                  allowFullScreen
+                />
               </div>
               <div style={videoTextStyle}>
                 <h3 style={panelTitleStyle}>Regarder la video de demonstration</h3>
                 <p style={bodyTextStyle}>La video presente les etapes principales : connexion, creation patient, diagnostic, statistiques et export PDF/Excel.</p>
-                <button type="button" onClick={handleVideo} style={secondaryButtonStyle}><Play size={15} /> Ouvrir la video</button>
+                <button type="button" onClick={handleVideo} style={secondaryButtonStyle}><Play size={15} /> Ouvrir dans un nouvel onglet</button>
               </div>
             </div>
           </section>
@@ -509,7 +513,7 @@ const faqButtonStyle = { width: '100%', border: 'none', background: 'transparent
 const faqAnswerStyle = { padding: '0 14px 14px', color: '#64748b', fontSize: 12, lineHeight: 1.6 };
 const videoPanelStyle = { display: 'grid', gridTemplateColumns: '420px minmax(0, 1fr)', gap: 16, background: '#ffffff', border: '1px solid rgba(37,99,235,0.1)', borderRadius: 16, padding: 16 };
 const videoPreviewStyle = { minHeight: 236, borderRadius: 12, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' };
-const videoPlayerStyle = { width: '100%', height: '100%', minHeight: 236, display: 'block', background: '#0f172a' };
+const videoPlayerStyle = { width: '100%', height: '100%', minHeight: 236, display: 'block', background: '#0f172a', border: 'none' };
 const videoTextStyle = { display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10 };
 const primaryButtonStyle = { minHeight: 38, border: 'none', borderRadius: 10, background: '#2563eb', color: '#ffffff', fontSize: 12, fontWeight: 800, cursor: 'pointer', padding: '0 14px' };
 const secondaryButtonStyle = { minHeight: 36, borderRadius: 10, border: '1px solid rgba(37,99,235,0.16)', background: '#ffffff', color: '#2563eb', fontSize: 12, fontWeight: 800, cursor: 'pointer', padding: '0 12px', display: 'inline-flex', alignItems: 'center', gap: 7, alignSelf: 'flex-start' };
