@@ -399,6 +399,10 @@ function SigPageV2() {
   const [zoneCenter, setZoneCenter] = useState(null);
   const [thermalEnabled, setThermalEnabled] = useState(true);
 
+  // Stats de cancer agrégées à partir des wilayas actuellement chargées.
+  // Quand une seule wilaya est sélectionnée (filtre appliqué), wilayasData.wilayas
+  // ne contient (normalement) que les données de cette wilaya : la somme
+  // correspond donc directement à sa répartition par type de cancer.
   const aggregatedCancerStats = useMemo(() => {
     if (!wilayasData || !wilayasData.wilayas) return [];
     const totals = {};
@@ -842,7 +846,10 @@ function SigPageV2() {
         setDraftFilters((prev) => ({ ...prev, wilaya: w.name }));
         setSelectedCommune('');
         setSelectedCommuneId(null);
-        setTab('overview');
+        // On ouvre directement l'onglet "Cancers" pour afficher la
+        // répartition par type de cancer de la wilaya cliquée
+        // (ex : 1 cancer du sein, 2 cas cancer prostate...).
+        setTab('cancers');
         mapInstance.current.flyTo([lat, lon], 10, { animate: true, duration: 1.1 });
       });
       marker.addTo(markersLayerRef.current);
@@ -985,6 +992,14 @@ function SigPageV2() {
   // Indicateur visuel : y a-t-il des filtres actifs non encore appliqués ?
   const hasPendingChanges = JSON.stringify(draftFilters) !== JSON.stringify(appliedFilters);
   const hasActiveFilters = Object.values(appliedFilters).some(v => v !== '') || Boolean(selectedWilaya || selectedCommune);
+
+  // Total de cas correspondant à la wilaya actuellement sélectionnée
+  // (sert à afficher "6 cas" à côté du titre de la répartition par cancer).
+  const selectedWilayaTotalCases = useMemo(() => {
+    if (!selectedWilaya) return null;
+    const match = mapDataAll.find((w) => w.name === selectedWilaya);
+    return match ? Number(match.cases || 0) : (wilayasData?.total_patients ?? null);
+  }, [selectedWilaya, mapDataAll, wilayasData]);
 
   return (
     <AppLayout>
@@ -1131,11 +1146,20 @@ function SigPageV2() {
 
                   {tab === 'cancers' && (selectedCommuneCancerData || aggregatedCancerStats.length > 0) && (
                     <div>
-                      <div className="sc-title" style={{ marginBottom: 12 }}>
-                        {selectedCommuneCancerData ? `Cancers de ${selectedCommuneCancerData.commune}` : 'Cancers renseignés'}
+                      <div className="sc-title" style={{ marginBottom: 4 }}>
+                        {selectedCommuneCancerData
+                          ? `Cancers de ${selectedCommuneCancerData.commune}`
+                          : selectedWilaya
+                            ? `Cancers à ${selectedWilaya}`
+                            : 'Cancers renseignés'}
                       </div>
+                      {!selectedCommuneCancerData && selectedWilaya && (
+                        <div className="sig-subtitle" style={{ marginBottom: 12 }}>
+                          {selectedWilayaTotalCases != null ? `${selectedWilayaTotalCases} cas au total` : ''}
+                        </div>
+                      )}
                       {selectedCommuneCancerData && (
-                        <div className="hypothesis-card" style={{ marginBottom: 14 }}>
+                        <div className="hypothesis-card" style={{ marginBottom: 14, marginTop: 10 }}>
                           <div className="ht-title">Commune sélectionnée : {selectedCommuneCancerData.commune}</div>
                           <div className="ht-text" style={{ marginBottom: 10 }}>
                             Incidence: <b>{selectedCommuneCancerData.incidenceRate}/100k</b><br />
@@ -1149,7 +1173,9 @@ function SigPageV2() {
                           )}
                         </div>
                       )}
-                      {selectedCommuneCancerData ? null : aggregatedCancerStats.map((cancer, idx) => (
+                      {selectedCommuneCancerData ? null : aggregatedCancerStats.length === 0 ? (
+                        <p className="sig-subtitle">Aucun cas de cancer renseigné pour cette sélection.</p>
+                      ) : aggregatedCancerStats.map((cancer, idx) => (
                         <div key={idx} className="cancer-item">
                           <div className="ci-name">
                             {cancer.name && cancer.code && cancer.name !== cancer.code
@@ -1159,7 +1185,9 @@ function SigPageV2() {
                           <div className="ci-value">
                             <div>
                               <div className="ci-count">{cancer.count}</div>
-                              <div style={{ fontSize: '0.65rem', color: '#334155' }}>patients</div>
+                              <div style={{ fontSize: '0.65rem', color: '#334155' }}>
+                                {cancer.count > 1 ? 'cas' : 'cas'}
+                              </div>
                             </div>
                             <div className="ci-pct">{cancer.percentage}%</div>
                           </div>
