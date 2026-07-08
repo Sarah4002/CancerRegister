@@ -371,7 +371,7 @@ export default function HelpCenterPage() {
   aria-label="Vidéo de démonstration RegistreCancer.dz"
 >
   <source
-    src="https://app.heygen.com/videos/national-cancer-registry-platform-tutorial-a4f7264b4ab34677ae77a656f9d9da4c"
+    src="https://drive.google.com/file/d/1UoaEDf4n5j-pQGTSC3UrJOc7MxAoWV4d/view?usp=sharing"
     type="video/mp4"
   />
   Votre navigateur ne peut pas lire cette vidéo.
