@@ -162,6 +162,103 @@ function triggerDownload(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
+/* Essaie plusieurs noms de méthode courants pour récupérer le détail complet
+   d'un patient (les lignes de la liste n'ont pas forcément tous les champs
+   cliniques comme le diagnostic ou le traitement). Si aucune méthode ne
+   fonctionne, on retombe sur les données déjà disponibles dans la ligne. */
+async function fetchPatientDetail(id, fallback) {
+  const candidateMethods = ['get', 'getById', 'retrieve', 'detail', 'show'];
+  for (const method of candidateMethods) {
+    if (typeof patientService[method] === 'function') {
+      try {
+        const { data } = await patientService[method](id);
+        if (data) return data;
+      } catch {
+        // méthode absente ou en erreur : on essaie la suivante
+      }
+    }
+  }
+  return fallback;
+}
+
+/* Génère un document imprimable (à enregistrer en PDF via la boîte de dialogue
+   d'impression du navigateur) pour le dossier d'un seul patient. */
+function printPatientDossier(p) {
+  const win = window.open('', '_blank', 'width=850,height=1000');
+  if (!win) {
+    toast.error('Veuillez autoriser les fenêtres popup pour générer le PDF.');
+    return;
+  }
+
+  const row = (label, value) => `<tr><td class="lbl">${label}</td><td class="val">${value ?? '—'}</td></tr>`;
+  const fmtDate = v => {
+    if (!v) return null;
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? v : d.toLocaleDateString('fr-DZ');
+  };
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Dossier patient - ${p.registration_number || ''}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #0f172a; padding: 36px; }
+  h1 { font-size: 20px; margin: 0 0 2px; }
+  .sub { color: #64748b; font-size: 12px; margin-bottom: 18px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: #eff6ff; color: #2563eb; border: 1px solid rgba(37,99,235,0.25); margin-bottom: 22px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: #2563eb; border-bottom: 1px solid rgba(37,99,235,0.15); padding-bottom: 6px; margin: 26px 0 10px; }
+  table { width: 100%; border-collapse: collapse; }
+  tr { border-bottom: 1px solid #f1f5f9; }
+  td.lbl { width: 220px; padding: 7px 10px 7px 0; color: #64748b; font-size: 12px; vertical-align: top; }
+  td.val { padding: 7px 0; font-size: 13px; font-weight: 600; color: #0f172a; }
+  footer { margin-top: 40px; font-size: 10.5px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+  @media print { body { padding: 16px; } }
+</style>
+</head>
+<body>
+  <h1>Dossier Patient — RegistreCancer.dz</h1>
+  <div class="sub">Document généré le ${new Date().toLocaleDateString('fr-DZ')} à ${new Date().toLocaleTimeString('fr-DZ')}</div>
+  <div class="badge">${p.registration_number || 'N° non renseigné'}</div>
+
+  <h2>Identification</h2>
+  <table>
+    ${row('Nom complet', p.full_name)}
+    ${row('Sexe', p.sexe_label || p.sexe)}
+    ${row('Date de naissance', fmtDate(p.date_naissance))}
+    ${row('Âge', p.age != null ? `${p.age} ans` : null)}
+    ${row('Wilaya', p.wilaya)}
+    ${row('Commune', p.commune)}
+  </table>
+
+  <h2>Diagnostic</h2>
+  <table>
+    ${row('Type de cancer', p.cancer_type)}
+    ${row('Stade', p.stade)}
+    ${row('Date de diagnostic', fmtDate(p.date_diagnostic))}
+  </table>
+
+  <h2>Suivi</h2>
+  <table>
+    ${row('Statut du dossier', p.statut_label || p.statut_dossier)}
+    ${row('Traitement', p.traitement_type)}
+    ${row('Médecin référent', p.medecin_nom)}
+    ${row('Date d’enregistrement', fmtDate(p.date_enregistrement))}
+  </table>
+
+  <footer>Document confidentiel — usage médical uniquement. RegistreCancer.dz</footer>
+
+  <script>
+    window.onload = function () { window.print(); };
+  </script>
+</body>
+</html>`;
+
+  win.document.write(html);
+  win.document.close();
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    DELETE CONFIRM MODAL
 ───────────────────────────────────────────────────────────────────────────── */
@@ -298,7 +395,7 @@ function DeleteConfirmModal({ patient, onClose, onConfirm, loading }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   EXPORT MODAL
+   EXPORT MODAL (liste complète, avec filtres et regroupement)
 ───────────────────────────────────────────────────────────────────────────── */
 function ExportModal({ onClose, currentFilters }) {
   const [groupBy,      setGroupBy]      = useState('none');
@@ -656,6 +753,83 @@ function DeleteIconButton({ onClick }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   EXPORT ICON BUTTON (menu déroulant : PDF / CSV / XLSX pour UN patient)
+───────────────────────────────────────────────────────────────────────────── */
+function ExportSingleButton({ onExport }) {
+  const [open, setOpen]       = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleOutside(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [open]);
+
+  const options = [
+    ['pdf',  'Imprimer / PDF'],
+    ['csv',  'Export CSV'],
+    ['xlsx', 'Export Excel'],
+  ];
+
+  return (
+    <div ref={wrapRef} style={{ position:'relative' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        title="Exporter ce dossier"
+        style={{
+          width:30, height:30,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          borderRadius:8,
+          border: hovered || open ? '1px solid rgba(22,163,74,0.3)' : '1px solid transparent',
+          background: hovered || open ? 'rgba(22,163,74,0.07)' : 'transparent',
+          cursor:'pointer',
+          transition:'all .15s',
+          flexShrink:0,
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={hovered || open ? '#16a34a' : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition:'stroke .15s' }}>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position:'absolute', right:0, top:'110%', zIndex:50,
+          background:'#fff', border:'1px solid rgba(37,99,235,0.14)',
+          borderRadius:10, boxShadow:'0 10px 28px rgba(15,23,42,0.14)',
+          minWidth:168, overflow:'hidden',
+        }}>
+          {options.map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => { setOpen(false); onExport(id); }}
+              style={{
+                width:'100%', textAlign:'left', padding:'9px 13px',
+                fontSize:12.5, fontWeight:600, color:'#334155',
+                border:'none', background:'transparent', cursor:'pointer',
+                display:'flex', alignItems:'center', gap:8,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    MAIN PAGE
 ───────────────────────────────────────────────────────────────────────────── */
 export default function PatientsPage() {
@@ -740,6 +914,29 @@ export default function PatientsPage() {
     } finally {
       setDeleteLoading(false);
     }
+  };
+
+  /* Export du dossier d'UN SEUL patient : PDF (impression), CSV ou Excel.
+     On tente de récupérer le détail complet (diagnostic, traitement...) via
+     l'API avant d'exporter, avec repli sur les données déjà affichées. */
+  const handleSingleExport = async (patient, format) => {
+    const detail = await fetchPatientDetail(patient.id, patient);
+
+    if (format === 'pdf') {
+      printPatientDossier(detail);
+      return;
+    }
+
+    const row = {};
+    EXPORT_COLUMNS.forEach(({ key }) => { row[key] = detail[key] ?? ''; });
+
+    const ts       = new Date().toISOString().slice(0, 10);
+    const filename = `dossier_${detail.registration_number || detail.id}_${ts}.${format}`;
+
+    if (format === 'csv') downloadCSV([row], filename);
+    else                  downloadXLSX([row], filename);
+
+    toast.success(`Dossier de ${detail.full_name || 'ce patient'} exporté en ${format.toUpperCase()}`);
   };
 
   return (
@@ -886,7 +1083,7 @@ export default function PatientsPage() {
           <table style={{ width:'100%', borderCollapse:'collapse' }}>
             <thead>
               <tr style={{ background:'var(--bg-elevated)' }}>
-                {['N° Dossier','Patient','Sexe','Âge','Wilaya','Statut','Médecin','Enregistré le','',''].map((h,idx) => (
+                {['N° Dossier','Patient','Sexe','Âge','Wilaya','Statut','Médecin','Enregistré le','','',''].map((h,idx) => (
                   <th key={idx} style={{
                     padding:'10px 14px', textAlign:'left',
                     fontSize:11, fontWeight:600, letterSpacing:.5,
@@ -934,6 +1131,9 @@ export default function PatientsPage() {
                       </button>
                     </Link>
                   </td>
+                  <td style={{ padding:'12px 4px' }} onClick={e => e.stopPropagation()}>
+                    <ExportSingleButton onExport={(format) => handleSingleExport(p, format)} />
+                  </td>
                   <td style={{ padding:'12px 14px 12px 4px' }} onClick={e => e.stopPropagation()}>
                     <DeleteIconButton
                       onClick={() => setDeleteTarget(p)}
@@ -965,7 +1165,7 @@ export default function PatientsPage() {
         )}
       </div>
 
-      {/* Export Modal */}
+      {/* Export Modal (liste complète) */}
       {showExport && (
         <ExportModal
           onClose={() => setShowExport(false)}
