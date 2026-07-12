@@ -230,7 +230,7 @@ class PatientViewSet(viewsets.ModelViewSet):
         Endpoint public pour application mobile QR code.
         """
 
-        patient = self._get_public_patient(pk)
+        patient = self._get_public_patient(pk, request=request)
 
         if not patient:
             return Response(
@@ -265,7 +265,7 @@ class PatientViewSet(viewsets.ModelViewSet):
         Mise à jour publique des habitudes de vie via QR code.
         """
 
-        patient = self._get_public_patient(pk)
+        patient = self._get_public_patient(pk, request=request)
 
         if not patient:
             return Response(
@@ -665,15 +665,37 @@ class PatientViewSet(viewsets.ModelViewSet):
         except ValueError:
             return None
 
-    def _get_public_patient(self, pk):
-        try:
-            return Patient.objects.get(
-                pk=pk,
-                est_actif=True,
-            )
+    def _get_public_patient(self, pk, request=None):
+        queryset = Patient.objects.filter(est_actif=True)
 
-        except Patient.DoesNotExist:
+        if not pk:
             return None
+
+        try:
+            return queryset.get(pk=pk)
+        except (Patient.DoesNotExist, ValueError, TypeError):
+            pass
+
+        # Supporte aussi un appel via /patients/<registration_number>/public/
+        # ou via la référence fournie dans l'URL du QR code.
+        candidate_refs = []
+        if request is not None:
+            candidate_refs.extend([
+                request.query_params.get('ref'),
+                request.query_params.get('token'),
+                request.query_params.get('patient_ref'),
+            ])
+        candidate_refs.append(pk)
+
+        for ref in candidate_refs:
+            if not ref:
+                continue
+            try:
+                return queryset.get(registration_number=ref)
+            except Patient.DoesNotExist:
+                continue
+
+        return None
 
     def _validate_habitudes_data(self, data):
         errors = {}

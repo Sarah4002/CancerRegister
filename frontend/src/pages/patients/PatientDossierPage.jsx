@@ -10,7 +10,9 @@ import ExamenModal from '../../components/patients/ExamenModal';
 import { WILAYAS, COMMUNES_PAR_WILAYA } from './communesAlgerie';
 import toast from 'react-hot-toast';
 
-const MOBILE_APP_BASE_URL = import.meta.env.VITE_MOBILE_APP_URL || 'https://patientlifestyleform.vercel.app/patient';
+const MOBILE_APP_BASE_URL = (
+  import.meta.env.VITE_MOBILE_APP_URL || 'https://patientlifestyleform.vercel.app/patient'
+).replace(/\/+$/, '');
 
 const ANTECEDENT_LABELS = {
   cancer_sein:         'Cancer du sein',
@@ -134,7 +136,7 @@ function EditField({ field, value, onChange, allValues }) {
 }
 
 function QRCodeCard({ patient }) {
-  const mobileUrl = `${MOBILE_APP_BASE_URL}/${patient.id}?ref=${encodeURIComponent(patient.registration_number)}`;
+  const mobileUrl = `${MOBILE_APP_BASE_URL}/${patient.id}?ref=${encodeURIComponent(patient.registration_number)}&token=${encodeURIComponent(patient.registration_number)}`;
   const qrApiUrl  = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(mobileUrl) + '&color=2d5a3d&bgcolor=ffffff&format=png';
   const [copied, setCopied] = useState(false);
   const copyUrl = () => { navigator.clipboard.writeText(mobileUrl).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); };
