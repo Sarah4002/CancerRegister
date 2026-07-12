@@ -230,7 +230,10 @@ class PatientViewSet(viewsets.ModelViewSet):
         Endpoint public pour application mobile QR code.
         """
 
-        patient = self._get_public_patient(pk, request=request)
+        try:
+            patient = self._get_public_patient(pk, request=request)
+        except Exception:
+            patient = None
 
         if not patient:
             return Response(
@@ -238,21 +241,27 @@ class PatientViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        return Response({
-            'id': patient.id,
-            'registration_number': patient.registration_number,
-            'nom': patient.nom,
-            'prenom': patient.prenom,
-            'age': patient.age,
-            'wilaya': patient.wilaya,
+        try:
+            return Response({
+                'id': patient.id,
+                'registration_number': getattr(patient, 'registration_number', None),
+                'nom': getattr(patient, 'nom', None),
+                'prenom': getattr(patient, 'prenom', None),
+                'age': getattr(patient, 'age', None),
+                'wilaya': getattr(patient, 'wilaya', None),
 
-            # Habitudes de vie
-            'tabagisme': patient.tabagisme,
-            'alcool': patient.alcool,
-            'activite_physique': patient.activite_physique,
-            'alimentation': patient.alimentation,
-            'antecedents_familiaux': patient.antecedents_familiaux,
-        })
+                # Habitudes de vie
+                'tabagisme': getattr(patient, 'tabagisme', None),
+                'alcool': getattr(patient, 'alcool', None),
+                'activite_physique': getattr(patient, 'activite_physique', None),
+                'alimentation': getattr(patient, 'alimentation', None),
+                'antecedents_familiaux': getattr(patient, 'antecedents_familiaux', None),
+            })
+        except Exception:
+            return Response(
+                {'detail': 'Dossier introuvable.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     @action(
         detail=True,
@@ -265,7 +274,10 @@ class PatientViewSet(viewsets.ModelViewSet):
         Mise à jour publique des habitudes de vie via QR code.
         """
 
-        patient = self._get_public_patient(pk, request=request)
+        try:
+            patient = self._get_public_patient(pk, request=request)
+        except Exception:
+            patient = None
 
         if not patient:
             return Response(
@@ -273,7 +285,13 @@ class PatientViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        errors, updates = self._validate_habitudes_data(request.data)
+        try:
+            errors, updates = self._validate_habitudes_data(request.data)
+        except Exception:
+            return Response(
+                {'errors': {'detail': 'Données invalides.'}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if errors:
             return Response(
@@ -671,13 +689,17 @@ class PatientViewSet(viewsets.ModelViewSet):
         if not pk:
             return None
 
+        pk_value = str(pk).strip()
+        if not pk_value:
+            return None
+
+        # 1) Essayer d’abord par clé primaire si c’est un entier.
         try:
-            return queryset.get(pk=pk)
+            return queryset.get(pk=int(pk_value))
         except (Patient.DoesNotExist, ValueError, TypeError):
             pass
 
-        # Supporte aussi un appel via /patients/<registration_number>/public/
-        # ou via la référence fournie dans l'URL du QR code.
+        # 2) Essayer ensuite par numéro de dossier / référence QR.
         candidate_refs = []
         if request is not None:
             candidate_refs.extend([
@@ -685,13 +707,16 @@ class PatientViewSet(viewsets.ModelViewSet):
                 request.query_params.get('token'),
                 request.query_params.get('patient_ref'),
             ])
-        candidate_refs.append(pk)
+        candidate_refs.extend([pk_value, str(pk_value).replace('/public', '')])
 
         for ref in candidate_refs:
             if not ref:
                 continue
+            ref_value = str(ref).strip()
+            if not ref_value:
+                continue
             try:
-                return queryset.get(registration_number=ref)
+                return queryset.get(registration_number=ref_value)
             except Patient.DoesNotExist:
                 continue
 
