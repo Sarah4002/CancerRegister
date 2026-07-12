@@ -3,10 +3,15 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from apps.patients.views import PatientViewSet
 
 urlpatterns = [
     
     path('admin/', admin.site.urls),
+
+    # Route publique simple pour les QR codes mobiles
+    path('patient/<str:pk>/', PatientViewSet.as_view({'get': 'public'}), name='mobile-patient-public'),
+    path('patient/<str:pk>/habitudes/', PatientViewSet.as_view({'patch': 'habitudes'}), name='mobile-patient-habitudes'),
 
     # ==============================
     # API v1
