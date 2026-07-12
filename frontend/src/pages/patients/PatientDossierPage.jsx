@@ -136,7 +136,7 @@ function EditField({ field, value, onChange, allValues }) {
 }
 
 function QRCodeCard({ patient }) {
-  const publicUrl = `${window.location.origin}/patient/${encodeURIComponent(patient.id)}`;
+  const publicUrl = `${MOBILE_APP_BASE_URL}/${encodeURIComponent(patient.id)}`;
   const mobileUrl = `${publicUrl}?ref=${encodeURIComponent(patient.registration_number)}&token=${encodeURIComponent(patient.registration_number)}`;
   const qrApiUrl  = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(mobileUrl) + '&color=2d5a3d&bgcolor=ffffff&format=png';
   const [copied, setCopied] = useState(false);
