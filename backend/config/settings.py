@@ -189,6 +189,7 @@ _CORS_DEFAULTS = ','.join([
     'http://localhost:3000',
     'http://localhost:5173',
     'https://patientlifestyleform.vercel.app',
+    'https://questionnaire-app-khaki-alpha.vercel.app',
     'https://devona-copasetic-chieko.ngrok-free.dev',
     'https://registredecancer.vercel.app',
     'https://registrecancer.vercel.app',
@@ -203,6 +204,7 @@ CORS_ALLOWED_ORIGINS = config(
 # (Vercel génère une URL unique par branche, ex: patientlifestyleform-git-main-xxx.vercel.app)
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r'^https://patientlifestyleform[a-zA-Z0-9\-]*\.vercel\.app$',
+    r'^https://questionnaire-app-khaki-alpha(?:-[a-zA-Z0-9\-]+)?\.vercel\.app$',
 ]
 
 if DEBUG:
@@ -231,7 +233,7 @@ CORS_ALLOW_HEADERS = [
 # → https://patientlifestyleform.vercel.app/patient/79?ref=P-2026-0049
 MOBILE_APP_BASE_URL = config(
     'MOBILE_APP_BASE_URL',
-    default='https://patientlifestyleform.vercel.app/patient',
+    default='https://questionnaire-app-khaki-alpha.vercel.app/patient',
 )
 
 # ─────────────────────────────────────────────
