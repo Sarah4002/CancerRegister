@@ -8,6 +8,24 @@ from .models import (
 )
 
 
+# Champs qu'un anatomopathologiste peut renseigner dans un compte rendu. Les
+# autres données médicales (TNM, stade, traitement…) restent sous la
+# responsabilité de l'oncologue / médecin chef.
+ANAPATH_REPORT_FIELDS = {
+    'patient', 'date_diagnostic', 'type_diagnostic', 'base_diagnostic',
+    'topographie', 'morphologie', 'topographie_code', 'morphologie_code',
+    'grade_histologique', 'differentiation', 'variante_histologique',
+    'methodes_confirmation_text', 'conf_histologie_tumeur', 'conf_cytologie',
+    'conf_microscopie_sans_histo', 'conf_marqueurs_biologiques',
+    'conf_biopsie_medullaire', 'numero_bloc_anapath',
+    'medecin_anatomopathologiste', 'laboratoire_anapath',
+    'date_analyse_anapath', 'technique_prelevement', 'qualite_prelevement',
+    'immunohistochimie', 'rapport_complet', 'marges_chirurgicales',
+    'distance_marge_minimale', 'emboles_lymphatiques', 'emboles_vasculaires',
+    'observations',
+}
+
+
 class TopographieSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -108,6 +126,17 @@ class DiagnosticCreateSerializer(serializers.ModelSerializer):
         if style_vie_data:
             StyleVie.objects.create(diagnostic=diag, **style_vie_data)
         return diag
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        if request and getattr(request.user, 'role', None) == 'anapath':
+            forbidden = set(attrs) - ANAPATH_REPORT_FIELDS
+            if forbidden:
+                raise serializers.ValidationError({
+                    field: "Ce champ ne peut pas être modifié dans un compte rendu d'anatomopathologie."
+                    for field in sorted(forbidden)
+                })
+        return attrs
 
     def update(self, instance, validated_data):
         style_vie_data = validated_data.pop('style_vie', None)

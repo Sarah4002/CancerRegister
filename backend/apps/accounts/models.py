@@ -32,6 +32,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         EPIDEMIOLOGIST = 'epidemiologist', 'Épidémiologiste'
         PHARMACIST     = 'pharmacist',  'Pharmacien'
         READONLY       = 'readonly',    'Lecture seule'
+        SECRETAIRE     = 'secretaire',   'Saise des données'
+        DOCTOR_CHEF    = 'doctor_chef', 'Médecin Chef'
+       
 
     class Speciality(models.TextChoices):
         ONCOLOGY          = 'oncology',          'Oncologie'

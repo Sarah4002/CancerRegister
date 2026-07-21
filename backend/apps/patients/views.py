@@ -23,6 +23,9 @@ from .serializers import (
     ContactUrgenceSerializer,
     DossierMedicalSerializer,
     PatientCreateSerializer,
+    PatientAdministrativeSerializer,
+    PatientAdministrativeDetailSerializer,
+    PatientClinicalContextSerializer,
     PatientDetailSerializer,
     PatientListSerializer,
 )
@@ -165,13 +168,17 @@ class PatientViewSet(viewsets.ModelViewSet):
     # =========================================================================
 
     def get_serializer_class(self):
+        is_secretary = self.request.user.role == 'secretaire'
+        is_limited_clinical_reader = self.request.user.role in {'pharmacist', 'anapath'}
         if self.action == 'list':
-            return PatientListSerializer
+            return PatientClinicalContextSerializer if is_limited_clinical_reader else PatientListSerializer
 
         if self.action in ['create', 'update', 'partial_update']:
-            return PatientCreateSerializer
+            return PatientAdministrativeSerializer if is_secretary else PatientCreateSerializer
 
-        return PatientDetailSerializer
+        if is_secretary:
+            return PatientAdministrativeDetailSerializer
+        return PatientClinicalContextSerializer if is_limited_clinical_reader else PatientDetailSerializer
 
     # =========================================================================
     # CRUD
@@ -330,6 +337,9 @@ class PatientViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def stats(self, request):
+        from apps.accounts.permissions import can_view_statistics
+        if not can_view_statistics(request.user):
+            raise PermissionDenied("Vous n'avez pas accès aux statistiques.")
         queryset = Patient.objects.filter(est_actif=True)
 
         return Response({
@@ -373,7 +383,8 @@ class PatientViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def changer_statut(self, request, pk=None):
-        if not can_write_patient(request.user):
+        from apps.accounts.permissions import can_write_diagnostic
+        if not can_write_diagnostic(request.user):
             return Response(
                 {'detail': 'Non autorisé.'},
                 status=status.HTTP_403_FORBIDDEN,
@@ -410,10 +421,14 @@ class PatientViewSet(viewsets.ModelViewSet):
         )
 
         if request.method == 'GET':
+            from apps.accounts.permissions import can_write_diagnostic
+            if not can_write_diagnostic(request.user):
+                raise PermissionDenied("Accès au dossier médical non autorisé.")
             serializer = DossierMedicalSerializer(dossier)
             return Response(serializer.data)
 
-        if not can_write_patient(request.user):
+        from apps.accounts.permissions import can_write_diagnostic
+        if not can_write_diagnostic(request.user):
             raise PermissionDenied(
                 "Vous n'avez pas le droit de modifier le dossier médical."
             )

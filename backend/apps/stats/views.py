@@ -31,7 +31,14 @@ from django.db.models.functions import (
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated as DRFIsAuthenticated
+from apps.accounts.permissions import can_view_statistics
+
+
+class IsAuthenticated(DRFIsAuthenticated):
+    """Toutes les vues de ce module sont des statistiques autorisées par rôle."""
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) and can_view_statistics(request.user)
 
 # ── Import des modèles ────────────────────────────────────────────────────────
 try:

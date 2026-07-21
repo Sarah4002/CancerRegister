@@ -18,6 +18,8 @@ export const ROLES = {
   ANAPATH:        'anapath',
   EPIDEMIOLOGIST: 'epidemiologist',
   PHARMACIST:     'pharmacist',
+  SECRETAIRE:     'secretaire',
+  DOCTOR_CHEF:    'doctor_chef',
   READONLY:       'readonly',
 };
 
@@ -27,6 +29,8 @@ export const ROLE_LABELS = {
   anapath:        'Médecin Anatomopathologiste',
   epidemiologist: 'Épidémiologiste',
   pharmacist:     'Pharmacien',
+  secretaire:     'Secrétaire',
+  doctor_chef:    'Médecin chef',
   readonly:       'Lecture seule',
 };
 
@@ -36,6 +40,8 @@ export const ROLE_COLORS = {
   anapath:        { color: '#9b8afb', bg: 'rgba(155,138,251,0.1)', border: 'rgba(155,138,251,0.25)' },
   epidemiologist: { color: '#00e5a0', bg: 'rgba(0,229,160,0.1)',   border: 'rgba(0,229,160,0.25)'   },
   pharmacist:     { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',   border: 'rgba(245,158,11,0.25)'   },
+  secretaire:     { color: '#14b8a6', bg: 'rgba(20,184,166,0.1)',   border: 'rgba(20,184,166,0.25)'   },
+  doctor_chef:    { color: '#7c3aed', bg: 'rgba(124,58,237,0.1)',   border: 'rgba(124,58,237,0.25)'   },
   readonly:       { color: '#9ca3af', bg: 'rgba(107,114,128,0.1)', border: 'rgba(107,114,128,0.25)' },
 };
 
@@ -47,6 +53,8 @@ function buildEmptyCan() {
     viewStatistics: false, export:          false,
     viewMap:        false, manageUsers:     false,
     viewRcp:        false,
+    writeAnapathReport: false, validateDiagnosis: false,
+    exportIdentifiedData: false,
   };
 }
 
@@ -81,6 +89,9 @@ export default function usePermissions() {
     viewMap:         perms.can_view_map         ?? false,
     manageUsers:     perms.can_manage_users     ?? false,
     viewRcp:         perms.can_view_rcp         ?? false,
+    writeAnapathReport: perms.can_write_anapath_report ?? false,
+    validateDiagnosis: perms.can_validate_diagnosis ?? false,
+    exportIdentifiedData: perms.can_export_identified_data ?? false,
   };
 
   return {

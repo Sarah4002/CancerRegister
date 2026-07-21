@@ -1,5 +1,6 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from apps.accounts.permissions import CanViewStatistics
 from rest_framework.response import Response
 from django.db.models import Count, Q
 from django.utils import timezone
@@ -14,7 +15,7 @@ from apps.treatments.models import (
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CanViewStatistics])
 def dashboard_global(request):
     today      = timezone.now().date()
     an_courant = today.year
@@ -176,7 +177,7 @@ def dashboard_global(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CanViewStatistics])
 def alertes(request):
     return Response({
         'patients_perdus_vue':  Patient.objects.filter(statut_dossier='perdu').count(),
@@ -192,7 +193,7 @@ def alertes(request):
 # ─────────────────────────────────────────────────────────────────
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CanViewStatistics])
 def stats_incidence(request):
     """Incidence par wilaya, année, sexe."""
     annee = request.query_params.get('annee')
@@ -231,7 +232,7 @@ def stats_incidence(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CanViewStatistics])
 def stats_cancers(request):
     """Statistiques détaillées par type de cancer."""
     annee = request.query_params.get('annee')
@@ -282,7 +283,7 @@ def stats_cancers(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CanViewStatistics])
 def stats_patients(request):
     """Statistiques démographiques détaillées."""
     annee  = request.query_params.get('annee')
@@ -343,7 +344,7 @@ def stats_patients(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CanViewStatistics])
 def stats_traitements(request):
     """Statistiques sur les traitements."""
     annee = request.query_params.get('annee')

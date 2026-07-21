@@ -7,9 +7,9 @@ from apps.accounts.permissions import (
     can_read_patient,    can_write_patient,
     can_read_diagnostic, can_write_diagnostic,
     can_read_treatment,  can_write_treatment,
-    can_view_statistics, can_export,
+    can_view_statistics, can_export, can_export_identified_data,
     can_view_map,        can_manage_users,
-    can_view_rcp,
+    can_view_rcp,        can_write_anapath_report, can_validate_diagnosis,
 )
 
 User = get_user_model()
@@ -51,9 +51,12 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'can_write_treatment':  can_write_treatment(user),
                 'can_view_statistics':  can_view_statistics(user),
                 'can_export':           can_export(user),
+                'can_export_identified_data': can_export_identified_data(user),
                 'can_view_map':         can_view_map(user),
                 'can_manage_users':     can_manage_users(user),
                 'can_view_rcp':         can_view_rcp(user),
+                'can_write_anapath_report': can_write_anapath_report(user),
+                'can_validate_diagnosis': can_validate_diagnosis(user),
             }
         }
         return data

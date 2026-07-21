@@ -165,3 +165,46 @@ class PatientCreateSerializer(serializers.ModelSerializer):
             for contact_data in contacts_data:
                 ContactUrgence.objects.create(patient=instance, **contact_data)
         return instance
+
+
+class PatientAdministrativeSerializer(PatientCreateSerializer):
+    """Identité et coordonnées, sans antécédents ni informations cliniques."""
+    class Meta(PatientCreateSerializer.Meta):
+        fields = [
+            'id_national', 'num_securite_sociale', 'num_matricule',
+            'nom', 'prenom', 'nom_jeune_fille', 'sexe', 'date_naissance',
+            'age_diagnostic', 'lieu_naissance', 'nationalite',
+            'adresse', 'commune', 'wilaya', 'code_postal',
+            'telephone', 'telephone2', 'email', 'niveau_instruction',
+            'profession', 'situation_familiale', 'nombre_enfants',
+            'contacts_urgence',
+        ]
+
+
+class PatientAdministrativeDetailSerializer(serializers.ModelSerializer):
+    contacts_urgence = ContactUrgenceSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Patient
+        fields = [
+            'id', 'registration_number', 'id_national', 'num_securite_sociale',
+            'num_matricule', 'nom', 'prenom', 'nom_jeune_fille', 'sexe',
+            'date_naissance', 'age_diagnostic', 'lieu_naissance', 'nationalite',
+            'adresse', 'commune', 'wilaya', 'code_postal', 'telephone',
+            'telephone2', 'email', 'niveau_instruction', 'profession',
+            'situation_familiale', 'nombre_enfants', 'contacts_urgence',
+            'date_enregistrement', 'date_modification',
+        ]
+        read_only_fields = ['id', 'registration_number', 'date_enregistrement', 'date_modification']
+
+
+class PatientClinicalContextSerializer(serializers.ModelSerializer):
+    """Identification minimale pour la prescription ou l'anatomopathologie."""
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Patient
+        fields = ['id', 'registration_number', 'nom', 'prenom', 'full_name', 'sexe', 'date_naissance']
+
+    def get_full_name(self, obj):
+        return f"{obj.nom} {obj.prenom}".strip()

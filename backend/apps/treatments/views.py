@@ -16,10 +16,11 @@ from .serializers import (
     HormonotherapieSerializer, ImmunotherapieSerializer,
 )
 from apps.accounts.models import AccessLog
+from apps.accounts.permissions import CanReadOrWriteTreatment
 
 
 class ChimiotherapieViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanReadOrWriteTreatment]
     filter_backends    = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields   = ['patient', 'statut', 'intention', 'ligne']
     search_fields      = ['protocole', 'patient__nom', 'patient__registration_number']
@@ -49,7 +50,7 @@ class ChimiotherapieViewSet(viewsets.ModelViewSet):
 
 
 class RadiotherapieViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanReadOrWriteTreatment]
     serializer_class   = RadiotherapieSerializer
     filter_backends    = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields   = ['patient', 'statut', 'technique', 'intention']
@@ -65,7 +66,7 @@ class RadiotherapieViewSet(viewsets.ModelViewSet):
 
 
 class ChirurgieViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanReadOrWriteTreatment]
     serializer_class   = ChirurgieSerializer
     filter_backends    = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields   = ['patient', 'statut', 'type_chirurgie', 'marges_resection']
@@ -81,7 +82,7 @@ class ChirurgieViewSet(viewsets.ModelViewSet):
 
 
 class HormonotherapieViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanReadOrWriteTreatment]
     serializer_class   = HormonotherapieSerializer
     filter_backends    = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields   = ['patient', 'statut', 'type_hormonotherapie']
@@ -97,7 +98,7 @@ class HormonotherapieViewSet(viewsets.ModelViewSet):
 
 
 class ImmunotherapieViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanReadOrWriteTreatment]
     serializer_class   = ImmunotherapieSerializer
     filter_backends    = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields   = ['patient', 'statut', 'type_immunotherapie']
@@ -114,7 +115,7 @@ class ImmunotherapieViewSet(viewsets.ModelViewSet):
 
 class TraitementsViewSet(viewsets.ViewSet):
     """Vue consolidée : tous les traitements."""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanReadOrWriteTreatment]
 
     @action(detail=False, methods=['get'])
     def par_patient(self, request):

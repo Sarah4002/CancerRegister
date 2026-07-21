@@ -4,6 +4,7 @@ apps/exports/views.py — Import / Export CanReg5
 
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAuthenticated
+from apps.accounts.permissions import CanExportIdentifiedData, CanManageUsers
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from django.http import HttpResponse
@@ -70,7 +71,7 @@ def nettoyer_diagnostic(data):
 
 # ── APERÇU ────────────────────────────────────────────────────
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CanManageUsers])
 @parser_classes([MultiPartParser])
 def canreg_preview(request):
     file = request.FILES.get('file')
@@ -100,7 +101,7 @@ def canreg_preview(request):
 
 # ── IMPORT CONFIRMÉ ───────────────────────────────────────────
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CanManageUsers])
 @parser_classes([MultiPartParser])
 def canreg_import(request):
     file = request.FILES.get('file')
@@ -185,7 +186,7 @@ def canreg_import(request):
 
 # ── EXPORT ────────────────────────────────────────────────────
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CanExportIdentifiedData])
 def canreg_export(request):
     qs = Patient.objects.all().order_by('id')
 

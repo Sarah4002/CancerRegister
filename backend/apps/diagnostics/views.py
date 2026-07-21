@@ -12,7 +12,10 @@ from .serializers import (
     DiagnosticValidationRuleSerializer,
 )
 from apps.accounts.models import AccessLog
-from apps.accounts.permissions import CanReadOrWriteDiagnostic, can_write_diagnostic, IsAdmin
+from apps.accounts.permissions import (
+    CanReadOrWriteDiagnostic, can_write_diagnostic, can_validate_diagnosis,
+    IsAdmin,
+)
 
 
 class TopographieViewSet(viewsets.ModelViewSet):
@@ -42,6 +45,17 @@ class TopographieViewSet(viewsets.ModelViewSet):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied('Non autorise a modifier des topographies.')
         serializer.save()
+
+    @action(detail=True, methods=['post'], url_path='valider')
+    def valider(self, request, pk=None):
+        """Validation clinique finale réservée au médecin chef."""
+        if not can_validate_diagnosis(request.user):
+            return Response({'detail': 'Validation réservée au médecin chef.'}, status=status.HTTP_403_FORBIDDEN)
+        diagnostic = self.get_object()
+        diagnostic.est_principal = True
+        diagnostic.modifie_par = request.user
+        diagnostic.save(update_fields=['est_principal', 'modifie_par', 'date_modification'])
+        return Response(DiagnosticDetailSerializer(diagnostic, context={'request': request}).data)
 
     def destroy(self, request, *args, **kwargs):
         # Soft-delete: mark est_actif False

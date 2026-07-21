@@ -4,22 +4,25 @@ apps/accounts/permissions.py
 Permissions granulaires par rôle.
 Utilisé dans tous les ViewSets pour contrôler l'accès.
 
-MATRICE DES DROITS :
-┌─────────────────────────┬───────┬───────────┬─────────┬──────────┐
-│ Fonctionnalité          │ Admin │ Oncologue │ Anapath │ Epidémio │
-├─────────────────────────┼───────┼───────────┼─────────┼──────────┤
-│ Créer patient           │  ✅   │    ✅     │   ❌    │    ❌    │
-│ Modifier patient        │  ✅   │    ✅     │   ❌    │    ❌    │
-│ Voir patients           │  ✅   │    ✅     │   👁    │    👁    │
-│ Saisir diagnostic       │  ✅   │    ✅     │   ✅    │    ❌    │
-│ Modifier diagnostic     │  ✅   │    ✅     │   ✅    │    ❌    │
-│ Voir diagnostic         │  ✅   │    ✅     │   ✅    │    ❌    │
-│ Saisir traitement       │  ✅   │    ✅     │   ❌    │    ❌    │
-│ Voir statistiques       │  ✅   │    👁     │   ❌    │    ✅    │
-│ Exporter données        │  ✅   │    ❌     │   ❌    │    ✅    │
-│ Carte SIG               │  ✅   │    ❌     │   ❌    │    ✅    │
-│ Gérer utilisateurs      │  ✅   │    ❌     │   ❌    │    ❌    │
-└─────────────────────────┴───────┴───────────┴─────────┴──────────┘
+Fonction / Permission   	              Admin (IT)	Doctor Chef	Doctor	Secrétaire	Pharmacie	Anapath	Épidémiologiste
+Gérer les utilisateurs	                      ✅	        ❌	      ❌	      ❌	         ❌      	❌	     ❌
+Gérer les rôles	                              ✅	        ❌	      ❌    	  ❌          ❌	        ❌	     ❌
+Paramètres de l'application	                  ✅	        ❌	      ❌	      ❌	         ❌	        ❌	     ❌
+Sauvegarde / Restauration	                  ✅	        ❌	      ❌	      ❌	         ❌	        ❌	     ❌
+Consulter les logs	                          ✅	        ❌	      ❌	      ❌	         ❌	        ❌        ❌
+Voir les dossiers patients                    ❌	        ✅	      ✅	      ⚠️(Administratif)	   ⚠️  (Prescription)	⚠️ (Résultats AP)	❌
+Créer un patient	                          ❌	        ✅	      ✅	      ✅	         ❌	        ❌	     ❌
+Modifier les informations administratives	  ❌	        ✅	      ✅	      ✅	         ❌	        ❌	     ❌
+Modifier les données médicales	              ❌	        ✅	      ✅	      ❌	         ❌	        ❌	     ❌
+Valider le diagnostic	                      ❌	        ✅	      ❌	      ❌	         ❌	        ❌	     ❌
+Ajouter un compte rendu d'Anapath	          ❌	   Consultation	Consultation ❌	        ❌	       ✅	    ❌
+Prescrire un traitement	                      ❌	        ✅	      ✅	      ❌	         ❌	        ❌	     ❌
+Consulter les prescriptions	                  ❌	        ✅	      ✅	      ❌	         ✅	        ❌	     ❌
+Délivrer les médicaments	                  ❌	        ❌	      ❌	      ❌	         ✅	        ❌	     ❌
+Gérer le stock pharmacie	                  ❌    	    ❌	      ❌	      ❌	         ✅	        ❌	     ❌
+Générer les statistiques	                  ❌ 	    ✅	      ⚠️	   ❌	      ⚠️	      ⚠️	    ✅
+Exporter les données anonymisées	          ❌	        ✅	      ❌	      ❌	         ❌	        ❌	     ✅
+Exporter les données nominatives	          ❌	        ✅	      ❌	      ❌	         ❌	        ❌	     ❌
 """
 
 from rest_framework.permissions import BasePermission, SAFE_METHODS
@@ -32,8 +35,12 @@ ROLE_ANAPATH        = 'anapath'         # Médecin anatomopathologiste
 ROLE_EPIDEMIOLOGIST = 'epidemiologist'  # Épidémiologiste
 ROLE_PHARMACIST     = 'pharmacist'      # Pharmacien
 ROLE_READONLY       = 'readonly'
+ROLE_SECRETAIRE     = 'secretaire'       # Saisie des données
+ROLE_DOCTOR_CHEF    = 'doctor_chef'     # Médecin chef
 
-ALL_ROLES = [ROLE_ADMIN, ROLE_DOCTOR, ROLE_ANAPATH, ROLE_EPIDEMIOLOGIST, ROLE_PHARMACIST, ROLE_READONLY]
+
+ALL_ROLES = [ROLE_ADMIN, ROLE_DOCTOR, ROLE_ANAPATH, ROLE_EPIDEMIOLOGIST, ROLE_PHARMACIST, ROLE_READONLY,ROLE_SECRETAIRE,ROLE_DOCTOR_CHEF]
+
 
 
 # ── Helpers ────────────────────────────────────────────────────
@@ -43,41 +50,56 @@ def has_role(user, *roles):
 def is_admin(user):
     return has_role(user, ROLE_ADMIN)
 
+def is_doctor_chef(user):
+    return has_role(user, ROLE_DOCTOR_CHEF)
+
 def can_write_patient(user):
     """Créer ou modifier un dossier patient (identité, coordonnées, profil)."""
-    return has_role(user, ROLE_ADMIN, ROLE_DOCTOR)
+    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_DOCTOR,ROLE_SECRETAIRE)
 
 def can_read_patient(user):
-    """Voir les dossiers patients."""
-    return has_role(user, ROLE_ADMIN, ROLE_DOCTOR, ROLE_ANAPATH, ROLE_EPIDEMIOLOGIST, ROLE_PHARMACIST)
+    """Voir les dossiers patients selon le périmètre défini par rôle."""
+    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_SECRETAIRE, ROLE_DOCTOR, ROLE_ANAPATH, ROLE_PHARMACIST)
 
 def can_write_diagnostic(user):
-    """Saisir ou modifier un diagnostic / morphologie."""
-    return has_role(user, ROLE_ADMIN, ROLE_DOCTOR, ROLE_ANAPATH)
+    """Saisir ou modifier les données médicales hors compte rendu anapath."""
+    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_DOCTOR)
 
 def can_read_diagnostic(user):
-    """Voir les diagnostics."""
-    return has_role(user, ROLE_ADMIN, ROLE_DOCTOR, ROLE_ANAPATH)
+    """Consulter les diagnostics et résultats anatomopathologiques."""
+    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_DOCTOR, ROLE_ANAPATH)
+
+def can_write_anapath_report(user):
+    """Ajouter ou modifier un compte rendu d'anatomopathologie."""
+    return has_role(user, ROLE_ANAPATH)
+
+def can_validate_diagnosis(user):
+    """Valider un diagnostic définitif."""
+    return has_role(user, ROLE_DOCTOR_CHEF)
 
 def can_write_treatment(user):
     """Saisir ou modifier un traitement."""
-    return has_role(user, ROLE_ADMIN, ROLE_DOCTOR)
+    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_DOCTOR)
 
 def can_read_treatment(user):
     """Voir les traitements."""
-    return has_role(user, ROLE_ADMIN, ROLE_DOCTOR, ROLE_PHARMACIST)
+    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_DOCTOR, ROLE_PHARMACIST)
 
 def can_view_statistics(user):
     """Voir les statistiques."""
-    return has_role(user, ROLE_ADMIN, ROLE_DOCTOR, ROLE_EPIDEMIOLOGIST)
+    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_DOCTOR, ROLE_PHARMACIST, ROLE_ANAPATH, ROLE_EPIDEMIOLOGIST)
 
 def can_export(user):
-    """Exporter les données."""
-    return has_role(user, ROLE_ADMIN, ROLE_EPIDEMIOLOGIST)
+    """Exporter des données anonymisées."""
+    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_EPIDEMIOLOGIST)
+
+def can_export_identified_data(user):
+    """Exporter des données nominatives."""
+    return has_role(user, ROLE_DOCTOR_CHEF)
 
 def can_view_map(user):
     """Carte SIG."""
-    return has_role(user, ROLE_ADMIN, ROLE_EPIDEMIOLOGIST)
+    return has_role(user, ROLE_EPIDEMIOLOGIST)
 
 def can_manage_users(user):
     """Gérer les comptes utilisateurs."""
@@ -85,7 +107,7 @@ def can_manage_users(user):
 
 def can_view_rcp(user):
     """RCP — réunion de concertation pluridisciplinaire."""
-    return has_role(user, ROLE_ADMIN, ROLE_DOCTOR)
+    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_DOCTOR)
 
 
 # ── Classes de permission DRF ──────────────────────────────────
@@ -114,7 +136,21 @@ class CanReadOrWriteDiagnostic(BasePermission):
     def has_permission(self, request, view):
         if request.method in SAFE_METHODS:
             return can_read_diagnostic(request.user)
-        return can_write_diagnostic(request.user)
+        return can_write_diagnostic(request.user) or can_write_anapath_report(request.user)
+
+
+class CanWriteAnapathReport(BasePermission):
+    message = "Ajout de compte rendu anatomopathologique réservé au service d'anapath."
+
+    def has_permission(self, request, view):
+        return can_write_anapath_report(request.user)
+
+
+class CanValidateDiagnosis(BasePermission):
+    message = "Validation du diagnostic réservée au médecin chef."
+
+    def has_permission(self, request, view):
+        return can_validate_diagnosis(request.user)
 
 
 class CanReadOrWriteTreatment(BasePermission):
@@ -135,6 +171,13 @@ class CanExport(BasePermission):
     message = "Export non autorisé pour votre profil."
     def has_permission(self, request, view):
         return can_export(request.user)
+
+
+class CanExportIdentifiedData(BasePermission):
+    message = "Export de données nominatives réservé au médecin chef."
+
+    def has_permission(self, request, view):
+        return can_export_identified_data(request.user)
 
 
 class CanManageUsers(BasePermission):

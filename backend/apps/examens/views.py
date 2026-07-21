@@ -1,12 +1,13 @@
 from rest_framework import viewsets, filters, status
 from rest_framework.permissions import IsAuthenticated
+from apps.accounts.permissions import CanReadOrWriteDiagnostic
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import ExamenMedical
 from .serializers import ExamenMedicalSerializer
 
 class ExamenMedicalViewSet(viewsets.ModelViewSet):
     serializer_class = ExamenMedicalSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanReadOrWriteDiagnostic]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['patient', 'categorie', 'statut']
     search_fields = ['nom_examen', 'resultat']
