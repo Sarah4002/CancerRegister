@@ -12,7 +12,7 @@ const NAV_CONFIG = [
     { path: '/dashboard', label: 'Tableau de bord', icon: GridIcon, roles: ['doctor', 'doctor_chef', 'anapath', 'epidemiologist', 'pharmacist', 'secretaire', 'readonly'] },
   ] },
   { section: 'Administration', items: [
-    { path: '/dashboardadmin', label: 'Tableau de bord admin', icon: GridIcon, permission: 'manageUsers' },
+    { path: '/dashboardadmin', label: 'Tableau de bord ', icon: GridIcon, permission: 'manageUsers' },
     { path: '/utilisateurs', label: 'Utilisateurs', icon: UsersIcon, permission: 'manageUsers' },
     { path: '/audit-logs', label: "Journal d'audit", icon: CopyIcon, permission: 'manageUsers' },
     { path: '/parametres', label: 'Paramètres', icon: SlidersIcon, permission: 'manageUsers' },
