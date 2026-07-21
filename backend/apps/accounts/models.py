@@ -129,6 +129,10 @@ class AccessLog(models.Model):
     class Meta:
         db_table = 'access_logs'
         ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['-timestamp'], name='access_log_timestamp_idx'),
+            models.Index(fields=['action', '-timestamp'], name='access_log_action_time_idx'),
+        ]
 
     def __str__(self):
         return f"{self.user} - {self.action} - {self.timestamp}"

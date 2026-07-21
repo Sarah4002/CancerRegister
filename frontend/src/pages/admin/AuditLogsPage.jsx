@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { AppLayout } from '../../components/layout/Sidebar';
 import { adminService } from '../../services/adminService';
 import toast from 'react-hot-toast';
@@ -43,6 +43,7 @@ export default function AuditLogsPage() {
   const [search, setSearch]       = useState('');
   const [actionFilter, setAction] = useState('');
   const [selected, setSelected]   = useState(null);
+  const isInitialLoad              = useRef(true);
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -67,7 +68,13 @@ export default function AuditLogsPage() {
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
   useEffect(() => {
-    const timer = setTimeout(fetchLogs, 350);
+    // Afficher les premiers journaux sans attendre ; seule la recherche est temporisée.
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      fetchLogs();
+      return undefined;
+    }
+    const timer = setTimeout(fetchLogs, search ? 250 : 0);
     return () => clearTimeout(timer);
   }, [fetchLogs]);
 

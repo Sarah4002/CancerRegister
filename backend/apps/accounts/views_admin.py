@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 from datetime import datetime, timedelta
 
@@ -57,9 +58,18 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
 
 class AdminUserLogSerializer(serializers.ModelSerializer):
+    user_display = serializers.SerializerMethodField()
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+
     class Meta:
         model  = AccessLog
-        fields = ['id', 'action', 'resource', 'resource_id', 'ip_address', 'timestamp', 'details']
+        fields = [
+            'id', 'action', 'resource', 'resource_id', 'ip_address',
+            'user_agent', 'timestamp', 'details', 'user_display', 'user_email',
+        ]
+
+    def get_user_display(self, obj):
+        return obj.user.get_display_name() if obj.user else ''
 
 
 # ── Liste des médecins / participants RCP ──────────────────────
@@ -198,11 +208,22 @@ class AdminAuditLogsView(generics.ListAPIView):
     serializer_class   = AdminUserLogSerializer
 
     def get_queryset(self):
-        qs = AccessLog.objects.all().order_by('-timestamp')
+        qs = AccessLog.objects.select_related('user').order_by('-timestamp')
         action    = self.request.query_params.get('action')
+        search    = self.request.query_params.get('search', '').strip()
         date_from = self.request.query_params.get('date_from')
         date_to   = self.request.query_params.get('date_to')
         if action:    qs = qs.filter(action=action)
+        if search:
+            qs = qs.filter(
+                Q(user__first_name__icontains=search)
+                | Q(user__last_name__icontains=search)
+                | Q(user__email__icontains=search)
+                | Q(user__username__icontains=search)
+                | Q(resource__icontains=search)
+                | Q(resource_id__icontains=search)
+                | Q(ip_address__icontains=search)
+            )
         if date_from: qs = qs.filter(timestamp__date__gte=date_from)
         if date_to:   qs = qs.filter(timestamp__date__lte=date_to)
         return qs
@@ -218,16 +239,30 @@ class AdminAuditStatsView(APIView):
             datetime.combine(today, datetime.min.time()),
             timezone.get_current_timezone()
         )
-        total          = AccessLog.objects.count()
-        aujourd_hui    = AccessLog.objects.filter(timestamp__gte=today_start).count()
-        cette_semaine  = AccessLog.objects.filter(timestamp__gte=now - timedelta(days=7)).count()
-        ce_mois        = AccessLog.objects.filter(timestamp__year=now.year, timestamp__month=now.month).count()
+        week_start = now - timedelta(days=7)
+        month_start = today.replace(day=1)
+        aggregates = AccessLog.objects.aggregate(
+            total=Count('id'),
+            today=Count('id', filter=Q(timestamp__gte=today_start)),
+            this_week=Count('id', filter=Q(timestamp__gte=week_start)),
+            this_month=Count('id', filter=Q(timestamp__date__gte=month_start)),
+            deletes=Count('id', filter=Q(action=AccessLog.Action.DELETE)),
+            unique_users=Count('user', distinct=True),
+        )
 
-        activite_7j = []
-        for day_offset in range(6, -1, -1):
-            day = today - timedelta(days=day_offset)
-            count = AccessLog.objects.filter(timestamp__date=day).count()
-            activite_7j.append({'date': day.isoformat(), 'count': count})
+        daily_counts = {
+            row['day'].isoformat(): row['count']
+            for row in AccessLog.objects
+            .filter(timestamp__date__gte=today - timedelta(days=6))
+            .annotate(day=TruncDate('timestamp'))
+            .values('day')
+            .annotate(count=Count('id'))
+        }
+        activite_7j = [
+            {'date': (today - timedelta(days=day_offset)).isoformat(),
+             'count': daily_counts.get((today - timedelta(days=day_offset)).isoformat(), 0)}
+            for day_offset in range(6, -1, -1)
+        ]
 
         par_action = [
             {'action': r['action'], 'n': r['n']}
@@ -245,8 +280,11 @@ class AdminAuditStatsView(APIView):
                 .annotate(n=Count('id')).order_by('-n')[:8]
         ]
         return Response({
-            'total': total, 'aujourd_hui': aujourd_hui,
-            'cette_semaine': cette_semaine, 'ce_mois': ce_mois,
+            **aggregates,
+            # Alias conservés pour les consommateurs existants de l'API.
+            'aujourd_hui': aggregates['today'],
+            'cette_semaine': aggregates['this_week'],
+            'ce_mois': aggregates['this_month'],
             'activite_7j': activite_7j, 'par_action': par_action, 'top_users': top_users,
         })
 
