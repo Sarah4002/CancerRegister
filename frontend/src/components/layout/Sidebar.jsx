@@ -25,14 +25,6 @@ const NAV_CONFIG = [
     ],
   },
   {
-   /* section: 'Clinique',
-    items: [
-     { path: '/diagnostics', label: 'Diagnostics', icon: MicroscopeIcon, permission: 'readDiagnostic' },
-      { path: '/traitements', label: 'Traitements', icon: PillIcon, permission: 'readTreatment' },
-      { path: '/suivi', label: 'Suivi clinique', icon: HeartIcon, permission: 'readTreatment' },
-    ],*/
-  },
-  {
     section: 'Analyses',
     items: [
       { path: '/stats', label: 'Statistiques', icon: ChartIcon, permission: 'viewStatistics' },
@@ -106,7 +98,7 @@ export default function Sidebar() {
   const filteredNav = NAV_CONFIG
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => {
+      items: (section.items || []).filter((item) => {
         const hasPermission = !item.permission || can[item.permission];
         const hasRole = !item.roles || item.roles.includes(user?.role);
         return hasPermission && hasRole;
