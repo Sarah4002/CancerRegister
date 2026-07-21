@@ -34,6 +34,8 @@ import StatistiquesPage from './pages/statistiques/StatistiquesPage';
 import StatsPage from './pages/stats/StatsPage';
 import AdminPage from './pages/admin/AdminPage';
 import AdminCustomFieldsPage from './pages/admin/AdminCustomFieldsPage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AuditLogsPage from './pages/admin/AuditLogsPage';
 
 
 import SettingsPage from './pages/settings/SettingsPage';
@@ -271,6 +273,21 @@ function App() {
         <Route path="/admin" element={
           <PermRoute permission="manageUsers">
             <AdminPage />
+          </PermRoute>
+        } />
+        <Route path="/dashboardadmin" element={
+          <PermRoute permission="manageUsers">
+            <AdminPage />
+          </PermRoute>
+        } />
+        <Route path="/utilisateurs" element={
+          <PermRoute permission="manageUsers">
+            <AdminUsersPage />
+          </PermRoute>
+        } />
+        <Route path="/audit-logs" element={
+          <PermRoute permission="manageUsers">
+            <AuditLogsPage />
           </PermRoute>
         } />
         <Route path="/admin/champs-personnalises" element={

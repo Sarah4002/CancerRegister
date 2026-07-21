@@ -74,8 +74,27 @@ export default function usePermissions() {
     };
   }
 
-  const perms = user.permissions || {};
   const role  = user.role;
+  // Les sessions créées avant l'ajout des permissions granulaires ne
+  // contiennent pas `user.permissions`. Conserver les droits attendus par rôle
+  // évite de bloquer un médecin jusqu'à sa prochaine reconnexion.
+  const rolePermissions = {
+    can_read_patient: ['doctor_chef', 'doctor', 'secretaire', 'anapath', 'pharmacist'].includes(role),
+    can_write_patient: ['doctor_chef', 'doctor', 'secretaire'].includes(role),
+    can_read_diagnostic: ['doctor_chef', 'doctor', 'anapath'].includes(role),
+    can_write_diagnostic: ['doctor_chef', 'doctor'].includes(role),
+    can_read_treatment: ['doctor_chef', 'doctor', 'pharmacist'].includes(role),
+    can_write_treatment: ['doctor_chef', 'doctor'].includes(role),
+    can_view_statistics: ['doctor_chef', 'doctor', 'pharmacist', 'anapath', 'epidemiologist'].includes(role),
+    can_export: ['doctor_chef', 'epidemiologist'].includes(role),
+    can_export_identified_data: role === 'doctor_chef',
+    can_view_map: role === 'epidemiologist',
+    can_manage_users: role === 'admin',
+    can_view_rcp: ['doctor_chef', 'doctor'].includes(role),
+    can_write_anapath_report: role === 'anapath',
+    can_validate_diagnosis: role === 'doctor_chef',
+  };
+  const perms = user.permissions || rolePermissions;
 
   const can = {
     readPatient:     perms.can_read_patient     ?? false,
