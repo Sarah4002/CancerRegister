@@ -421,9 +421,9 @@ export default function DashboardPage() {
   );
 
   const {
-    kpis, par_sexe, par_statut, top_cancers, par_stade,
-    evolution_mensuelle, top_wilayas, tranches_age,
-    traitements_types, reponses_chimio, activite_recente,
+    kpis = {}, par_sexe = {}, par_statut = [], top_cancers = [], par_stade = [],
+    evolution_mensuelle = [], top_wilayas = [], tranches_age = [],
+    traitements_types = [], reponses_chimio = [], activite_recente = [],
   } = data;
 
   /* ── Data computed ── */
