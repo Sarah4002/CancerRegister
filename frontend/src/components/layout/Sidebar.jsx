@@ -8,21 +8,26 @@ const SIDEBAR_WIDTH = 260;
 const MOBILE_BREAKPOINT = 1100;
 
 const NAV_CONFIG = [
-  { section: 'Principal', items: [{ path: '/dashboard', label: 'Tableau de bord', icon: GridIcon }] },
+  { section: 'Principal', items: [
+    { path: '/dashboard', label: 'Tableau de bord', icon: GridIcon },
+    { path:'/dashboardadmin', label:'Tableau de bord admin', icon: GridIcon, permission:'manageUsers'}
+
+
+  ] },
   {
     section: 'Patients',
     items: [
       { path: '/patients', label: 'Liste des patients', icon: UsersIcon, permission: 'readPatient' },
-      { path: '/patients/doublons', label: 'Doublons', icon: CopyIcon, permission: 'writePatient' },
+      //{ path: '/patients/doublons', label: 'Doublons', icon: CopyIcon, permission: 'writePatient' },
     ],
   },
   {
-    section: 'Clinique',
+   /* section: 'Clinique',
     items: [
-      { path: '/diagnostics', label: 'Diagnostics', icon: MicroscopeIcon, permission: 'readDiagnostic' },
+     { path: '/diagnostics', label: 'Diagnostics', icon: MicroscopeIcon, permission: 'readDiagnostic' },
       { path: '/traitements', label: 'Traitements', icon: PillIcon, permission: 'readTreatment' },
       { path: '/suivi', label: 'Suivi clinique', icon: HeartIcon, permission: 'readTreatment' },
-    ],
+    ],*/
   },
   {
     section: 'Analyses',
@@ -35,8 +40,10 @@ const NAV_CONFIG = [
   {
     section: 'Systeme',
     items: [
+      { path: '/utilisateurs', label: 'Utilisateurs', icon: UsersIcon, permission: 'manageUsers' },
+      { path: '/audit log', label: 'Journal d\'audit', icon: CopyIcon, permission: 'manageUsers' },
       { path: '/aide', label: "Centre d'aide", labelKey: 'help', icon: HelpIcon },
-      { path: '/parametres-medecin', label: 'Parametres medecin', labelKey: 'doctorSettings', icon: DoctorSettingsIcon, roles: ['doctor'] },
+      { path: '/parametres-medecin', label: 'Parametres', labelKey: 'doctorSettings', icon: DoctorSettingsIcon, roles: ['doctor'] },
       { path: '/admin', label: 'Administration', icon: SettingsIcon, permission: 'manageUsers' },
       { path: '/parametres', label: 'Parametres', icon: SlidersIcon, permission: 'manageUsers' },
     ],
