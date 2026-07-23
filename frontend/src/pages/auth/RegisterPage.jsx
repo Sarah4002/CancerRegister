@@ -20,13 +20,12 @@ const WILAYAS = [
 ];
 
 const ROLES = [
-  { value: 'doctor_chef', label: 'Medecin Chef', icon: '' },
-  { value: 'doctor', label: 'Medecin Oncologue', icon: '' },
-  { value: 'anapath', label: 'Medecin Anatomopathologiste', icon: '' },
-  { value: 'epidemiologist', label: 'Epidemiologiste', icon: '' },
-  { value: 'pharmacist', label: 'Pharmacien', icon: '' },
-  { value: 'secretaire', label: 'Secretaire', icon: '' },
-
+  { value: 'doctor_chef', label: 'Medecin Chef', icon: '👨‍⚕️' },
+  { value: 'doctor', label: 'Medecin Oncologue', icon: '🩺' },
+  { value: 'anapath', label: 'Medecin Anatomopathologiste', icon: '🔬' },
+  { value: 'epidemiologist', label: 'Epidemiologiste', icon: '📊' },
+  { value: 'pharmacist', label: 'Pharmacien', icon: '💊' },
+  { value: 'secretaire', label: 'Secretaire', icon: '📋' },
 ];
 
 const SPECIALITIES = [
@@ -115,7 +114,7 @@ function Step2({ onNext, onBack, saved }) {
       <InputField
         label="Confirmer le mot de passe *"
         type={showPass2 ? 'text' : 'password'}
-        placeholder="��������"
+        placeholder="Confirmez le mot de passe"
         error={errors.password_confirm?.message}
         suffix={<EyeBtn show={showPass2} toggle={() => setShowPass2((v) => !v)} />}
         {...register('password_confirm')}
@@ -136,10 +135,12 @@ function Step3({ onNext, onBack, saved, isLoading }) {
   const selectedRole = watch('role') || '';
 
   const roleColors = {
+    doctor_chef: { active: 'rgba(124,58,237,0.10)', border: 'rgba(124,58,237,0.26)', text: '#7c3aed' },
     doctor: { active: 'rgba(37,99,235,0.10)', border: 'rgba(37,99,235,0.26)', text: '#2563eb' },
     anapath: { active: 'rgba(59,130,246,0.10)', border: 'rgba(59,130,246,0.24)', text: '#2563eb' },
     epidemiologist: { active: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.30)', text: '#1d4ed8' },
     pharmacist: { active: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.24)', text: '#d97706' },
+    secretaire: { active: 'rgba(8,145,178,0.10)', border: 'rgba(8,145,178,0.24)', text: '#0891b2' },
   };
 
   return (
@@ -151,7 +152,7 @@ function Step3({ onNext, onBack, saved, isLoading }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
           {ROLES.map((role) => {
             const isSelected = selectedRole === role.value;
-            const colors = roleColors[role.value];
+            const colors = roleColors[role.value] || { active: 'rgba(37,99,235,0.10)', border: 'rgba(37,99,235,0.26)', text: '#2563eb' };
             return (
               <label key={role.value} style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -160,7 +161,14 @@ function Step3({ onNext, onBack, saved, isLoading }) {
                 border: `1px solid ${isSelected ? colors.border : 'rgba(37,99,235,0.12)'}`,
                 borderRadius: '12px', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'center',
               }}>
-                <input type="radio" value={role.value} {...register('role')} onChange={() => setValue('role', role.value, { shouldValidate: false })} style={{ display: 'none' }} />
+                <input
+                  type="radio"
+                  value={role.value}
+                  checked={isSelected}
+                  {...register('role')}
+                  onChange={() => setValue('role', role.value, { shouldValidate: true })}
+                  style={{ display: 'none' }}
+                />
                 <span style={{ fontSize: 22 }}>{role.icon}</span>
                 <span style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.3, color: isSelected ? colors.text : '#334155' }}>{role.label}</span>
               </label>
@@ -195,6 +203,7 @@ export default function RegisterPage() {
   const [step, setStep] = useState(0);
   const [saved, setSaved] = useState([{}, {}, {}]);
   const [success, setSuccess] = useState(false);
+  const [createdUser, setCreatedUser] = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated || !user?.permissions?.can_manage_users) {
@@ -215,6 +224,7 @@ export default function RegisterPage() {
     const allData = Object.assign({}, ...updated);
     const result = await registerUser(allData);
     if (result.success) {
+      setCreatedUser({ first_name: allData.first_name, last_name: allData.last_name, email: allData.email });
       setSuccess(true);
     } else {
       const msg = typeof result.errors === 'object'
@@ -224,7 +234,7 @@ export default function RegisterPage() {
     }
   };
 
-  if (success) return <SuccessScreen />;
+  if (success) return <SuccessScreen user={createdUser} />;
 
   return (
     <AppLayout title="Creer un utilisateur">
@@ -234,7 +244,7 @@ export default function RegisterPage() {
             Creer un compte utilisateur
           </h2>
           <p style={{ fontSize: 13, color: '#64748b' }}>
-            Meme design simple que le formulaire Nouveau patient.
+            Remplissez les informations pour donner acces a la plateforme.
           </p>
         </div>
 
@@ -262,8 +272,13 @@ function Stepper({ step }) {
           borderRight: i < STEP_LABELS.length - 1 ? '1px solid rgba(37,99,235,0.12)' : 'none',
           transition: 'all 0.2s',
         }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: i === step ? '#2563eb' : i < step ? '#1d4ed8' : '#64748b' }}>
-            {i < step ? '? ' : ''}{label}
+          <div style={{ fontSize: 11, fontWeight: 600, color: i === step ? '#2563eb' : i < step ? '#1d4ed8' : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+            {i < step && (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+            {label}
           </div>
         </div>
       ))}
@@ -335,7 +350,7 @@ function NavBtns({ onBack, isLast, isLoading }) {
       }}>
         Retour
       </button>
-      <PrimaryBtn label={isLast ? 'Creer l\'utilisateur' : 'Continuer'} isLoading={isLoading} />
+      <PrimaryBtn label={isLast ? "Creer l'utilisateur" : 'Continuer'} isLoading={isLoading} />
     </div>
   );
 }
@@ -375,8 +390,11 @@ function PasswordStrength({ password }) {
       </div>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         {checks.map((c) => (
-          <span key={c.label} style={{ fontSize: 11, color: c.ok ? '#2563eb' : '#64748b', display: 'flex', alignItems: 'center', gap: 3 }}>
-            {c.ok ? '?' : '?'} {c.label}
+          <span key={c.label} style={{ fontSize: 11, color: c.ok ? '#2563eb' : '#94a3b8', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={c.ok ? '#2563eb' : '#94a3b8'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              {c.ok ? <polyline points="20 6 9 17 4 12" /> : <line x1="18" y1="6" x2="6" y2="18" />}
+            </svg>
+            {c.label}
           </span>
         ))}
       </div>
@@ -384,7 +402,7 @@ function PasswordStrength({ password }) {
   );
 }
 
-function SuccessScreen() {
+function SuccessScreen({ user }) {
   return (
     <AppLayout title="Creer un utilisateur">
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
@@ -396,7 +414,9 @@ function SuccessScreen() {
           </div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: '#0f172a', marginBottom: 12 }}>Utilisateur cree</h2>
           <p style={{ fontSize: 14, color: '#334155', lineHeight: 1.8, marginBottom: 24 }}>
-            Le compte a ete cree avec succes avec le meme design que Nouveau patient.
+            {user?.first_name
+              ? `Le compte de ${user.first_name} ${user.last_name} a ete cree avec succes.`
+              : 'Le compte a ete cree avec succes.'}
           </p>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <Link to="/admin" style={{ textDecoration: 'none', width: '100%', maxWidth: 260 }}>
