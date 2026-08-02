@@ -268,7 +268,7 @@ export default function PatientDossierPage() {
     } catch (err) { } finally { setLoading(false); }
   };
 
-  const handleEditMode = () => { setEditData({ ...patient }); setEditMode(true); };
+  const handleEditMode = () => { setActiveMainTab('identite'); setActiveIdentiteTab('identite'); setEditData({ ...patient }); setEditMode(true); };
   const handleCancel = () => { setEditData({}); setEditMode(false); };
 
   const handleUpdatePatient = async () => {
@@ -284,7 +284,7 @@ export default function PatientDossierPage() {
            payload[k] = nonStringFields.includes(k) ? null : '';
         }
       });
-      await patientService.update(id, payload);
+      await patientService.patch(id, payload);
       await loadAllData();
       setEditMode(false);
       setEditData({});
@@ -381,8 +381,33 @@ export default function PatientDossierPage() {
         .input-st { width: 100%; padding: 8px 12px; background: #f1f5f9; border: 1px solid rgba(37,99,235,0.12); border-radius: 6px; color: #0f172a; font-size: 13px; outline: none; box-sizing: border-box; }
         .label-st { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 6px; font-weight: 600; }
       `}</style>
-   
-      
+
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:20, marginBottom:24, flexWrap:'wrap', padding:'18px 22px', background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:16 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap', marginBottom:8 }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', lineHeight: '1.1' }}>
+              {patient.nom} {patient.prenom}
+            </div>
+            <span style={{ padding: '6px 14px', borderRadius: 999, background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, fontSize: 12, fontWeight: 700 }}>
+              {patient.statut_label || '—'}
+            </span>
+          </div>
+          <div style={{ display:'flex', gap:12, flexWrap:'wrap', color:'#64748b', fontSize:13 }}>
+            <span>{patient.registration_number || '—'}</span>
+            <span>{patient.age ? `${patient.age} ans` : patient.age_diagnostic ? `${patient.age_diagnostic} ans au diagnostic` : '—'}</span>
+            <span>{patient.wilaya || '—'}</span>
+            <span>{patient.commune || '—'}</span>
+          </div>
+        </div>
+        <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+          <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
+            Modifier le patient
+          </button>
+          <button type="button" onClick={() => navigate('/patients')} style={{ padding:'10px 18px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:12, color:'#334155', cursor:'pointer', fontSize:13 }}>
+            Retour aux patients
+          </button>
+        </div>
+      </div>
 
       {editMode && activeMainTab === 'identite' && (
         <div style={{ marginBottom: 14, padding: '10px 16px', background: 'rgba(245,166,35,0.06)', border: '1px solid rgba(245,166,35,0.2)', borderRadius: '12px', fontSize: 12, color: '#d97706', display: 'flex', alignItems: 'center', gap: 8, animation: 'fadeIn 0.2s ease' }}>
@@ -594,7 +619,7 @@ export default function PatientDossierPage() {
 
                    {diagnostics.length === 0 ? (
                      <div style={{ padding: 48, textAlign: 'center' }}>
-                       <div style={{ fontSize: 40, marginBottom: 12 }}>🔬</div>
+                       <div style={{ fontSize: 40, marginBottom: 12 }}></div>
                        <div style={{ fontSize: 14, color: '#64748b' }}>Aucun diagnostic recensé</div>
                      </div>
                    ) : (
@@ -695,6 +720,12 @@ export default function PatientDossierPage() {
           {activeMainTab === 'traitements' && (
             <div style={{ animation: 'fadeIn 0.2s ease' }}>
               <SectionLabel>Historique des Traitements</SectionLabel>
+              <button style={addBtnStyle}>
+                         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                         </svg>
+                         Ajouter un traitement
+                       </button>
               {Object.keys(traitements).map(key => traitements[key]?.length > 0 && (
                 <div key={key} style={{ marginBottom: 20 }}>
                   <h4 style={{ textTransform: 'capitalize', color: '#2563eb', borderBottom: '1px solid rgba(37,99,235,0.12)', paddingBottom: 6, marginTop: 0, marginBottom: 8, fontSize: 14 }}>{key}</h4>
@@ -713,6 +744,12 @@ export default function PatientDossierPage() {
           {activeMainTab === 'suivi' && (
             <div style={{ animation: 'fadeIn 0.2s ease' }}>
                <SectionLabel>Consultations & Suivi</SectionLabel>
+               <button style={addBtnStyle}>
+                         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                         </svg>
+                         Ajouter un suivi clinique
+                       </button>
                {suivi.length === 0 ? <div style={{ color: '#64748b', fontStyle: 'italic', fontSize: 13 }}>Aucune consultation enregistrée.</div> : (
                  suivi.map(c => (
                    <div key={c.id} style={{ background: '#f1f5f9', padding: '12px 16px', borderRadius: '12px', margin: '8px 0', fontSize: 13, color: '#334155', border: '1px solid rgba(37,99,235,0.06)' }}>
