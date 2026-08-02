@@ -63,6 +63,46 @@ const EXAMEN_STATUT_COLORS = {
   annule:     { bg: 'rgba(255,77,106,0.1)',  color: '#dc2626' },
 };
 
+// ── Reprises du design de DiagnosticsPage pour garder une cohérence visuelle ──
+const STADE_COLORS = {
+  '0':    { bg: 'rgba(0,229,160,0.1)',   color: '#16a34a', border: 'rgba(0,229,160,0.3)' },
+  'I':    { bg: 'rgba(0,229,160,0.12)',  color: '#16a34a', border: 'rgba(0,229,160,0.3)' },
+  'IA':   { bg: 'rgba(0,229,160,0.12)',  color: '#16a34a', border: 'rgba(0,229,160,0.3)' },
+  'IB':   { bg: 'rgba(0,229,160,0.12)',  color: '#16a34a', border: 'rgba(0,229,160,0.3)' },
+  'II':   { bg: 'rgba(245,166,35,0.12)', color: '#d97706', border: 'rgba(245,166,35,0.3)' },
+  'IIA':  { bg: 'rgba(245,166,35,0.12)', color: '#d97706', border: 'rgba(245,166,35,0.3)' },
+  'IIB':  { bg: 'rgba(245,166,35,0.12)', color: '#d97706', border: 'rgba(245,166,35,0.3)' },
+  'III':  { bg: 'rgba(255,120,50,0.12)', color: '#ff7832', border: 'rgba(255,120,50,0.3)' },
+  'IIIA': { bg: 'rgba(255,120,50,0.12)', color: '#ff7832', border: 'rgba(255,120,50,0.3)' },
+  'IIIB': { bg: 'rgba(255,120,50,0.12)', color: '#ff7832', border: 'rgba(255,120,50,0.3)' },
+  'IIIC': { bg: 'rgba(255,120,50,0.12)', color: '#ff7832', border: 'rgba(255,120,50,0.3)' },
+  'IV':   { bg: 'rgba(255,77,106,0.12)', color: '#dc2626', border: 'rgba(255,77,106,0.3)' },
+  'U':    { bg: 'rgba(107,114,128,0.1)', color: '#9ca3af', border: 'rgba(107,114,128,0.2)' },
+};
+
+function StageBadge({ stade, label }) {
+  const c = STADE_COLORS[stade] || STADE_COLORS['U'];
+  return (
+    <span style={{
+      padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+      background: c.bg, color: c.color, border: `1px solid ${c.border}`,
+      fontFamily: 'var(--font-mono)',
+    }}>{label || stade}</span>
+  );
+}
+
+function TNMBadge({ tnm }) {
+  if (!tnm || tnm === '—') return <span style={{ color: '#64748b', fontSize: 12 }}>—</span>;
+  return (
+    <span style={{
+      padding: '2px 8px', borderRadius: 6, fontSize: 11,
+      background: 'rgba(0,168,255,0.08)',
+      border: '1px solid rgba(0,168,255,0.2)',
+      color: '#2563eb', fontFamily: 'var(--font-mono)', fontWeight: 600,
+    }}>{tnm}</span>
+  );
+}
+
 const EDIT_FIELDS = {
   identite: [
     { key: 'nom',                  label: 'Nom',                   type: 'text' },
@@ -341,41 +381,8 @@ export default function PatientDossierPage() {
         .input-st { width: 100%; padding: 8px 12px; background: #f1f5f9; border: 1px solid rgba(37,99,235,0.12); border-radius: 6px; color: #0f172a; font-size: 13px; outline: none; box-sizing: border-box; }
         .label-st { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 6px; font-weight: 600; }
       `}</style>
+   
       
-      {/* ── Header ── */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', flexShrink: 0, background: patient.sexe === 'F' ? 'linear-gradient(135deg, rgba(245,101,196,0.2), rgba(245,101,196,0.1))' : 'linear-gradient(135deg, rgba(0,168,255,0.2), rgba(0,168,255,0.1))', border: '2px solid ' + (patient.sexe === 'F' ? 'rgba(245,101,196,0.3)' : 'rgba(0,168,255,0.3)'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: patient.sexe === 'F' ? 'rgba(245,101,196,0.9)' : 'rgba(0,168,255,0.9)' }}>
-            {((patient.nom?.[0] || '') + (patient.prenom?.[0] || '')).toUpperCase()}
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
-              <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#0f172a' }}>
-                {patient.nom} {patient.prenom}
-              </h2>
-              <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color, border: '1px solid ' + sc.border }}>{patient.statut_label}</span>
-              {editMode && <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, background: 'rgba(245,166,35,0.12)', color: '#d97706' }}>Mode edition</span>}
-            </div>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <Info val={patient.registration_number} mono />
-              <Info val={patient.age ? patient.age + ' ans' : '—'} />
-              <Info val={patient.wilaya || '—'} />
-              <Info val={patient.commune || ''} />
-              <Info val={patient.medecin_referent_info?.full_name || '—'} />
-            </div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          {activeMainTab === 'identite' && !editMode && <button onClick={handleEditMode} style={btnSt}>Modifier Profil</button>}
-          {activeMainTab === 'identite' && editMode && (
-            <>
-              <button onClick={handleCancel} style={btnStSecondary}>Annuler</button>
-              <button onClick={handleUpdatePatient} disabled={saving} style={btnStSuccess}>{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
-            </>
-          )}
-          <Link to="/patients" style={{ textDecoration: 'none' }}><button style={btnStSecondary}>Retour</button></Link>
-        </div>
-      </div>
 
       {editMode && activeMainTab === 'identite' && (
         <div style={{ marginBottom: 14, padding: '10px 16px', background: 'rgba(245,166,35,0.06)', border: '1px solid rgba(245,166,35,0.2)', borderRadius: '12px', fontSize: 12, color: '#d97706', display: 'flex', alignItems: 'center', gap: 8, animation: 'fadeIn 0.2s ease' }}>
@@ -530,13 +537,7 @@ export default function PatientDossierPage() {
              <div>
                {/* Onglets internes conservés pour naviguer entre Clinique / Diagnostic / Examens
                    (également synchronisés avec le sidebar global via activeSubTab) */}
-               <div style={{ display: 'flex', marginBottom: 20, background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
-                 {DOSSIER_TABS.map(t => (
-                   <button key={t.key} onClick={() => setActiveSubTab(t.key)} style={{ flex: 1, padding: '12px 6px', background: 'none', border: 'none', borderBottom: '2px solid ' + (activeSubTab === t.key ? '#2563eb' : 'transparent'), color: activeSubTab === t.key ? '#2563eb' : '#64748b', fontSize: 11.5, fontWeight: activeSubTab === t.key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}>
-                     {t.label}
-                   </button>
-                 ))}
-               </div>
+              
 
                {activeSubTab === 'clinique' && (
                  <div style={{ animation: 'fadeIn 0.2s ease' }}>
@@ -579,21 +580,70 @@ export default function PatientDossierPage() {
 
                {activeSubTab === 'diagnostic' && (
                  <div style={{ animation: 'fadeIn 0.2s ease' }}>
-                   <SectionLabel>Diagnostic(s) associe(s)</SectionLabel>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                     <SectionLabel style={{ margin: 0 }}>Diagnostic(s) associé(s)</SectionLabel>
+                     <Link to={`/diagnostics/nouveau?patient=${id}`} style={{ textDecoration: 'none' }}>
+                       <button style={addBtnStyle}>
+                         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                         </svg>
+                         Ajouter un diagnostic
+                       </button>
+                     </Link>
+                   </div>
+
                    {diagnostics.length === 0 ? (
-                     <div style={{ padding: '12px 0', color: '#64748b', fontStyle: 'italic', fontSize: 13 }}>Aucun diagnostic recensé.</div>
+                     <div style={{ padding: 48, textAlign: 'center' }}>
+                       <div style={{ fontSize: 40, marginBottom: 12 }}>🔬</div>
+                       <div style={{ fontSize: 14, color: '#64748b' }}>Aucun diagnostic recensé</div>
+                     </div>
                    ) : (
-                     diagnostics.map((diag, index) => (
-                       <div key={diag.id} style={{ marginBottom: index !== diagnostics.length - 1 ? 28 : 0, paddingBottom: 16, borderBottom: index !== diagnostics.length - 1 ? '1px dashed rgba(37,99,235,0.15)' : 'none' }}>
-                         <div style={{ fontWeight: 600, fontSize: 14, color: '#2563eb', marginBottom: 10 }}>Topographie: {diag.topographie_code}</div>
-                         <Grid>
-                           <InfoRow label="Date du Diagnostic" value={diag.date_diagnostic ? new Date(diag.date_diagnostic).toLocaleDateString('fr-DZ') : '—'} />
-                           <InfoRow label="Stade AJCC" value={diag.stade_ajcc} />
-                           <InfoRow label="Morphologie" value={diag.morphologie_code} />
-                           <InfoRow label="Base du Diagnostic" value={diag.base_diagnostic} />
-                         </Grid>
-                       </div>
-                     ))
+                     <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                         <thead>
+                           <tr style={{ background: '#f1f5f9' }}>
+                             {['Date', 'Localisation', 'Morphologie', 'TNM', 'Stade', 'Grade', 'Base Diag.', ''].map(h => (
+                               <th key={h} style={thStyle}>{h}</th>
+                             ))}
+                           </tr>
+                         </thead>
+                         <tbody>
+                           {diagnostics.map((d, i) => (
+                             <tr key={d.id}
+                               onClick={() => navigate(`/diagnostics/${d.id}`)}
+                               style={{ cursor: 'pointer', borderBottom: '1px solid rgba(37,99,235,0.12)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
+                               onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
+                               onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'}
+                             >
+                               <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                                 {d.date_diagnostic ? new Date(d.date_diagnostic).toLocaleDateString('fr-DZ') : '—'}
+                               </td>
+                               <td style={tdStyle}>
+                                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#2563eb', marginBottom: 2 }}>
+                                   {d.categorie_cancer === 'liquide' ? 'HEMATO' : d.topographie_code}
+                                 </div>
+                                 <div style={{ fontSize: 11.5, color: '#334155', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                   {d.diagnostic_resume || d.topographie_libelle || '—'}
+                                 </div>
+                               </td>
+                               <td style={tdStyle}>
+                                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#7c3aed', marginBottom: 2 }}>{d.morphologie_code}</div>
+                                 <div style={{ fontSize: 11, color: '#64748b', maxWidth: 150, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.morphologie_libelle || '—'}</div>
+                               </td>
+                               <td style={tdStyle}><TNMBadge tnm={d.tnm_complet} /></td>
+                               <td style={tdStyle}><StageBadge stade={d.stade_ajcc} label={d.stade_label} /></td>
+                               <td style={{ ...tdStyle, fontSize: 11, color: '#64748b' }}>{d.grade_label || '—'}</td>
+                               <td style={{ ...tdStyle, fontSize: 11, color: '#64748b' }}>{d.base_diag_label || d.base_diagnostic || '—'}</td>
+                               <td style={tdStyle} onClick={e => e.stopPropagation()}>
+                                 <Link to={`/diagnostics/${d.id}`} style={{ textDecoration: 'none' }}>
+                                   <button style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: 'pointer' }}>Voir</button>
+                                 </Link>
+                               </td>
+                             </tr>
+                           ))}
+                         </tbody>
+                       </table>
+                     </div>
                    )}
                  </div>
                )}
@@ -602,7 +652,12 @@ export default function PatientDossierPage() {
                  <div style={{ animation: 'fadeIn 0.2s ease' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                      <SectionLabel style={{ margin: 0 }}>Examens & Bilans</SectionLabel>
-                     <button onClick={() => setShowExamenModal(true)} style={btnSt}>+ Prescrire un examen</button>
+                     <button onClick={() => setShowExamenModal(true)} style={addBtnStyle}>
+                       <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                       </svg>
+                       Prescrire un examen
+                     </button>
                    </div>
                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                      <thead>
@@ -703,3 +758,6 @@ function HabitudeRow({ label, value, colorMap, labelMap }) {
 const btnSt = { padding: '8px 16px', background: '#2563eb', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500 };
 const btnStSecondary = { padding: '8px 16px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', color: '#334155', borderRadius: 6, cursor: 'pointer', fontSize: 13 };
 const btnStSuccess = { padding: '8px 16px', background: 'linear-gradient(135deg, #16a34a, #00b38a)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500 };
+const addBtnStyle = { padding: '9px 18px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-display)' };
+const thStyle = { padding: '10px 12px', textAlign: 'left', fontSize: 10, fontWeight: 600, letterSpacing: 0.5, color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid rgba(37,99,235,0.12)', whiteSpace: 'nowrap' };
+const tdStyle = { padding: '11px 12px', verticalAlign: 'middle' };
