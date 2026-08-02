@@ -110,6 +110,16 @@ const EDIT_FIELDS = {
   ],
 };
 
+// ── Sections affichées dans le sidebar global lorsqu'on est sur la fiche patient ──
+const PATIENT_SECTIONS = [
+  { key: 'identite',    label: 'Identité & Profil'  },
+  { key: 'clinique',    label: 'Infos Cliniques'    },
+  { key: 'diagnostic',  label: 'Diagnostic'         },
+  { key: 'examens',     label: 'Examens & Bilans'   },
+  { key: 'traitements', label: 'Traitements'        },
+  { key: 'suivi',       label: 'Suivi Clinique'     },
+];
+
 function EditField({ field, value, onChange, allValues }) {
   const base = { width: '100%', padding: '9px 11px', background: '#f1f5f9', border: '1px solid #2563eb', borderRadius: '12px', color: '#0f172a', fontSize: 13, fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box' };
   if (field.type === 'select') return (
@@ -264,6 +274,20 @@ export default function PatientDossierPage() {
     });
   };
 
+  // ── Mapping entre les sections du sidebar global et les onglets internes ──
+  const activeSectionKey = activeMainTab === 'dossier' ? activeSubTab : activeMainTab;
+
+  const handleSectionSelect = (key) => {
+    if (['clinique', 'diagnostic', 'examens'].includes(key)) {
+      setActiveMainTab('dossier');
+      setActiveSubTab(key);
+    } else {
+      setActiveMainTab(key);
+    }
+  };
+
+  const currentSectionLabel = PATIENT_SECTIONS.find(s => s.key === activeSectionKey)?.label || '';
+
   if (loading || !patient) return (
     <AppLayout title="Fiche Patient">
        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: '#64748b' }}>
@@ -296,13 +320,23 @@ export default function PatientDossierPage() {
   ];
 
   return (
-    <AppLayout title="Fiche Patient">
+    <AppLayout
+      title="Fiche Patient"
+      patientContext={{
+        patient,
+        sections: PATIENT_SECTIONS,
+        activeKey: activeSectionKey,
+        onSelect: handleSectionSelect,
+      }}
+      breadcrumb={[
+        { label: 'Patients', onClick: () => navigate('/patients') },
+        { label: `${patient.nom} ${patient.prenom}`, onClick: () => setActiveMainTab('identite') },
+        { label: currentSectionLabel },
+      ]}
+    >
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
-        .sidebar-item { padding: 12px 16px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; color: #334155; transition: 0.2s; font-size: 14px; font-weight: 500; }
-        .sidebar-item:hover { background: rgba(0,168,255,0.05); color: #0f172a; }
-        .sidebar-item.active { background: rgba(0,168,255,0.1); color: #2563eb; border-left: 3px solid #2563eb; }
         .main-content { flex: 1; background: #ffffff; border: 1px solid rgba(37,99,235,0.08); border-radius: 12px; padding: 24px; min-height: 500px; }
         .input-st { width: 100%; padding: 8px 12px; background: #f1f5f9; border: 1px solid rgba(37,99,235,0.12); border-radius: 6px; color: #0f172a; font-size: 13px; outline: none; box-sizing: border-box; }
         .label-st { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 6px; font-weight: 600; }
@@ -350,25 +384,8 @@ export default function PatientDossierPage() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
-        {/* ── SIDEBAR ── */}
-        <div style={{ width: 240, flexShrink: 0 }}>
-          <div className={`sidebar-item ${activeMainTab === 'identite' ? 'active' : ''}`} onClick={() => setActiveMainTab('identite')}>
-            Identité & Profil
-          </div>
-          <div className={`sidebar-item ${activeMainTab === 'dossier' ? 'active' : ''}`} onClick={() => setActiveMainTab('dossier')}>
-            Dossier Médical
-          </div>
-          <div className={`sidebar-item ${activeMainTab === 'traitements' ? 'active' : ''}`} onClick={() => setActiveMainTab('traitements')}>
-            Traitements
-          </div>
-          <div className={`sidebar-item ${activeMainTab === 'suivi' ? 'active' : ''}`} onClick={() => setActiveMainTab('suivi')}>
-            Suivi Clinique
-          </div>
-        </div>
-
-        {/* ── MAIN CONTENT ── */}
-        <div className="main-content">
+      {/* ── Contenu (la navigation entre sections se fait désormais via le sidebar global) ── */}
+      <div className="main-content">
           {/* == IDENTITe & PROFIL == */}
           {activeMainTab === 'identite' && (
             <>
@@ -508,10 +525,11 @@ export default function PatientDossierPage() {
             </>
           )}
 
-          {/* == DOSSIER MeDICAL (MÊME DESIGN HARMONISÉ) == */}
+          {/* == DOSSIER MeDICAL == */}
           {activeMainTab === 'dossier' && (
              <div>
-               {/* Même design de navigation en onglets étalés */}
+               {/* Onglets internes conservés pour naviguer entre Clinique / Diagnostic / Examens
+                   (également synchronisés avec le sidebar global via activeSubTab) */}
                <div style={{ display: 'flex', marginBottom: 20, background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
                  {DOSSIER_TABS.map(t => (
                    <button key={t.key} onClick={() => setActiveSubTab(t.key)} style={{ flex: 1, padding: '12px 6px', background: 'none', border: 'none', borderBottom: '2px solid ' + (activeSubTab === t.key ? '#2563eb' : 'transparent'), color: activeSubTab === t.key ? '#2563eb' : '#64748b', fontSize: 11.5, fontWeight: activeSubTab === t.key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}>
@@ -649,7 +667,6 @@ export default function PatientDossierPage() {
                )}
             </div>
           )}
-        </div>
       </div>
 
       {showExamenModal && (

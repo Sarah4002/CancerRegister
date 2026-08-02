@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../hooks/useAuth';
 import usePermissions from '../../hooks/usePermissions';
 import usePreferences from '../../hooks/usePreferences';
@@ -46,16 +46,19 @@ const UI_TEXT = {
     subtitle: 'Interface simple, lumineuse et centree sur le travail clinique',
     help: "Centre d'aide",
     doctorSettings: 'Parametres medecin',
+    backToPatients: 'Retour aux patients',
   },
   en: {
     subtitle: 'Simple, clear interface focused on clinical work',
     help: 'Help center',
     doctorSettings: 'Doctor settings',
+    backToPatients: 'Back to patients',
   },
   ar: {
     subtitle: 'واجهة بسيطة ومريحة للعمل الطبي',
     help: 'مركز المساعدة',
     doctorSettings: 'إعدادات الطبيب',
+    backToPatients: 'العودة إلى المرضى',
   },
 };
 
@@ -77,8 +80,9 @@ function useIsMobile() {
   return isMobile;
 }
 
-export default function Sidebar() {
+export default function Sidebar({ patientContext }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { logout } = useAuthStore();
@@ -126,6 +130,16 @@ export default function Sidebar() {
         left: 0,
       };
 
+  // ── Mode contexte patient : le sidebar global est remplacé par la fiche patient ──
+  const inPatientMode = !!patientContext?.patient;
+  const p = patientContext?.patient;
+  const patientInitials = inPatientMode
+    ? ((p.nom?.[0] || '') + (p.prenom?.[0] || '')).toUpperCase() || (p.full_name?.[0] || 'P').toUpperCase()
+    : '';
+  const patientFullName = inPatientMode
+    ? (p.full_name || `${p.nom || ''} ${p.prenom || ''}`.trim() || 'Patient')
+    : '';
+
   return (
     <>
       {isMobile && mobileOpen && (
@@ -146,69 +160,140 @@ export default function Sidebar() {
       <aside style={{ ...sidebarStyle, ...(dark ? sidebarDarkStyle : {}), ...sidebarPosition }}>
         <div style={accentLineStyle} />
 
-        <div style={brandWrapStyle}>
-          <div style={brandBadgeStyle}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" fill="white" />
-              <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </div>
-          <div>
-            <div style={{ ...brandTitleStyle, color: dark ? '#f8fafc' : '#0f172a' }}>RegistreCancer.dz</div>
-            <div style={{ ...brandSubtitleStyle, color: dark ? '#94a3b8' : '#64748b' }}>Plateforme nationale oncologique</div>
-          </div>
-        </div>
+        {inPatientMode ? (
+          <>
+            {/* ── Retour à la liste ── */}
+            <button
+              type="button"
+              onClick={() => navigate('/patients')}
+              style={{ ...backLinkStyle, ...(dark ? backLinkDarkStyle : {}) }}
+            >
+              <ArrowLeftIcon size={13} />
+              {t.backToPatients}
+            </button>
 
-        <div style={{ ...profileCardStyle, ...(dark ? profileCardDarkStyle : {}) }}>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
-            <div style={avatarStyle}>{String(user?.first_name?.[0] || user?.username?.[0] || 'U').toUpperCase()}</div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ ...profileNameStyle, color: dark ? '#f8fafc' : '#0f172a' }}>{profileName}</div>
-              <div style={{ ...profileCaptionStyle, color: dark ? '#94a3b8' : '#64748b' }}>{user?.institution || user?.email || 'Compte connecte'}</div>
+            {/* ── Carte patient (remplace la marque de l'app) ── */}
+            <div style={{ ...profileCardStyle, ...(dark ? profileCardDarkStyle : {}), marginTop: 6 }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
+                <div style={{ ...avatarStyle, width: 38, height: 38, fontSize: 13 }}>{patientInitials}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...profileNameStyle, color: dark ? '#f8fafc' : '#0f172a', whiteSpace: 'normal' }}>
+                    {patientFullName}
+                  </div>
+                  <div style={{ ...profileCaptionStyle, color: dark ? '#94a3b8' : '#64748b', fontFamily: 'var(--font-mono)' }}>
+                    {p.registration_number || '—'}
+                  </div>
+                </div>
+              </div>
+              {p.statut_label && (
+                <div
+                  style={{
+                    ...rolePillStyle,
+                    background: 'rgba(37, 99, 235, 0.1)',
+                    color: '#2563eb',
+                    border: '1px solid rgba(37, 99, 235, 0.18)',
+                  }}
+                >
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563eb' }} />
+                  {p.statut_label}
+                </div>
+              )}
             </div>
-          </div>
-          <div
-            style={{
-              ...rolePillStyle,
-              background: roleColor?.bg || 'rgba(37, 99, 235, 0.1)',
-              color: roleColor?.color || '#2563eb',
-              border: `1px solid ${roleColor?.border || 'rgba(37, 99, 235, 0.18)'}`,
-            }}
-          >
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: roleColor?.color || '#2563eb' }} />
-            {roleLabel || 'Profil utilisateur'}
-          </div>
-        </div>
 
-        <nav style={navStyle}>
-          {filteredNav.map(({ section, items }) => (
-            <div key={section} style={{ marginBottom: 10 }}>
-              <div style={sectionTitleStyle}>{section}</div>
-              {items.map(({ path, label, icon: Icon, labelKey }) => {
-                const active = isActivePath(path, location.pathname);
-                const compact = path === '/patients/doublons';
-                const displayLabel = labelKey ? t[labelKey] : label;
+            {/* ── Navigation propre au dossier patient ── */}
+            <nav style={navStyle}>
+              <div style={sectionTitleStyle}>Dossier patient</div>
+              {(patientContext.sections || []).map((s) => {
+                const active = patientContext.activeKey === s.key;
+                const Icon = s.icon || DotIcon;
                 return (
-                  <Link key={path} to={path} style={{ textDecoration: 'none' }}>
-                    <div
-                      style={{
-                        ...navItemStyle,
-                        ...(compact ? navItemCompactStyle : {}),
-                        ...(active ? navItemActiveStyle : {}),
-                      }}
-                    >
-                      <div style={{ ...navIconWrapStyle, ...(active ? navIconActiveStyle : {}) }}>
-                        <Icon size={compact ? 13 : 15} />
-                      </div>
-                      <span style={{ ...navLabelStyle, color: active ? '#fff' : dark ? '#dbeafe' : '#334155' }}>{displayLabel}</span>
-                      {active && <span style={activeDotStyle} />}
+                  <div
+                    key={s.key}
+                    onClick={() => patientContext.onSelect?.(s.key)}
+                    style={{
+                      ...navItemStyle,
+                      ...(active ? navItemActiveStyle : {}),
+                    }}
+                  >
+                    <div style={{ ...navIconWrapStyle, ...(active ? navIconActiveStyle : {}) }}>
+                      <Icon size={15} />
                     </div>
-                  </Link>
+                    <span style={{ ...navLabelStyle, color: active ? '#fff' : dark ? '#dbeafe' : '#334155' }}>
+                      {s.label}
+                    </span>
+                    {active && <span style={activeDotStyle} />}
+                  </div>
                 );
               })}
+            </nav>
+          </>
+        ) : (
+          <>
+            <div style={brandWrapStyle}>
+              <div style={brandBadgeStyle}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" fill="white" />
+                  <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div>
+                <div style={{ ...brandTitleStyle, color: dark ? '#f8fafc' : '#0f172a' }}>RegistreCancer.dz</div>
+                <div style={{ ...brandSubtitleStyle, color: dark ? '#94a3b8' : '#64748b' }}>Plateforme nationale oncologique</div>
+              </div>
             </div>
-          ))}
-        </nav>
+
+            <div style={{ ...profileCardStyle, ...(dark ? profileCardDarkStyle : {}) }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
+                <div style={avatarStyle}>{String(user?.first_name?.[0] || user?.username?.[0] || 'U').toUpperCase()}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...profileNameStyle, color: dark ? '#f8fafc' : '#0f172a' }}>{profileName}</div>
+                  <div style={{ ...profileCaptionStyle, color: dark ? '#94a3b8' : '#64748b' }}>{user?.institution || user?.email || 'Compte connecte'}</div>
+                </div>
+              </div>
+              <div
+                style={{
+                  ...rolePillStyle,
+                  background: roleColor?.bg || 'rgba(37, 99, 235, 0.1)',
+                  color: roleColor?.color || '#2563eb',
+                  border: `1px solid ${roleColor?.border || 'rgba(37, 99, 235, 0.18)'}`,
+                }}
+              >
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: roleColor?.color || '#2563eb' }} />
+                {roleLabel || 'Profil utilisateur'}
+              </div>
+            </div>
+
+            <nav style={navStyle}>
+              {filteredNav.map(({ section, items }) => (
+                <div key={section} style={{ marginBottom: 10 }}>
+                  <div style={sectionTitleStyle}>{section}</div>
+                  {items.map(({ path, label, icon: Icon, labelKey }) => {
+                    const active = isActivePath(path, location.pathname);
+                    const compact = path === '/patients/doublons';
+                    const displayLabel = labelKey ? t[labelKey] : label;
+                    return (
+                      <Link key={path} to={path} style={{ textDecoration: 'none' }}>
+                        <div
+                          style={{
+                            ...navItemStyle,
+                            ...(compact ? navItemCompactStyle : {}),
+                            ...(active ? navItemActiveStyle : {}),
+                          }}
+                        >
+                          <div style={{ ...navIconWrapStyle, ...(active ? navIconActiveStyle : {}) }}>
+                            <Icon size={compact ? 13 : 15} />
+                          </div>
+                          <span style={{ ...navLabelStyle, color: active ? '#fff' : dark ? '#dbeafe' : '#334155' }}>{displayLabel}</span>
+                          {active && <span style={activeDotStyle} />}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
+            </nav>
+          </>
+        )}
 
         <div style={{ padding: '8px 12px 4px' }}>
           <button onClick={logout} style={logoutButtonStyle}>
@@ -221,7 +306,7 @@ export default function Sidebar() {
   );
 }
 
-export function AppLayout({ children, title }) {
+export function AppLayout({ children, title, patientContext, breadcrumb }) {
   const isMobile = useIsMobile();
   const { theme, language } = usePreferences();
   const dark = theme === 'dark';
@@ -229,7 +314,7 @@ export function AppLayout({ children, title }) {
 
   return (
     <div className="app-shell" style={{ display: 'flex', minHeight: '100vh', background: dark ? '#0f172a' : 'linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%)' }}>
-      <Sidebar />
+      <Sidebar patientContext={patientContext} />
       <div
         className="app-shell__main"
         style={{
@@ -245,7 +330,29 @@ export function AppLayout({ children, title }) {
             <div style={{ width: 3, height: 20, background: 'linear-gradient(180deg, #2563eb, #93c5fd)', borderRadius: 2 }} />
             <div>
               <h1 style={{ ...pageTitleStyle, color: dark ? '#f8fafc' : '#0f172a' }}>{title}</h1>
-              <div style={{ fontSize: 11, color: dark ? '#94a3b8' : '#64748b', marginTop: 2 }}>{t.subtitle}</div>
+              {breadcrumb && breadcrumb.length > 0 ? (
+                <div style={breadcrumbStyle}>
+                  {breadcrumb.map((b, i) => (
+                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center' }}>
+                      {b.onClick ? (
+                        <span
+                          onClick={b.onClick}
+                          style={{ ...breadcrumbLinkStyle, color: dark ? '#93c5fd' : '#2563eb' }}
+                        >
+                          {b.label}
+                        </span>
+                      ) : (
+                        <span style={{ ...breadcrumbCurrentStyle, color: dark ? '#94a3b8' : '#64748b' }}>{b.label}</span>
+                      )}
+                      {i < breadcrumb.length - 1 && (
+                        <span style={{ ...breadcrumbSepStyle, color: dark ? '#475569' : '#cbd5e1' }}>›</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: 11, color: dark ? '#94a3b8' : '#64748b', marginTop: 2 }}>{t.subtitle}</div>
+              )}
             </div>
           </div>
         </div>
@@ -318,6 +425,28 @@ const brandSubtitleStyle = {
   color: '#64748b',
   marginTop: 1,
   lineHeight: 1.4,
+};
+
+const backLinkStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  width: '100%',
+  padding: '10px 12px',
+  margin: '10px 0 4px',
+  background: 'transparent',
+  border: '1px solid rgba(37, 99, 235, 0.16)',
+  borderRadius: 10,
+  color: '#2563eb',
+  fontSize: 12.5,
+  fontWeight: 600,
+  cursor: 'pointer',
+  fontFamily: 'var(--font-body)',
+};
+
+const backLinkDarkStyle = {
+  border: '1px solid rgba(147, 197, 253, 0.2)',
+  color: '#93c5fd',
 };
 
 const profileCardStyle = {
@@ -487,6 +616,28 @@ const pageTitleStyle = {
   color: '#0f172a',
 };
 
+const breadcrumbStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  marginTop: 3,
+  fontSize: 11.5,
+};
+
+const breadcrumbLinkStyle = {
+  cursor: 'pointer',
+  fontWeight: 600,
+};
+
+const breadcrumbCurrentStyle = {
+  fontWeight: 500,
+};
+
+const breadcrumbSepStyle = {
+  margin: '0 6px',
+  fontSize: 11,
+};
+
 const contentPanelStyle = {
   minHeight: '100%',
 };
@@ -561,4 +712,10 @@ function LogoutIcon({ size = 16 }) {
 }
 function MenuIcon({ size = 16 }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={2}><path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" /></svg>;
+}
+function ArrowLeftIcon({ size = 16 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={2}><path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+function DotIcon({ size = 16 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4" /></svg>;
 }
