@@ -13,6 +13,7 @@ export default function NewConsultationPage() {
  const [searchParams] = useSearchParams();
  const [submitting, setSubmitting] = useState(false);
  const [patients, setPatients] = useState([]);
+ const [selectedPatient, setSelectedPatient] = useState(null);
  const initialPatient = searchParams.get('patient') || location.state?.patientContext?.id || '';
 
  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
@@ -31,6 +32,7 @@ export default function NewConsultationPage() {
  }
  });
 
+ const patientIdWatch = watch('patient');
  const poids = watch('poids_kg');
  const taille = watch('taille_cm');
  const rechute = watch('rechute');
@@ -50,6 +52,15 @@ export default function NewConsultationPage() {
    }
  }).catch(() => {});
  }, [initialPatient, setValue]);
+
+ useEffect(() => {
+   if (!patientIdWatch) { setSelectedPatient(null); return; }
+   const existing = patients.find((p) => String(p.id) === String(patientIdWatch)) || null;
+   if (existing?.date_naissance) { setSelectedPatient(existing); return; }
+   patientService.get(patientIdWatch)
+     .then(({ data }) => setSelectedPatient(data))
+     .catch(() => setSelectedPatient(existing));
+ }, [patientIdWatch, patients]);
 
  const onSubmit = async (data) => {
  setSubmitting(true);
@@ -94,7 +105,14 @@ export default function NewConsultationPage() {
  };
 
  return (
- <AppLayout title="Nouvelle Consultation de Suivi">
+ <AppLayout
+   title="Nouvelle Consultation de Suivi"
+   patientContext={selectedPatient ? {
+     patient: selectedPatient,
+     backPath: `/patients/${selectedPatient.id}`,
+     backLabel: 'Retour au patient',
+   } : undefined}
+ >
  <div style={{ maxWidth:860, margin:'0 auto' }}>
  <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>
  <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>

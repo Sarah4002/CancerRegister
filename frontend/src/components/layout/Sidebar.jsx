@@ -165,11 +165,11 @@ export default function Sidebar({ patientContext }) {
             {/* ── Retour à la liste ── */}
             <button
               type="button"
-              onClick={() => navigate('/patients')}
+              onClick={() => navigate(patientContext.backPath || '/patients')}
               style={{ ...backLinkStyle, ...(dark ? backLinkDarkStyle : {}) }}
             >
               <ArrowLeftIcon size={13} />
-              {t.backToPatients}
+              {patientContext.backLabel || t.backToPatients}
             </button>
 
             {/* ── Carte patient (remplace la marque de l'app) ── */}

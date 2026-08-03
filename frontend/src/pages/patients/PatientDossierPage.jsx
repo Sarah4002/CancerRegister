@@ -383,22 +383,7 @@ export default function PatientDossierPage() {
       `}</style>
 
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:20, marginBottom:24, flexWrap:'wrap', padding:'18px 22px', background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:16 }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap', marginBottom:8 }}>
-            <div style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', lineHeight: '1.1' }}>
-              {patient.nom} {patient.prenom}
-            </div>
-            <span style={{ padding: '6px 14px', borderRadius: 999, background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, fontSize: 12, fontWeight: 700 }}>
-              {patient.statut_label || '—'}
-            </span>
-          </div>
-          <div style={{ display:'flex', gap:12, flexWrap:'wrap', color:'#64748b', fontSize:13 }}>
-            <span>{patient.registration_number || '—'}</span>
-            <span>{patient.age ? `${patient.age} ans` : patient.age_diagnostic ? `${patient.age_diagnostic} ans au diagnostic` : '—'}</span>
-            <span>{patient.wilaya || '—'}</span>
-            <span>{patient.commune || '—'}</span>
-          </div>
-        </div>
+        
         
       </div>
 
@@ -412,14 +397,15 @@ export default function PatientDossierPage() {
       {/* ── Contenu (la navigation entre sections se fait désormais via le sidebar global) ── */}
       <div className="main-content">
         <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-          <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
-            Modifier le patient
-          </button>
+         
          
         </div>
           {/* == IDENTITe & PROFIL == */}
           {activeMainTab === 'identite' && (
             <>
+             <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
+            Modifier le patient
+             </button>
               <div style={{ display: 'flex', marginBottom: 16, background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
                 {ID_TABS.map(t => (
                   <button key={t.key} onClick={() => setActiveIdentiteTab(t.key)} style={{ flex: 1, padding: '12px 6px', background: 'none', border: 'none', borderBottom: '2px solid ' + (activeIdentiteTab === t.key ? '#2563eb' : 'transparent'), color: activeIdentiteTab === t.key ? '#2563eb' : '#64748b', fontSize: 11.5, fontWeight: activeIdentiteTab === t.key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}>

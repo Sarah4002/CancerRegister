@@ -587,7 +587,14 @@ export default function NewDiagnosticPage() {
   };
 
   return (
-    <AppLayout title="Nouveau Diagnostic">
+    <AppLayout
+      title="Nouveau Diagnostic"
+      patientContext={selectedPatient ? {
+        patient: selectedPatient,
+        backPath: `/patients/${selectedPatient.id}`,
+        backLabel: 'Retour au patient',
+      } : undefined}
+    >
       <style>{`
         @keyframes spin   { to { transform: rotate(360deg); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }

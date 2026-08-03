@@ -27,6 +27,7 @@ export default function NewTraitementPage() {
   const [submitting, setSubmitting] = useState(false);
   const [patients, setPatients]     = useState([]);
   const [diagnostics, setDiagnostics] = useState([]);
+  const [selectedPatient, setSelectedPatient] = useState(null);
 
   const { register, handleSubmit, watch, control, formState: { errors } } = useForm({
     mode: 'onSubmit',
@@ -57,6 +58,15 @@ export default function NewTraitementPage() {
     diagnosticService.parPatient(patientId).then(({ data }) => setDiagnostics(data || [])).catch(() => setDiagnostics([]));
   }, [patientId]);
 
+  useEffect(() => {
+    if (!patientId) { setSelectedPatient(null); return; }
+    const existing = patients.find(p => String(p.id) === String(patientId)) || null;
+    if (existing?.date_naissance) { setSelectedPatient(existing); return; }
+    patientService.get(patientId)
+      .then(({ data }) => setSelectedPatient(data))
+      .catch(() => setSelectedPatient(existing));
+  }, [patientId, patients]);
+
   const onSubmit = async (data) => {
     setSubmitting(true);
     try {
@@ -74,7 +84,14 @@ export default function NewTraitementPage() {
   };
 
   return (
-    <AppLayout title={`Nouveau traitement – ${cfg.label}`}>
+    <AppLayout
+      title={`Nouveau traitement – ${cfg.label}`}
+      patientContext={selectedPatient ? {
+        patient: selectedPatient,
+        backPath: `/patients/${selectedPatient.id}`,
+        backLabel: 'Retour au patient',
+      } : undefined}
+    >
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
 
         {/* Type selector */}
