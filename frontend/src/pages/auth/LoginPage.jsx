@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../hooks/useAuth';
+import { getHomeRouteForRole } from '../../hooks/usePermissions';
 
 const schema = z.object({
   email: z.string().email('Email invalide'),
@@ -29,18 +30,28 @@ function BgDecoration() {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, isLoading, isAuthenticated } = useAuthStore();
+  const { login, isLoading, isAuthenticated, user } = useAuthStore();
   const [showPass, setShowPass] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { setMounted(true); if (isAuthenticated) navigate('/dashboard'); }, [isAuthenticated, navigate]);
+  useEffect(() => {
+    setMounted(true);
+    if (isAuthenticated) {
+      navigate(getHomeRouteForRole(user?.role));
+    }
+  }, [isAuthenticated, user?.role, navigate]);
 
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
 
   const onSubmit = async (data) => {
     const result = await login(data);
-    if (result.success) { toast.success('Connexion réussie'); navigate('/dashboard'); }
-    else toast.error(result.error);
+    if (result.success) {
+      toast.success('Connexion réussie');
+      const role = useAuthStore.getState().user?.role;
+      navigate(getHomeRouteForRole(role));
+    } else {
+      toast.error(result.error);
+    }
   };
 
   return (

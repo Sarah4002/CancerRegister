@@ -36,6 +36,7 @@ import AdminPage from './pages/admin/AdminPage';
 import AdminCustomFieldsPage from './pages/admin/AdminCustomFieldsPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AuditLogsPage from './pages/admin/AuditLogsPage';
+import SecretairePage from './pages/secretaire/SecretairePage';
 
 
 import SettingsPage from './pages/settings/SettingsPage';
@@ -45,6 +46,7 @@ import DoctorSettingsPage from './pages/settings/DoctorSettingsPage';
 import { AppLayout } from './components/layout/Sidebar';
 import AccessDenied, { RequirePermission } from './components/auth/AccessDenied';
 import useAuthStore from './hooks/useAuth';
+import { getHomeRouteForRole } from './hooks/usePermissions';
 import './styles/globals.css';
 
 
@@ -56,6 +58,29 @@ function ProtectedRoute({ children }) {
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
+function RoleAwareDashboard() {
+  const { user } = useAuthStore();
+
+  if (user?.role === 'secretaire') {
+    return <SecretairePage />;
+  }
+
+  if (user?.role === 'admin') {
+    return <AdminPage />;
+  }
+
+  return <DashboardPage />;
+}
+
+function HomeRedirect() {
+  const { isAuthenticated, user } = useAuthStore();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Navigate to={getHomeRouteForRole(user?.role)} replace />;
+}
 
 // ─────────────────────────────────────────
 // Route protégée : permission spécifique
@@ -131,7 +156,7 @@ function App() {
         {/* ───────── Dashboard ───────── */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
-            <DashboardPage />
+            <RoleAwareDashboard />
           </ProtectedRoute>
         } />
 
@@ -312,6 +337,13 @@ function App() {
           </ProtectedRoute>
         } />
 
+        {/* ───────── Page de Secretaire ───────── */}
+        <Route path="/secretaire" element={
+          <PermRoute permission="secretaire">
+            <SecretairePage />
+          </PermRoute>
+        } />
+
         {/* ───────── Accès refusé ───────── */}
         <Route path="/acces-refuse" element={
           <ProtectedRoute>
@@ -321,8 +353,8 @@ function App() {
        
 
         {/* ───────── Redirects ───────── */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<HomeRedirect />} />
+        <Route path="*" element={<HomeRedirect />} />
 
       </Routes>
     </BrowserRouter>

@@ -399,14 +399,7 @@ export default function PatientDossierPage() {
             <span>{patient.commune || '—'}</span>
           </div>
         </div>
-        <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-          <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
-            Modifier le patient
-          </button>
-          <button type="button" onClick={() => navigate('/patients')} style={{ padding:'10px 18px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:12, color:'#334155', cursor:'pointer', fontSize:13 }}>
-            Retour aux patients
-          </button>
-        </div>
+        
       </div>
 
       {editMode && activeMainTab === 'identite' && (
@@ -418,6 +411,12 @@ export default function PatientDossierPage() {
 
       {/* ── Contenu (la navigation entre sections se fait désormais via le sidebar global) ── */}
       <div className="main-content">
+        <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+          <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
+            Modifier le patient
+          </button>
+         
+        </div>
           {/* == IDENTITe & PROFIL == */}
           {activeMainTab === 'identite' && (
             <>

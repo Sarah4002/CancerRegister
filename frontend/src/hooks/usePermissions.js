@@ -45,6 +45,17 @@ export const ROLE_COLORS = {
   readonly:       { color: '#9ca3af', bg: 'rgba(107,114,128,0.1)', border: 'rgba(107,114,128,0.25)' },
 };
 
+export function getHomeRouteForRole(role) {
+  switch (role) {
+    case ROLES.ADMIN:
+      return '/admin';
+    case ROLES.SECRETAIRE:
+      return '/secretaire';
+    default:
+      return '/dashboard';
+  }
+}
+
 function buildEmptyCan() {
   return {
     readPatient:    false, writePatient:    false,
