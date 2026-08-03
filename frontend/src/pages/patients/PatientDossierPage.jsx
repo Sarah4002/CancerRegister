@@ -606,7 +606,7 @@ export default function PatientDossierPage() {
                  <div style={{ animation: 'fadeIn 0.2s ease' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                      <SectionLabel style={{ margin: 0 }}>Diagnostic(s) associé(s)</SectionLabel>
-                     <Link to={`/diagnostics/nouveau?patient=${id}`} style={{ textDecoration: 'none' }}>
+                     <Link to={`/diagnostics/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
                        <button style={addBtnStyle}>
                          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
@@ -719,12 +719,14 @@ export default function PatientDossierPage() {
           {activeMainTab === 'traitements' && (
             <div style={{ animation: 'fadeIn 0.2s ease' }}>
               <SectionLabel>Historique des Traitements</SectionLabel>
-              <button style={addBtnStyle}>
+              <Link to={`/traitements/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
+                <button style={addBtnStyle}>
                          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                          </svg>
                          Ajouter un traitement
                        </button>
+              </Link>
               {Object.keys(traitements).map(key => traitements[key]?.length > 0 && (
                 <div key={key} style={{ marginBottom: 20 }}>
                   <h4 style={{ textTransform: 'capitalize', color: '#2563eb', borderBottom: '1px solid rgba(37,99,235,0.12)', paddingBottom: 6, marginTop: 0, marginBottom: 8, fontSize: 14 }}>{key}</h4>
@@ -743,12 +745,14 @@ export default function PatientDossierPage() {
           {activeMainTab === 'suivi' && (
             <div style={{ animation: 'fadeIn 0.2s ease' }}>
                <SectionLabel>Consultations & Suivi</SectionLabel>
-               <button style={addBtnStyle}>
+               <Link to={`/suivi/consultations/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
+                 <button style={addBtnStyle}>
                          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                          </svg>
                          Ajouter un suivi clinique
                        </button>
+               </Link>
                {suivi.length === 0 ? <div style={{ color: '#64748b', fontStyle: 'italic', fontSize: 13 }}>Aucune consultation enregistrée.</div> : (
                  suivi.map(c => (
                    <div key={c.id} style={{ background: '#f1f5f9', padding: '12px 16px', borderRadius: '12px', margin: '8px 0', fontSize: 13, color: '#334155', border: '1px solid rgba(37,99,235,0.06)' }}>

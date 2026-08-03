@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { traitementService } from '../../services/traitementService';
@@ -18,8 +18,10 @@ const TYPE_CONFIG = {
 
 export default function NewTraitementPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const type = searchParams.get('type') || 'chimio';
+  const initialPatient = searchParams.get('patient') || location.state?.patientContext?.id || '';
   const cfg  = TYPE_CONFIG[type] || TYPE_CONFIG.chimio;
 
   const [submitting, setSubmitting] = useState(false);
@@ -29,7 +31,7 @@ export default function NewTraitementPage() {
   const { register, handleSubmit, watch, control, formState: { errors } } = useForm({
     mode: 'onSubmit',
     defaultValues: {
-      patient:          searchParams.get('patient') || '',
+      patient:          initialPatient,
       intention:        'curatif',
       statut:           'planifie',
       tnm_type:         'c',

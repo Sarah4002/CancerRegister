@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { diagnosticService } from '../../services/diagnosticService';
@@ -412,7 +412,9 @@ function ValidationStatusBar({ violations }) {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function NewDiagnosticPage() {
   const navigate       = useNavigate();
+  const location       = useLocation();
   const [searchParams] = useSearchParams();
+  const initialPatient = searchParams.get('patient') || location.state?.patientContext?.id || '';
 
   const [submitting,    setSubmitting]    = useState(false);
   const [topoSelected,  setTopoSelected]  = useState(null);
@@ -431,7 +433,7 @@ export default function NewDiagnosticPage() {
     defaultValues: {
       categorie_cancer:'solide', tnm_type:'c', stade_ajcc:'U',
       base_diagnostic:'9', lateralite:'0', grade_histologique:'U',
-      patient: searchParams.get('patient') || '',
+      patient: initialPatient,
     },
   });
 
@@ -455,7 +457,7 @@ export default function NewDiagnosticPage() {
     patientService.list({ page_size:200 }).then(({ data }) => {
       const list = data.results || data;
       setPatients(list);
-      const pid = searchParams.get('patient');
+      const pid = initialPatient;
       if (pid) setSelectedPatient(list.find(p => String(p.id) === String(pid)) || null);
     }).catch(()=>{});
 

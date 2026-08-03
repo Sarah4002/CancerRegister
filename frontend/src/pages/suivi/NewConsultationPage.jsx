@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { suiviService } from '../../services/suiviService';
@@ -9,14 +9,16 @@ import { AppLayout } from '../../components/layout/Sidebar';
 
 export default function NewConsultationPage() {
  const navigate = useNavigate();
+ const location = useLocation();
  const [searchParams] = useSearchParams();
  const [submitting, setSubmitting] = useState(false);
  const [patients, setPatients] = useState([]);
+ const initialPatient = searchParams.get('patient') || location.state?.patientContext?.id || '';
 
- const { register, handleSubmit, watch, formState: { errors } } = useForm({
+ const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
  mode: 'onSubmit',
  defaultValues: {
- patient: searchParams.get('patient') || '',
+ patient: initialPatient,
  type_consultation: 'suivi',
  statut: 'realisee',
  rechute: false,
@@ -37,8 +39,17 @@ export default function NewConsultationPage() {
  const imc = poids && taille ? (poids / ((taille / 100) ** 2)).toFixed(1) : null;
 
  useEffect(() => {
- patientService.list({ page_size: 200 }).then(({ data }) => setPatients(data.results || data)).catch(() => {});
- }, []);
+ patientService.list({ page_size: 200 }).then(({ data }) => {
+   const list = data.results || data;
+   setPatients(list);
+   if (initialPatient) {
+     const matchingPatient = list.find((p) => String(p.id) === String(initialPatient));
+     if (matchingPatient) {
+       setValue('patient', matchingPatient.id);
+     }
+   }
+ }).catch(() => {});
+ }, [initialPatient, setValue]);
 
  const onSubmit = async (data) => {
  setSubmitting(true);
