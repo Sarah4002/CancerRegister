@@ -46,6 +46,11 @@ export default function NewConsultationPage() {
  const { heure_prochaine_consultation, ...rest } = data;
  const payload = { ...rest };
  Object.keys(payload).forEach(k => { if (payload[k] === '') delete payload[k]; });
+
+ if (payload.date_dernier_rdv) {
+   payload.date_dernier_rdv = payload.date_dernier_rdv;
+ }
+
  const { data: result } = await suiviService.consultations.create(payload);
 
  // Si une prochaine consultation est renseignée, on la fait apparaître
