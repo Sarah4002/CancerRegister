@@ -458,7 +458,11 @@ export default function NewDiagnosticPage() {
       const list = data.results || data;
       setPatients(list);
       const pid = initialPatient;
-      if (pid) setSelectedPatient(list.find(p => String(p.id) === String(pid)) || null);
+      if (pid) {
+        const found = list.find(p => String(p.id) === String(pid)) || null;
+        setSelectedPatient(found);
+        if (found) setValue('patient', found.id, { shouldValidate: true });
+      }
     }).catch(()=>{});
 
     validationRulesService.list({ active: true, page_size: 200 })

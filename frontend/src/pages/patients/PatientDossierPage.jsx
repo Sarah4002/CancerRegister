@@ -403,9 +403,11 @@ export default function PatientDossierPage() {
           {/* == IDENTITe & PROFIL == */}
           {activeMainTab === 'identite' && (
             <>
-             <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
-            Modifier le patient
-             </button>
+             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+               <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
+                 Modifier le patient
+               </button>
+             </div>
               <div style={{ display: 'flex', marginBottom: 16, background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
                 {ID_TABS.map(t => (
                   <button key={t.key} onClick={() => setActiveIdentiteTab(t.key)} style={{ flex: 1, padding: '12px 6px', background: 'none', border: 'none', borderBottom: '2px solid ' + (activeIdentiteTab === t.key ? '#2563eb' : 'transparent'), color: activeIdentiteTab === t.key ? '#2563eb' : '#64748b', fontSize: 11.5, fontWeight: activeIdentiteTab === t.key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}>
@@ -704,47 +706,123 @@ export default function PatientDossierPage() {
           {/* == TRAITEMENTS == */}
           {activeMainTab === 'traitements' && (
             <div style={{ animation: 'fadeIn 0.2s ease' }}>
-              <SectionLabel>Historique des Traitements</SectionLabel>
-              <Link to={`/traitements/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
-                <button style={addBtnStyle}>
-                         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
-                         </svg>
-                         Ajouter un traitement
-                       </button>
-              </Link>
-              {Object.keys(traitements).map(key => traitements[key]?.length > 0 && (
-                <div key={key} style={{ marginBottom: 20 }}>
-                  <h4 style={{ textTransform: 'capitalize', color: '#2563eb', borderBottom: '1px solid rgba(37,99,235,0.12)', paddingBottom: 6, marginTop: 0, marginBottom: 8, fontSize: 14 }}>{key}</h4>
-                  {traitements[key].map(t => (
-                     <div key={t.id} style={{ background: '#f1f5f9', padding: '12px 16px', borderRadius: '12px', margin: '8px 0', fontSize: 13, color: '#334155', border: '1px solid rgba(37,99,235,0.06)' }}>
-                       Phase: <strong style={{ color: '#0f172a' }}>{t.phase_traitement}</strong> — Statut: <span style={{ color: '#2563eb', fontWeight: 500 }}>{t.statut_traitement}</span> {t.date_debut && ` — Début: ${new Date(t.date_debut).toLocaleDateString('fr-DZ')}`}
-                     </div>
-                  ))}
-                </div>
-              ))}
-              {Object.keys(traitements).every(k => !traitements[k]?.length) && <div style={{ color: '#64748b', fontStyle: 'italic', fontSize: 13 }}>Aucun traitement trouvé.</div>}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <SectionLabel style={{ margin: 0 }}>Historique des Traitements</SectionLabel>
+                <Link to={`/traitements/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
+                  <button style={addBtnStyle}>
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Ajouter un traitement
+                  </button>
+                </Link>
+              </div>
+
+              {(() => {
+                const allTraitements = Object.entries(traitements).flatMap(([type, list]) =>
+                  (list || []).map(t => ({ ...t, _type: type }))
+                );
+                if (allTraitements.length === 0) {
+                  return (
+                    <div style={{ padding: 48, textAlign: 'center' }}>
+                      <div style={{ fontSize: 14, color: '#64748b' }}>Aucun traitement trouvé.</div>
+                    </div>
+                  );
+                }
+                return (
+                  <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ background: '#f1f5f9' }}>
+                          {['Type', 'Phase', 'Statut', 'Début', 'Fin', ''].map(h => (
+                            <th key={h} style={thStyle}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allTraitements.map((t, i) => (
+                          <tr key={t.id}
+                            onClick={() => navigate(`/traitements/${t._type}/${t.id}`)}
+                            style={{ cursor: 'pointer', borderBottom: '1px solid rgba(37,99,235,0.12)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
+                            onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'}
+                          >
+                            <td style={{ ...tdStyle, textTransform: 'capitalize', color: '#2563eb', fontWeight: 600, fontSize: 12 }}>{t._type}</td>
+                            <td style={{ ...tdStyle, fontSize: 12.5 }}>{t.phase_traitement || '—'}</td>
+                            <td style={tdStyle}>
+                              <span style={{ padding: '4px 10px', borderRadius: 20, background: 'rgba(37,99,235,0.1)', color: '#2563eb', fontSize: 11, fontWeight: 600 }}>
+                                {t.statut_traitement || '—'}
+                              </span>
+                            </td>
+                            <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{t.date_debut ? new Date(t.date_debut).toLocaleDateString('fr-DZ') : '—'}</td>
+                            <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{t.date_fin ? new Date(t.date_fin).toLocaleDateString('fr-DZ') : '—'}</td>
+                            <td style={tdStyle} onClick={e => e.stopPropagation()}>
+                              <button onClick={() => navigate(`/traitements/${t._type}/${t.id}`)} style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: 'pointer' }}>Voir</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
           {/* == SUIVI CLINIQUE == */}
           {activeMainTab === 'suivi' && (
             <div style={{ animation: 'fadeIn 0.2s ease' }}>
-               <SectionLabel>Consultations & Suivi</SectionLabel>
-               <Link to={`/suivi/consultations/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
-                 <button style={addBtnStyle}>
-                         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
-                         </svg>
-                         Ajouter un suivi clinique
-                       </button>
-               </Link>
-               {suivi.length === 0 ? <div style={{ color: '#64748b', fontStyle: 'italic', fontSize: 13 }}>Aucune consultation enregistrée.</div> : (
-                 suivi.map(c => (
-                   <div key={c.id} style={{ background: '#f1f5f9', padding: '12px 16px', borderRadius: '12px', margin: '8px 0', fontSize: 13, color: '#334155', border: '1px solid rgba(37,99,235,0.06)' }}>
-                     <strong style={{ color: '#0f172a' }}>Date: {new Date(c.date_consultation).toLocaleDateString('fr-DZ')}</strong> — PS ECOG: <span style={{ fontWeight: 600 }}>{c.ps_ecog}</span> — Poids: <span style={{ fontWeight: 600 }}>{c.poids_kg} kg</span>
-                   </div>
-                 ))
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                 <SectionLabel style={{ margin: 0 }}>Consultations & Suivi</SectionLabel>
+                 <Link to={`/suivi/consultations/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
+                   <button style={addBtnStyle}>
+                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                     </svg>
+                     Ajouter un suivi clinique
+                   </button>
+                 </Link>
+               </div>
+
+               {suivi.length === 0 ? (
+                 <div style={{ padding: 48, textAlign: 'center' }}>
+                   <div style={{ fontSize: 14, color: '#64748b' }}>Aucune consultation enregistrée.</div>
+                 </div>
+               ) : (
+                 <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                     <thead>
+                       <tr style={{ background: '#f1f5f9' }}>
+                         {['Date', 'Type', 'PS ECOG', 'Poids', 'Statut', ''].map(h => (
+                           <th key={h} style={thStyle}>{h}</th>
+                         ))}
+                       </tr>
+                     </thead>
+                     <tbody>
+                       {suivi.map((c, i) => (
+                         <tr key={c.id}
+                           onClick={() => navigate(`/suivi/consultations/${c.id}`)}
+                           style={{ cursor: 'pointer', borderBottom: '1px solid rgba(37,99,235,0.12)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
+                           onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
+                           onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'}
+                         >
+                           <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{c.date_consultation ? new Date(c.date_consultation).toLocaleDateString('fr-DZ') : '—'}</td>
+                           <td style={{ ...tdStyle, fontSize: 12.5 }}>{c.type_consultation_label || c.type_consultation || '—'}</td>
+                           <td style={{ ...tdStyle, fontSize: 12.5 }}>{c.ps_ecog ?? '—'}</td>
+                           <td style={{ ...tdStyle, fontSize: 12.5 }}>{c.poids_kg ? `${c.poids_kg} kg` : '—'}</td>
+                           <td style={tdStyle}>
+                             <span style={{ padding: '4px 10px', borderRadius: 20, background: 'rgba(37,99,235,0.1)', color: '#2563eb', fontSize: 11, fontWeight: 600 }}>
+                               {c.statut_label || c.statut || '—'}
+                             </span>
+                           </td>
+                           <td style={tdStyle} onClick={e => e.stopPropagation()}>
+                             <button onClick={() => navigate(`/suivi/consultations/${c.id}`)} style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: 'pointer' }}>Voir</button>
+                           </td>
+                         </tr>
+                       ))}
+                     </tbody>
+                   </table>
+                 </div>
                )}
             </div>
           )}

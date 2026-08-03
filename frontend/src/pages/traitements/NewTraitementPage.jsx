@@ -29,7 +29,7 @@ export default function NewTraitementPage() {
   const [diagnostics, setDiagnostics] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
 
-  const { register, handleSubmit, watch, control, formState: { errors } } = useForm({
+  const { register, handleSubmit, watch, control, setValue, formState: { errors } } = useForm({
     mode: 'onSubmit',
     defaultValues: {
       patient:          initialPatient,
@@ -50,7 +50,14 @@ export default function NewTraitementPage() {
   const patientId = watch('patient');
 
   useEffect(() => {
-    patientService.list({ page_size: 200 }).then(({ data }) => setPatients(data.results || data)).catch(() => {});
+    patientService.list({ page_size: 200 }).then(({ data }) => {
+      const list = data.results || data;
+      setPatients(list);
+      if (initialPatient) {
+        const found = list.find(p => String(p.id) === String(initialPatient));
+        if (found) setValue('patient', found.id, { shouldValidate: true });
+      }
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
