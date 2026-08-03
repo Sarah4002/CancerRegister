@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation as useRouterLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { suiviService } from '../../services/suiviService';
@@ -9,7 +9,7 @@ import { AppLayout } from '../../components/layout/Sidebar';
 
 export default function NewConsultationPage() {
  const navigate = useNavigate();
- const location = useLocation();
+ const location = useRouterLocation();
  const [searchParams] = useSearchParams();
  const [submitting, setSubmitting] = useState(false);
  const [patients, setPatients] = useState([]);
@@ -102,7 +102,7 @@ export default function NewConsultationPage() {
  toast.success('Consultation enregistrée !');
  }
 
- navigate(`/suivi/consultations/${result.id}`);
+ navigate(`/patients/${data.patient}`, { state: { returnSection: 'suivi', newConsultationId: result.id } });
  } catch (err) {
  toast.error(err.response?.data ? Object.values(err.response.data).flat().join('') : 'Erreur');
  } finally { setSubmitting(false); }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation as useRouterLocation } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { traitementService } from '../../services/traitementService';
@@ -18,7 +18,7 @@ const TYPE_CONFIG = {
 
 export default function NewTraitementPage() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const location = useRouterLocation();
   const [searchParams] = useSearchParams();
   const type = searchParams.get('type') || 'chimio';
   const initialPatient = searchParams.get('patient') || location.state?.patientContext?.id || '';
@@ -89,7 +89,7 @@ export default function NewTraitementPage() {
       const svc = traitementService[serviceKey];
       const { data: result } = await svc.create(payload);
       toast.success(`${cfg.label} enregistré avec succès !`);
-      navigate(`/traitements/${type}/${result.id}`);
+      navigate(`/patients/${payload.patient}`, { state: { returnSection: 'traitements', newTraitementId: result.id } });
     } catch (err) {
       const errs = err.response?.data;
       toast.error(errs ? Object.values(errs).flat().join(' ') : 'Erreur lors de la création.');

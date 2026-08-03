@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { patientService } from '../../services/patientService';
 import { examenService } from '../../services/examenService';
 import { diagnosticService } from '../../services/diagnosticService';
@@ -219,6 +219,7 @@ function QRCodeCard({ patient }) {
 export default function PatientDossierPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [patient, setPatient] = useState(null);
   const [dossier, setDossier] = useState(null);
@@ -232,6 +233,7 @@ export default function PatientDossierPage() {
   const [activeMainTab, setActiveMainTab] = useState('identite');
   const [activeSubTab, setActiveSubTab] = useState('clinique');
   const [activeIdentiteTab, setActiveIdentiteTab] = useState('identite');
+  const [highlightedDiagnosticId, setHighlightedDiagnosticId] = useState(null);
   
   const [showExamenModal, setShowExamenModal] = useState(false);
   const [editingExamen, setEditingExamen] = useState(null);
@@ -253,7 +255,16 @@ export default function PatientDossierPage() {
     }
 
     loadAllData();
-  }, [id, navigate]);
+    
+    if (location.state?.returnSection === 'diagnostic') {
+      setActiveMainTab('dossier');
+      setActiveSubTab('diagnostic');
+      if (location.state?.newDiagnosticId) {
+        setHighlightedDiagnosticId(location.state.newDiagnosticId);
+        setTimeout(() => setHighlightedDiagnosticId(null), 3000);
+      }
+    }
+  }, [id, navigate, location.state]);
 
   const loadAllData = async () => {
     if (id === undefined || id === null || id === '' || id === 'undefined') return;
@@ -273,6 +284,19 @@ export default function PatientDossierPage() {
       setDiagnostics(resDiag.data || []);
       setTraitements(resTrt.data || {});
       setSuivi(resSuiv.data || []);
+      
+      if (location.state?.returnSection === 'diagnostic' && location.state?.newDiagnosticId) {
+        setHighlightedDiagnosticId(location.state.newDiagnosticId);
+        setTimeout(() => setHighlightedDiagnosticId(null), 3000);
+      }
+      if (location.state?.returnSection === 'suivi' && location.state?.newConsultationId) {
+        setHighlightedDiagnosticId(location.state.newConsultationId);
+        setTimeout(() => setHighlightedDiagnosticId(null), 3000);
+      }
+      if (location.state?.returnSection === 'traitements' && location.state?.newTraitementId) {
+        setHighlightedDiagnosticId(location.state.newTraitementId);
+        setTimeout(() => setHighlightedDiagnosticId(null), 3000);
+      }
     } catch (err) { } finally { setLoading(false); }
   };
 
@@ -326,9 +350,13 @@ export default function PatientDossierPage() {
   const activeSectionKey = activeMainTab === 'dossier' ? activeSubTab : activeMainTab;
 
   const handleSectionSelect = (key) => {
-    if (['clinique', 'diagnostic', 'examens'].includes(key)) {
-      setActiveMainTab('dossier');
-      setActiveSubTab(key);
+    if (['clinique', 'diagnostic', 'examens', 'traitements', 'suivi'].includes(key)) {
+      if (['clinique', 'diagnostic', 'examens'].includes(key)) {
+        setActiveMainTab('dossier');
+        setActiveSubTab(key);
+      } else {
+        setActiveMainTab(key);
+      }
     } else {
       setActiveMainTab(key);
     }

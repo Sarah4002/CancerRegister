@@ -582,7 +582,7 @@ export default function NewDiagnosticPage() {
       const { data:diag } = await diagnosticService.create(payload);
       if (Object.keys(valeursCustom).length > 0) await sauvegarderCustom(diag.id);
       toast.success('Diagnostic enregistré avec succès !');
-      navigate(`/diagnostics/${diag.id}`);
+      navigate(`/patients/${payload.patient}`, { state: { returnSection: 'diagnostic', newDiagnosticId: diag.id } });
     } catch (err) {
       const errs = err.response?.data;
       toast.error(errs ? Object.values(errs).flat().join(' ') : 'Erreur lors de la création.');
