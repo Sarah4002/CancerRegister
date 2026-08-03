@@ -63,6 +63,13 @@ const EXAMEN_STATUT_COLORS = {
   annule:     { bg: 'rgba(255,77,106,0.1)',  color: '#dc2626' },
 };
 
+const EXAMEN_STATUT_LABELS = {
+  prescrit:   'Prescrit',
+  en_attente: 'En attente',
+  realise:    'Réalisé',
+  annule:     'Annulé',
+};
+
 // ── Reprises du design de DiagnosticsPage pour garder une cohérence visuelle ──
 const STADE_COLORS = {
   '0':    { bg: 'rgba(0,229,160,0.1)',   color: '#16a34a', border: 'rgba(0,229,160,0.3)' },
@@ -227,6 +234,7 @@ export default function PatientDossierPage() {
   const [activeIdentiteTab, setActiveIdentiteTab] = useState('identite');
   
   const [showExamenModal, setShowExamenModal] = useState(false);
+  const [editingExamen, setEditingExamen] = useState(null);
 
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState({});
@@ -664,40 +672,56 @@ export default function PatientDossierPage() {
                  <div style={{ animation: 'fadeIn 0.2s ease' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                      <SectionLabel style={{ margin: 0 }}>Examens & Bilans</SectionLabel>
-                     <button onClick={() => setShowExamenModal(true)} style={addBtnStyle}>
+                     <button onClick={() => { setEditingExamen(null); setShowExamenModal(true); }} style={addBtnStyle}>
                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                        </svg>
                        Prescrire un examen
                      </button>
                    </div>
-                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                     <thead>
-                       <tr style={{ borderBottom: '1px solid rgba(37,99,235,0.12)', color: '#64748b' }}>
-                         <th style={{ padding: '12px 8px', textAlign: 'left' }}>Categorie</th>
-                         <th style={{ padding: '12px 8px', textAlign: 'left' }}>Examen</th>
-                         <th style={{ padding: '12px 8px', textAlign: 'left' }}>Valeur</th>
-                         <th style={{ padding: '12px 8px', textAlign: 'left' }}>Statut</th>
-                         <th style={{ padding: '12px 8px', textAlign: 'right' }}>Prescrit le</th>
-                       </tr>
-                     </thead>
-                     <tbody>
-                       {examens.length === 0 ? (
-                         <tr><td colSpan={5} style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontStyle: 'italic' }}>Aucun examen enregistré.</td></tr>
-                       ) : examens.map(ex => {
-                         const st = EXAMEN_STATUT_COLORS[ex.statut] || EXAMEN_STATUT_COLORS.en_attente;
-                         return (
-                           <tr key={ex.id} style={{ borderBottom: '1px solid rgba(37,99,235,0.08)' }}>
-                             <td style={{ padding: '12px 8px', color: '#0f172a', fontWeight: 500 }}>{ex.categorie}</td>
-                             <td style={{ padding: '12px 8px', color: '#334155' }}>{ex.nom_examen}</td>
-                             <td style={{ padding: '12px 8px', color: '#0f172a', fontWeight: 600 }}>{ex.valeur || '—'}</td>
-                             <td style={{ padding: '12px 8px' }}><span style={{ padding: '4px 8px', borderRadius: 20, background: st.bg, color: st.color, fontSize: 11, fontWeight: 600 }}>{ex.statut}</span></td>
-                             <td style={{ padding: '12px 8px', textAlign: 'right', color: '#64748b' }}>{new Date(ex.date_prescription).toLocaleDateString('fr-DZ')}</td>
+
+                   {examens.length === 0 ? (
+                     <div style={{ padding: 48, textAlign: 'center' }}>
+                       <div style={{ fontSize: 14, color: '#64748b' }}>Aucun examen enregistré.</div>
+                     </div>
+                   ) : (
+                     <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                         <thead>
+                           <tr style={{ background: '#f1f5f9' }}>
+                             {['Catégorie', 'Examen', 'Valeur', 'Statut', 'Prescrit le', ''].map(h => (
+                               <th key={h} style={thStyle}>{h}</th>
+                             ))}
                            </tr>
-                         );
-                       })}
-                     </tbody>
-                   </table>
+                         </thead>
+                         <tbody>
+                           {examens.map((ex, i) => {
+                             const st = EXAMEN_STATUT_COLORS[ex.statut] || EXAMEN_STATUT_COLORS.en_attente;
+                             const stLabel = EXAMEN_STATUT_LABELS[ex.statut] || ex.statut || '—';
+                             return (
+                               <tr key={ex.id}
+                                 onClick={() => { setEditingExamen(ex); setShowExamenModal(true); }}
+                                 style={{ cursor: 'pointer', borderBottom: '1px solid rgba(37,99,235,0.12)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
+                                 onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
+                                 onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'}
+                               >
+                                 <td style={{ ...tdStyle, color: '#0f172a', fontWeight: 500, fontSize: 12.5 }}>{ex.categorie || '—'}</td>
+                                 <td style={{ ...tdStyle, color: '#334155', fontSize: 12.5 }}>{ex.nom_examen || '—'}</td>
+                                 <td style={{ ...tdStyle, color: '#0f172a', fontWeight: 600, fontSize: 12.5 }}>{ex.valeur || '—'}</td>
+                                 <td style={tdStyle}>
+                                   <span style={{ padding: '4px 10px', borderRadius: 20, background: st.bg, color: st.color, fontSize: 11, fontWeight: 600 }}>{stLabel}</span>
+                                 </td>
+                                 <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{ex.date_prescription ? new Date(ex.date_prescription).toLocaleDateString('fr-DZ') : '—'}</td>
+                                 <td style={tdStyle} onClick={e => e.stopPropagation()}>
+                                   <button onClick={() => { setEditingExamen(ex); setShowExamenModal(true); }} style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: 'pointer' }}>Voir</button>
+                                 </td>
+                               </tr>
+                             );
+                           })}
+                         </tbody>
+                       </table>
+                     </div>
+                   )}
                  </div>
                )}
              </div>
@@ -829,7 +853,12 @@ export default function PatientDossierPage() {
       </div>
 
       {showExamenModal && (
-        <ExamenModal patientId={id} onClose={() => setShowExamenModal(false)} onSuccess={() => { loadAllData(); setShowExamenModal(false); }} />
+        <ExamenModal
+          patientId={id}
+          examen={editingExamen}
+          onClose={() => { setShowExamenModal(false); setEditingExamen(null); }}
+          onSuccess={() => { loadAllData(); setShowExamenModal(false); setEditingExamen(null); }}
+        />
       )}
     </AppLayout>
   );

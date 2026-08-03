@@ -51,14 +51,20 @@ export default function NewTraitementPage() {
 
   useEffect(() => {
     patientService.list({ page_size: 200 }).then(({ data }) => {
-      const list = data.results || data;
-      setPatients(list);
-      if (initialPatient) {
-        const found = list.find(p => String(p.id) === String(initialPatient));
-        if (found) setValue('patient', found.id, { shouldValidate: true });
-      }
+      setPatients(data.results || data);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (initialPatient && patients.length > 0) {
+      const found = patients.find(p => String(p.id) === String(initialPatient));
+      if (found) {
+        const patientValue = String(found.id);
+        setValue('patient', patientValue, { shouldValidate: true });
+        setSelectedPatient(found);
+      }
+    }
+  }, [initialPatient, patients, setValue]);
 
   useEffect(() => {
     if (!patientId) { setDiagnostics([]); return; }

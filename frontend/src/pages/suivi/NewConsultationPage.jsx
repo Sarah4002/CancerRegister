@@ -42,16 +42,20 @@ export default function NewConsultationPage() {
 
  useEffect(() => {
  patientService.list({ page_size: 200 }).then(({ data }) => {
-   const list = data.results || data;
-   setPatients(list);
-   if (initialPatient) {
-     const matchingPatient = list.find((p) => String(p.id) === String(initialPatient));
-     if (matchingPatient) {
-       setValue('patient', matchingPatient.id);
+   setPatients(data.results || data);
+ }).catch(() => {});
+ }, []);
+
+ useEffect(() => {
+   if (initialPatient && patients.length > 0) {
+     const found = patients.find((p) => String(p.id) === String(initialPatient));
+     if (found) {
+       const patientValue = String(found.id);
+       setValue('patient', patientValue, { shouldValidate: true });
+       setSelectedPatient(found);
      }
    }
- }).catch(() => {});
- }, [initialPatient, setValue]);
+ }, [initialPatient, patients, setValue]);
 
  useEffect(() => {
    if (!patientIdWatch) { setSelectedPatient(null); return; }

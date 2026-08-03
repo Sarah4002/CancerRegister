@@ -452,23 +452,29 @@ export default function NewDiagnosticPage() {
           sauvegarder:sauvegarderCustom, loading:loadingCustom } =
     useCustomFields({ module:'diagnostic', objectId:null });
 
-  // Load patients and active validation rules
+  // Load patients once on mount
   useEffect(() => {
     patientService.list({ page_size:200 }).then(({ data }) => {
       const list = data.results || data;
       setPatients(list);
-      const pid = initialPatient;
-      if (pid) {
-        const found = list.find(p => String(p.id) === String(pid)) || null;
-        setSelectedPatient(found);
-        if (found) setValue('patient', found.id, { shouldValidate: true });
-      }
     }).catch(()=>{});
 
     validationRulesService.list({ active: true, page_size: 200 })
       .then(({ data }) => setValidationRules(data.results || data))
       .catch(() => setValidationRules([]));
-  }, [searchParams]);
+  }, []);
+
+  // Sync initialPatient to form when patients are loaded
+  useEffect(() => {
+    if (initialPatient && patients.length > 0) {
+      const found = patients.find(p => String(p.id) === String(initialPatient));
+      if (found) {
+        const patientValue = String(found.id);
+        setValue('patient', patientValue, { shouldValidate: true });
+        setSelectedPatient(found);
+      }
+    }
+  }, [initialPatient, patients, setValue]);
 
   // Update selectedPatient when selector changes
   useEffect(() => {
