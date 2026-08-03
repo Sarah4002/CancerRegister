@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { suiviService } from '../../services/suiviService';
 import { patientService } from '../../services/patientService';
+import { secretaryService } from '../../services/secretaryService';
 import { AppLayout } from '../../components/layout/Sidebar';
 
 export default function NewConsultationPage() {
@@ -24,6 +25,7 @@ export default function NewConsultationPage() {
  alcool: 'inconnu',
  activite_physique: 'inconnu',
  alimentation: 'inconnu',
+ heure_prochaine_consultation: '09:00',
  }
  });
 
@@ -31,6 +33,7 @@ export default function NewConsultationPage() {
  const taille = watch('taille_cm');
  const rechute = watch('rechute');
  const exposition_toxique = watch('exposition_toxique');
+ const prochaine_consultation = watch('prochaine_consultation');
  const imc = poids && taille ? (poids / ((taille / 100) ** 2)).toFixed(1) : null;
 
  useEffect(() => {
@@ -40,10 +43,34 @@ export default function NewConsultationPage() {
  const onSubmit = async (data) => {
  setSubmitting(true);
  try {
- const payload = { ...data };
+ const { heure_prochaine_consultation, ...rest } = data;
+ const payload = { ...rest };
  Object.keys(payload).forEach(k => { if (payload[k] === '') delete payload[k]; });
  const { data: result } = await suiviService.consultations.create(payload);
+
+ // Si une prochaine consultation est renseignée, on la fait apparaître
+ // automatiquement dans le calendrier du secrétariat (+ notifications).
+ if (data.prochaine_consultation) {
+ try {
+ await secretaryService.createRendezVous({
+ patient: data.patient,
+ date: data.prochaine_consultation,
+ heure: heure_prochaine_consultation || '09:00',
+ type: 'suivi',
+ statut: 'confirme',
+ notes: 'Programmé automatiquement depuis la consultation de suivi',
+ consultation_origine: result.id,
+ });
+ toast.success('Consultation enregistrée et rendez-vous ajouté au calendrier !');
+ } catch (rdvErr) {
+ console.error('Erreur création RDV automatique:', rdvErr);
  toast.success('Consultation enregistrée !');
+ toast.error("La consultation est enregistrée mais le rendez-vous n'a pas pu être ajouté au calendrier.");
+ }
+ } else {
+ toast.success('Consultation enregistrée !');
+ }
+
  navigate(`/suivi/consultations/${result.id}`);
  } catch (err) {
  toast.error(err.response?.data ? Object.values(err.response.data).flat().join('') : 'Erreur');
@@ -251,6 +278,22 @@ export default function NewConsultationPage() {
  <input type="date" {...register('prochaine_consultation')} style={inputSt} />
  </Field>
  </Row2>
+ {prochaine_consultation && (
+ <Row2>
+ <Field label="Heure du rendez-vous">
+ <input type="time" {...register('heure_prochaine_consultation')} style={inputSt} />
+ </Field>
+ <Field label="">
+ <div style={{
+ marginTop:22, fontSize:11, color:'#2563eb', background:'#eff6ff',
+ border:'1px solid rgba(37,99,235,0.18)', borderRadius:10, padding:'8px 12px',
+ display:'flex', alignItems:'center', gap:6,
+ }}>
+ 📅 Ce rendez-vous sera automatiquement ajouté au calendrier du secrétariat.
+ </div>
+ </Field>
+ </Row2>
+ )}
  <Field label="Marqueurs biologiques">
  <input {...register('marqueurs_biologiques')} placeholder="CEA: 2.1, CA125: 35, PSA: 4.2..." style={inputSt} />
  </Field>

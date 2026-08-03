@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { secretaryService } from '../../services/secretaryService';
+import { suiviService } from '../../services/suiviService';
 import { AppLayout } from '../../components/layout/Sidebar';
 
 /* ── Palette (identique au Dashboard) ── */
@@ -284,6 +285,99 @@ function RdvListPanel({ date, rdvs, onStatusChange }) {
 }
 
 /* ══════════════════════════════════════════════
+   Cloche de notifications — RDV à venir
+   ══════════════════════════════════════════════ */
+function formatJourRelatif(dateStr) {
+  const today = todayISO();
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  if (dateStr === today) return "Aujourd'hui";
+  if (dateStr === tomorrow) return 'Demain';
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString('fr-DZ', { weekday:'short', day:'numeric', month:'short' });
+}
+
+function NotificationBell({ items, open, onToggle, onSelect }) {
+  return (
+    <div style={{ position:'relative' }}>
+      <button
+        onClick={onToggle}
+        style={{
+          width:38, height:38, display:'flex', alignItems:'center', justifyContent:'center',
+          background:'#fff', border:'1px solid rgba(37,99,235,0.18)', borderRadius:10,
+          cursor:'pointer', position:'relative', boxShadow:'0 2px 6px rgba(15,23,42,0.06)',
+        }}
+      >
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2">
+          <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 01-3.46 0"/>
+        </svg>
+        {items.length > 0 && (
+          <span style={{
+            position:'absolute', top:-4, right:-4,
+            background:'#dc2626', color:'#fff', fontSize:9, fontWeight:800,
+            borderRadius:99, minWidth:17, height:17, padding:'0 4px',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            border:'2px solid #fff',
+          }}>
+            {items.length > 9 ? '9+' : items.length}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div style={{
+          position:'absolute', top:46, right:0, width:320, zIndex:20,
+          background:'#fff', border:'1px solid rgba(37,99,235,0.12)', borderRadius:14,
+          boxShadow:'0 12px 32px rgba(15,23,42,0.14)', overflow:'hidden',
+        }}>
+          <div style={{ padding:'12px 16px', borderBottom:'1px solid rgba(37,99,235,0.08)', fontSize:12, fontWeight:700, color:'#0f172a' }}>
+            Rendez-vous à venir (72h)
+          </div>
+          {items.length === 0 ? (
+            <div style={{ padding:'24px 16px', textAlign:'center', color:'#94a3b8', fontSize:12 }}>
+              Aucun rendez-vous dans les 3 prochains jours.
+            </div>
+          ) : (
+            <div style={{ maxHeight:320, overflowY:'auto' }}>
+              {items.map(r => (
+                <div
+                  key={r.id}
+                  onClick={() => onSelect(r.date)}
+                  style={{
+                    display:'flex', alignItems:'center', gap:10,
+                    padding:'10px 16px', cursor:'pointer',
+                    borderBottom:'1px solid rgba(37,99,235,0.06)',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <div style={{
+                    width:6, height:6, borderRadius:'50%', flexShrink:0,
+                    background: STATUT_RDV_COLORS[r.statut] || '#94a3b8',
+                  }} />
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:12.5, fontWeight:700, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {r.patient_nom}
+                    </div>
+                    <div style={{ fontSize:11, color:'#64748b' }}>
+                      {formatJourRelatif(r.date)} à {r.heure} · {TYPE_RDV_LABELS[r.type] || r.type}
+                    </div>
+                  </div>
+                  {r.source === 'consultation' && (
+                    <span style={{ fontSize:9, fontWeight:700, color:'#7c3aed', background:'#7c3aed14', padding:'2px 6px', borderRadius:6 }}>
+                      Suivi
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
    MAIN — SecretairePage
    ══════════════════════════════════════════════ */
 export default function SecretairePage() {
@@ -298,6 +392,9 @@ export default function SecretairePage() {
   const [filterMedecin, setFilterMedecin] = useState('');
   const [filterType, setFilterType]       = useState('');
   const [filterStatut, setFilterStatut]   = useState('');
+
+  const [upcoming, setUpcoming]   = useState([]);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -314,6 +411,52 @@ export default function SecretairePage() {
   }, [month, year]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  /* Notifications : RDV secrétariat classiques + "prochaine_consultation"
+     saisies depuis NewConsultationPage, fusionnés et triés sur les 72h à venir. */
+  const fetchUpcoming = useCallback(async () => {
+    try {
+      const [{ data: rdvUpcoming }, { data: consultUpcoming }] = await Promise.all([
+        secretaryService.getUpcoming({ jours: 3 }),
+        suiviService.consultations.upcoming({ jours: 3 }),
+      ]);
+
+      const fromRdv = (rdvUpcoming || []).map(r => ({ ...r, source: 'rdv' }));
+
+      // Les consultations avec une "prochaine_consultation" renseignée sont
+      // affichées comme RDV même tant qu'elles n'ont pas encore été
+      // formellement créées dans le module secrétariat.
+      const fromConsultations = (consultUpcoming || []).map(c => ({
+        id: `consult-${c.id}`,
+        date: c.prochaine_consultation,
+        heure: c.heure_prochaine_consultation || '--:--',
+        patient_nom: c.patient_nom,
+        medecin_nom: c.medecin_nom,
+        type: 'suivi',
+        statut: 'confirme',
+        source: 'consultation',
+      }));
+
+      const merged = [...fromRdv, ...fromConsultations]
+        .sort((a, b) => (a.date + a.heure).localeCompare(b.date + b.heure));
+
+      setUpcoming(merged);
+    } catch (err) {
+      console.error('Erreur chargement notifications RDV:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUpcoming();
+    const interval = setInterval(fetchUpcoming, 5 * 60 * 1000); // rafraîchi toutes les 5 min
+    return () => clearInterval(interval);
+  }, [fetchUpcoming]);
+
+  const handleNotifSelect = (dateStr) => {
+    const [y, m] = dateStr.split('-').map(Number);
+    setYear(y); setMonth(m - 1); setSelectedDate(dateStr);
+    setNotifOpen(false);
+  };
 
   const medecinsOptions = useMemo(
     () => [...new Set(rdvs.map(r => r.medecin_nom))].filter(Boolean).sort(),
@@ -381,25 +524,33 @@ export default function SecretairePage() {
             Gestion des rendez-vous et du planning des consultations
           </div>
         </div>
-        <Link to="/rendezvous/nouveau" style={{ textDecoration:'none' }}>
-          <button style={{
-            padding:'9px 18px', background:'linear-gradient(135deg,#3b82f6,#2563eb)',
-            border:'none', borderRadius:10, color:'#fff',
-            fontSize:12, fontWeight:600, cursor:'pointer',
-            boxShadow:'0 2px 8px rgba(37,99,235,0.25)',
-          }}>
-            + Nouveau rendez-vous
-          </button>
-        </Link>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <NotificationBell
+            items={upcoming}
+            open={notifOpen}
+            onToggle={() => setNotifOpen(o => !o)}
+            onSelect={handleNotifSelect}
+          />
+          <Link to="/rendezvous/nouveau" style={{ textDecoration:'none' }}>
+            <button style={{
+              padding:'9px 18px', background:'linear-gradient(135deg,#3b82f6,#2563eb)',
+              border:'none', borderRadius:10, color:'#fff',
+              fontSize:12, fontWeight:600, cursor:'pointer',
+              boxShadow:'0 2px 8px rgba(37,99,235,0.25)',
+            }}>
+              + Nouveau rendez-vous
+            </button>
+          </Link>
+        </div>
       </div>
 
       {/* ── KPIs ── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12, marginBottom:20 }}>
-        <KPICard label="RDV aujourd'hui"     value={k.rdv_aujourdhui}   color="#2563eb" icon="📅" />
-        <KPICard label="Cette semaine"        value={k.rdv_semaine}     color="#7c3aed" icon="🗓️" />
-        <KPICard label="En attente"           value={k.rdv_en_attente}  color="#d97706" icon="⏳" />
-        <KPICard label="Confirmés"            value={k.rdv_confirmes}   color="#16a34a" icon="✅" />
-        <KPICard label="Annulés (ce mois)"    value={k.rdv_annules}     color="#dc2626" icon="✖️" />
+        <KPICard label="RDV aujourd'hui"     value={k.rdv_aujourdhui}   color="#2563eb" icon="" />
+        <KPICard label="Cette semaine"        value={k.rdv_semaine}     color="#7c3aed" icon="" />
+        <KPICard label="En attente"           value={k.rdv_en_attente}  color="#d97706" icon="" />
+        <KPICard label="Confirmés"            value={k.rdv_confirmes}   color="#16a34a" icon="" />
+        <KPICard label="Annulés (ce mois)"    value={k.rdv_annules}     color="#dc2626" icon="" />
       </div>
 
       {/* ── Filtres ── */}
