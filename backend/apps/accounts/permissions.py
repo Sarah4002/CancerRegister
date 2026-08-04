@@ -91,11 +91,11 @@ def can_view_statistics(user):
 
 def can_export(user):
     """Exporter des données anonymisées."""
-    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_EPIDEMIOLOGIST)
+    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_DOCTOR,ROLE_EPIDEMIOLOGIST)
 
 def can_export_identified_data(user):
     """Exporter des données nominatives."""
-    return has_role(user, ROLE_DOCTOR_CHEF)
+    return has_role(user, ROLE_DOCTOR_CHEF,ROLE_DOCTOR)
 
 def can_view_map(user):
     """Carte SIG."""
