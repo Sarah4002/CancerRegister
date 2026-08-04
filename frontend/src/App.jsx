@@ -159,6 +159,7 @@ function App() {
             <RoleAwareDashboard />
           </ProtectedRoute>
         } />
+        <Route path="/admindashboard" element={<Navigate to="/dashboardadmin" replace />} />
 
         {/* ───────── Patients ───────── */}
         <Route path="/patients" element={
