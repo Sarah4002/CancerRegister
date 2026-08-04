@@ -87,7 +87,7 @@ def can_read_treatment(user):
 
 def can_view_statistics(user):
     """Voir les statistiques."""
-    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_DOCTOR, ROLE_PHARMACIST, ROLE_ANAPATH, ROLE_EPIDEMIOLOGIST)
+    return has_role(user, ROLE_ADMIN, ROLE_DOCTOR_CHEF, ROLE_DOCTOR, ROLE_PHARMACIST, ROLE_ANAPATH, ROLE_EPIDEMIOLOGIST)
 
 def can_export(user):
     """Exporter des données anonymisées."""
