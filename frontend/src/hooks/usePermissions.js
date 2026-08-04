@@ -48,7 +48,7 @@ export const ROLE_COLORS = {
 export function getHomeRouteForRole(role) {
   switch (role) {
     case ROLES.ADMIN:
-      return '/admin';
+      return '/admindashboard';
     case ROLES.SECRETAIRE:
       return '/secretaire';
     default:
