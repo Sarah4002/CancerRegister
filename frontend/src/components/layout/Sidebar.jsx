@@ -27,7 +27,7 @@ const NAV_CONFIG = [
   {
     section: 'Analyses',
     items: [
-      { path: '/stats', label: 'Statistiques', icon: ChartIcon, permission: 'viewStatistics' },
+      { path: '/stats', label: 'Statistiques', icon: ChartIcon, roles: ['doctor_chef', 'epidemiologist', 'readonly'] },
       { path: '/carte', label: 'Carte SIG', icon: MapIcon, permission: 'viewMap' },
       { path: '/rcp', label: 'RCP', icon: CalendarIcon, permission: 'viewRcp' },
     ],
@@ -35,7 +35,7 @@ const NAV_CONFIG = [
   {
     section: 'Systeme',
     items: [
-      { path: '/aide', label: "Centre d'aide", labelKey: 'help', icon: HelpIcon,roles: ['doctor', 'doctor_chef', 'anapath', 'epidemiologist', 'pharmacist', 'secretaire', 'readonly']  },
+      { path: '/aide', label: "Centre d'aide", labelKey: 'help', icon: HelpIcon, roles: ['doctor', 'doctor_chef', 'anapath', 'epidemiologist', 'pharmacist', 'secretaire', 'readonly'] },
       { path: '/parametres-medecin', label: 'Parametres', labelKey: 'doctorSettings', icon: DoctorSettingsIcon, roles: ['doctor'] },
     ],
   },
