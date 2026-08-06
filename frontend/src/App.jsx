@@ -27,7 +27,7 @@ import ConsultationDetailPage from './pages/suivi/ConsultationDetailPage';
 import RCPPage from './pages/rcp/RCPDashboard';
 import NewRCPPage, { NewDossierRCPPage } from './pages/rcp/NewRCPPage';
 import RCPDetailPage from './pages/rcp/RCPSallePage';
-
+import AdminSettingsPage from './pages/admin/AdminSettingsPage'; 
 import { SigPageV2 } from './pages/sig/SigPagev2.jsx';
 
 import StatistiquesPage from './pages/statistiques/StatistiquesPage';
@@ -322,9 +322,10 @@ function App() {
           </PermRoute>
         } />
 
+
          <Route path="/parametres" element={
           <PermRoute permission="manageUsers">
-            <SettingsPage />
+            < AdminSettingsPage/>
           </PermRoute>
         } />
         <Route path="/aide" element={

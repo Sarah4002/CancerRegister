@@ -34,4 +34,29 @@ export const adminService = {
 
   // System
   system: () => api.get('/auth/admin/system/'),
+
+  // À ajouter dans services/adminService.js, dans l'objet adminService
+
+  // Paramètres application
+  settings: {
+    get:    ()    => api.get('/auth/admin/settings/'),
+    update: (d)   => api.patch('/auth/admin/settings/', d),
+  },
+
+  // Sauvegarde / restauration
+  backup: {
+    list:     ()      => api.get('/auth/admin/backups/'),
+    create:   ()       => api.post('/auth/admin/backups/'),
+    download: (id)     => api.get(`/auth/admin/backups/${id}/download/`, { responseType: 'blob' }),
+    restore:  (id)     => api.post(`/auth/admin/backups/${id}/restore/`),
+    upload:   (formData) => api.post('/auth/admin/backups/upload/', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+    delete:   (id)     => api.delete(`/auth/admin/backups/${id}/`),
+  },
+
+  // Notifications (mot de passe oublié, etc.)
+  notifications: {
+    getConfig:  ()    => api.get('/auth/admin/notifications/config/'),
+    updateConfig: (d) => api.patch('/auth/admin/notifications/config/', d),
+    sendTest:   (email) => api.post('/auth/admin/notifications/test/', { email }),
+  },
 };
