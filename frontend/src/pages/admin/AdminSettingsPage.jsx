@@ -80,10 +80,10 @@ function Toggle({ checked, onChange }) {
    TABS NAVIGATION
 ───────────────────────────────────────────────────────────────────────────── */
 const TABS = [
-  { key:'general',       label:'Général',                icon:'⚙️' },
-  { key:'backup',        label:'Sauvegarde & restauration', icon:'💾' },
-  { key:'notifications', label:'Notifications',          icon:'✉️' },
-  { key:'passwords',     label:'Mots de passe',          icon:'🔑' },
+  { key:'general',       label:'Général',                icon:'' },
+  { key:'backup',        label:'Sauvegarde & restauration', icon:'' },
+  { key:'notifications', label:'Notifications',          icon:'' },
+  { key:'passwords',     label:'Mots de passe',          icon:'' },
 ];
 
 function TabsNav({ active, onChange }) {
@@ -168,7 +168,6 @@ function GeneralTab() {
       <FieldRow label="Langue par défaut" hint="Locale utilisée pour le formatage des dates et nombres.">
         <select style={inputSt} value={settings.langue} onChange={e => set('langue', e.target.value)}>
           <option value="fr-DZ">Français (Algérie)</option>
-          <option value="ar-DZ">العربية (الجزائر)</option>
           <option value="fr-FR">Français (France)</option>
         </select>
       </FieldRow>
@@ -206,7 +205,7 @@ function ConfirmModal({ title, message, confirmLabel, color = '#dc2626', onConfi
       zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:16,
     }}>
       <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:400, boxShadow:'0 24px 64px rgba(15,23,42,0.22)', padding:'26px 26px 22px' }}>
-        <div style={{ width:48, height:48, borderRadius:12, background:`${color}12`, border:`1px solid ${color}28`, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:16, fontSize:22 }}>⚠️</div>
+        <div style={{ width:48, height:48, borderRadius:12, background:`${color}12`, border:`1px solid ${color}28`, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:16, fontSize:22 }}></div>
         <div style={{ fontSize:16, fontWeight:800, color:'#0f172a', marginBottom:8 }}>{title}</div>
         <div style={{ fontSize:13, color:'#64748b', lineHeight:1.6, marginBottom:22 }}>{message}</div>
         <div style={{ display:'flex', gap:10 }}>
@@ -304,8 +303,8 @@ function BackupTab() {
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
         <div style={cardSt}>
           <SectionTitle sub="Génère une sauvegarde complète de la base de données (patients, diagnostics, utilisateurs, etc.)">Créer une sauvegarde</SectionTitle>
-          <PrimaryButton onClick={handleCreate} disabled={creating} color="#16a34a">
-            {creating ? 'Génération en cours...' : '💾 Créer une sauvegarde maintenant'}
+          <PrimaryButton onClick={handleCreate} disabled={creating} color="#2563eb">
+            {creating ? 'Génération en cours...' : 'Créer une sauvegarde maintenant'}
           </PrimaryButton>
           <div style={{ fontSize:11, color:'#94a3b8', marginTop:12 }}>
             La dernière sauvegarde automatique remonte à {backups[0]?.created_at ? new Date(backups[0].created_at).toLocaleString('fr-DZ') : '—'}.
@@ -315,11 +314,11 @@ function BackupTab() {
         <div style={cardSt}>
           <SectionTitle sub="Restaurer les données à partir d'un fichier de sauvegarde externe (.sql, .json)">Importer une sauvegarde</SectionTitle>
           <input ref={fileInputRef} type="file" accept=".sql,.json,.gz" onChange={handleUploadFile} style={{ display:'none' }} />
-          <PrimaryButton onClick={() => fileInputRef.current?.click()} disabled={uploading} color="#7c3aed" variant="outline">
-            {uploading ? 'Import en cours...' : '📤 Choisir un fichier'}
+          <PrimaryButton onClick={() => fileInputRef.current?.click()} disabled={uploading} color="#2563eb" variant="outline">
+            {uploading ? 'Import en cours...' : 'Choisir un fichier'}
           </PrimaryButton>
           <div style={{ fontSize:11, color:'#d97706', marginTop:12, background:'rgba(217,119,6,0.06)', border:'1px solid rgba(217,119,6,0.2)', borderRadius:8, padding:'8px 10px' }}>
-            ⚠️ L'import remplace les données existantes. Créez une sauvegarde avant d'importer.
+             L'import remplace les données existantes. Créez une sauvegarde avant d'importer.
           </div>
         </div>
       </div>
@@ -612,7 +611,7 @@ function PasswordsTab() {
                     <div style={{ fontSize:11, color:'#94a3b8' }}>{u.email}</div>
                   </div>
                 </div>
-                <button onClick={() => openFor(u)} style={{ padding:'6px 14px', background:'rgba(124,58,237,0.08)', border:'1px solid rgba(124,58,237,0.2)', borderRadius:8, color:'#7c3aed', fontSize:11.5, fontWeight:600, cursor:'pointer' }}>
+                <button onClick={() => openFor(u)} style={{ padding:'6px 14px', background:'rgba(124,58,237,0.08)', border:'1px solid rgba(124,58,237,0.2)', borderRadius:8, color:'#2563eb', fontSize:11.5, fontWeight:600, cursor:'pointer' }}>
                   Nouveau mot de passe
                 </button>
               </div>
@@ -637,7 +636,7 @@ function PasswordsTab() {
                   value={newPwd} onChange={e => setNewPwd(e.target.value)}
                   style={{ flex:1, boxSizing:'border-box', padding:'10px 13px', borderRadius:10, border:'1px solid rgba(124,58,237,0.25)', background:'#faf8ff', color:'#0f172a', fontSize:13, outline:'none', fontFamily:'var(--font-mono)' }}
                 />
-                <button onClick={() => setNewPwd(generatePassword())} title="Générer aléatoirement" style={{ padding:'0 14px', borderRadius:10, border:'1px solid rgba(124,58,237,0.25)', background:'#fff', color:'#7c3aed', cursor:'pointer', fontSize:16 }}>🔄</button>
+                <button onClick={() => setNewPwd(generatePassword())} title="Générer aléatoirement" style={{ padding:'0 14px', borderRadius:10, border:'1px solid rgba(124,58,237,0.25)', background:'#fff', color:'#2563eb', cursor:'pointer', fontSize:16 }}>🔄</button>
               </div>
               <div style={{ fontSize:11, color:'#94a3b8', marginBottom:20 }}>
                 Min. {policy.longueur_min || 8} caractères. Communiquez ce mot de passe à l'utilisateur de façon sécurisée.
