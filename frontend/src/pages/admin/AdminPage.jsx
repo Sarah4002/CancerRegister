@@ -218,10 +218,10 @@ export default function AdminPage() {
       <div style={{ marginBottom:8 }}>
         <div style={{ fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1.2, marginBottom:10 }}>Utilisateurs</div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
-          <KPICard label="Utilisateurs total"  value={userStats?.total}         color="#2563eb" icon="👥" link="/admin/users" />
-          <KPICard label="Comptes actifs"      value={userStats?.actifs}        color="#16a34a" icon="✅" link="/admin/users" />
-          <KPICard label="En attente"          value={userStats?.inactifs}      color="#d97706" icon="⏳" link="/admin/users" />
-          <KPICard label="Connectés (7 jours)" value={userStats?.connectes_7j}  color="#7c3aed" icon="🕐" link="/admin/users" />
+          <KPICard label="Utilisateurs total"  value={userStats?.total}         color="#2563eb" icon="" link="/admin/users" />
+          <KPICard label="Comptes actifs"      value={userStats?.actifs}        color="#16a34a" icon="" link="/admin/users" />
+          <KPICard label="En attente"          value={userStats?.inactifs}      color="#d97706" icon="" link="/admin/users" />
+          <KPICard label="Connectés (7 jours)" value={userStats?.connectes_7j}  color="#7c3aed" icon="" link="/admin/users" />
         </div>
       </div>
 
@@ -229,10 +229,10 @@ export default function AdminPage() {
       <div style={{ marginBottom:24 }}>
         <div style={{ fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1.2, marginBottom:10 }}>Journal d'audit</div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
-          <KPICard label="Événements total"    value={auditStats?.total}        color="#0891b2" icon="📋" link="/admin/audit-logs" />
-          <KPICard label="Aujourd'hui"         value={auditStats?.today}        color="#0d9488" icon="📅" link="/admin/audit-logs" />
-          <KPICard label="Utilisateurs actifs" value={auditStats?.unique_users} color="#9333ea" icon="🔗" link="/admin/audit-logs" />
-          <KPICard label="Suppressions"        value={auditStats?.deletes}      color="#dc2626" icon="🗑️" link="/admin/audit-logs" />
+          <KPICard label="Événements total"    value={auditStats?.total}        color="#0891b2" icon="" link="/admin/audit-logs" />
+          <KPICard label="Aujourd'hui"         value={auditStats?.today}        color="#0d9488" icon="" link="/admin/audit-logs" />
+          <KPICard label="Utilisateurs actifs" value={auditStats?.unique_users} color="#9333ea" icon="" link="/admin/audit-logs" />
+          <KPICard label="Suppressions"        value={auditStats?.deletes}      color="#dc2626" icon="" link="/admin/audit-logs" />
         </div>
       </div>
 
@@ -284,7 +284,7 @@ export default function AdminPage() {
           sub="Derniers événements du journal d'audit"
           span={2}
           action={
-            <Link to="/admin/audit-logs" style={{ fontSize:12, color:'#2563eb', fontWeight:600, textDecoration:'none' }}>
+            <Link to="/audit-logs" style={{ fontSize:12, color:'#2563eb', fontWeight:600, textDecoration:'none' }}>
               Voir tout →
             </Link>
           }
