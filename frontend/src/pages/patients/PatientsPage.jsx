@@ -4,6 +4,7 @@ import { patientService } from '../../services/patientService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import toast from 'react-hot-toast';
 import CanRegImportExport from '../../components/patients/CanRegImportExport';
+import usePermissions from '../../hooks/usePermissions';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    CONSTANTS
@@ -867,6 +868,7 @@ function ExportSingleButton({ onExport }) {
    MAIN PAGE
 ───────────────────────────────────────────────────────────────────────────── */
 export default function PatientsPage() {
+  const { can } = usePermissions();
   const navigate = useNavigate();
   const [patients,       setPatients]       = useState([]);
   const [stats,          setStats]          = useState(null);
@@ -1079,7 +1081,7 @@ export default function PatientsPage() {
             )}
           </button>
 
-          <CanRegImportExport onImportDone={() => fetchPatients()} />
+          {can.manageCanReg && <CanRegImportExport onImportDone={() => fetchPatients()} />}
 
           <Link to="/patients/nouveau" style={{ textDecoration:'none' }}>
             <button style={{

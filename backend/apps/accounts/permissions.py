@@ -120,6 +120,11 @@ def can_access_clinical_followup(user):
     return has_role(user, ROLE_DOCTOR_CHEF, ROLE_DOCTOR)
 
 
+def can_manage_canreg(user):
+    """Importer/exporter CanReg5 : opération sensible contenant des données médicales."""
+    return has_role(user, ROLE_ADMIN, ROLE_DOCTOR_CHEF)
+
+
 # ── Classes de permission DRF ──────────────────────────────────
 
 class IsAdmin(BasePermission):
@@ -190,6 +195,13 @@ class CanAccessClinicalFollowup(BasePermission):
 
     def has_permission(self, request, view):
         return can_access_clinical_followup(request.user)
+
+
+class CanManageCanReg(BasePermission):
+    message = "Import/export CanReg5 réservé à l'administrateur et au médecin chef."
+
+    def has_permission(self, request, view):
+        return can_manage_canreg(request.user)
 
 
 class CanExport(BasePermission):

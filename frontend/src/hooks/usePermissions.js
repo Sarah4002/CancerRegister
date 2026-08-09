@@ -64,7 +64,7 @@ function buildEmptyCan() {
     viewStatistics: false, export:          false,
     viewMap:        false, manageUsers:     false,
     viewRcp:        false,
-    manageAppointments: false, accessClinicalFollowup: false,
+    manageAppointments: false, accessClinicalFollowup: false, manageCanReg: false,
     writeAnapathReport: false, validateDiagnosis: false,
     exportIdentifiedData: false,
   };
@@ -107,6 +107,7 @@ export default function usePermissions() {
     can_validate_diagnosis: role === 'doctor_chef',
     can_manage_appointments: ['doctor_chef', 'doctor', 'secretaire'].includes(role),
     can_access_clinical_followup: ['doctor_chef', 'doctor'].includes(role),
+    can_manage_canreg: ['admin', 'doctor_chef'].includes(role),
   };
   const perms = user.permissions || rolePermissions;
 
@@ -124,8 +125,10 @@ export default function usePermissions() {
     viewRcp:         perms.can_view_rcp         ?? false,
     writeAnapathReport: perms.can_write_anapath_report ?? false,
     validateDiagnosis: perms.can_validate_diagnosis ?? false,
-    manageAppointments: perms.can_manage_appointments ?? false,
-    accessClinicalFollowup: perms.can_access_clinical_followup ?? false,
+    // Les sessions existantes peuvent ne pas contenir les nouvelles clés.
+    manageAppointments: perms.can_manage_appointments ?? rolePermissions.can_manage_appointments,
+    accessClinicalFollowup: perms.can_access_clinical_followup ?? rolePermissions.can_access_clinical_followup,
+    manageCanReg: perms.can_manage_canreg ?? rolePermissions.can_manage_canreg,
     exportIdentifiedData: perms.can_export_identified_data ?? false,
   };
 
