@@ -113,9 +113,9 @@ function normalizeTypeForCreate(type) {
 const RDV_PAGE_SIZE = 1000;
 
 export const secretaryService = {
-  getRendezVous: async ({ mois, annee } = {}) => {
+  getRendezVous: async ({ mois, annee, patient } = {}) => {
     const { data } = await api.get('/suivi/consultations/', {
-      params: { ordering: '-date_consultation', page_size: RDV_PAGE_SIZE },
+      params: { ordering: '-date_consultation', page_size: RDV_PAGE_SIZE, patient },
     });
 
     const items = Array.isArray(data) ? data : (data?.results || []);

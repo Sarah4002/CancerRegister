@@ -10,6 +10,7 @@ import ExamenModal from '../../components/patients/ExamenModal';
 import { WILAYAS, COMMUNES_PAR_WILAYA } from './communesAlgerie';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../hooks/useAuth';
+import { secretaryService } from '../../services/secretaryService';
 
 const MOBILE_APP_BASE_URL = (
   import.meta.env.VITE_MOBILE_APP_URL || 'https://patientlifestyleform.vercel.app/patient'
@@ -230,6 +231,7 @@ export default function PatientDossierPage() {
   const [diagnostics, setDiagnostics] = useState([]);
   const [traitements, setTraitements] = useState({});
   const [suivi, setSuivi] = useState([]);
+  const [rendezVous, setRendezVous] = useState([]);
   
   const [loading, setLoading] = useState(true);
   
@@ -283,13 +285,22 @@ export default function PatientDossierPage() {
         traitementService.parPatient(id).catch(() => ({ data: {} })),
         suiviService.consultations.parPatient(id).catch(() => ({ data: [] })),
       );
-      const [resPatient, resDossier = { data: {} }, resExamens = { data: [] }, resDiag = { data: [] }, resTrt = { data: {} }, resSuiv = { data: [] }] = await Promise.all(requests);
+      if (isSecretary) requests.push(secretaryService.getRendezVous({ patient: id }).catch(() => ({ data: [] })));
+      const responses = await Promise.all(requests);
+      const resPatient = responses[0];
+      const resDossier = isSecretary ? { data: {} } : (responses[1] || { data: {} });
+      const resExamens = isSecretary ? { data: [] } : (responses[2] || { data: [] });
+      const resDiag = isSecretary ? { data: [] } : (responses[3] || { data: [] });
+      const resTrt = isSecretary ? { data: {} } : (responses[4] || { data: {} });
+      const resSuiv = isSecretary ? { data: [] } : (responses[5] || { data: [] });
+      const resRendezVous = isSecretary ? (responses[1] || { data: [] }) : { data: [] };
       setPatient(resPatient.data);
       setDossier(resDossier.data);
       setExamens(resExamens.data?.results || resExamens.data || []);
       setDiagnostics(resDiag.data || []);
       setTraitements(resTrt.data || {});
       setSuivi(resSuiv.data || []);
+      setRendezVous(isSecretary ? (resRendezVous.data || []) : []);
       
       if (location.state?.returnSection === 'diagnostic' && location.state?.newDiagnosticId) {
         setHighlightedDiagnosticId(location.state.newDiagnosticId);
@@ -565,6 +576,25 @@ export default function PatientDossierPage() {
                         ))
                       ) : (
                         <div style={{ textAlign: 'center', padding: 32, color: '#64748b', fontSize: 13 }}>Aucun contact d'urgence enregistre</div>
+                      )}
+                    </div>
+                  )}
+                  {isSecretary && activeIdentiteTab === 'identite' && (
+                    <div style={{ marginTop: 24, borderTop: '1px solid rgba(37,99,235,0.12)', paddingTop: 20 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <SectionLabel style={{ margin: 0 }}>Rendez-vous précédents</SectionLabel>
+                        <Link to={`/secretaire/rendezvous?patient=${id}`} style={{ fontSize: 12, color: '#2563eb', fontWeight: 600 }}>Voir tous</Link>
+                      </div>
+                      {rendezVous.filter(rdv => rdv.date <= new Date().toISOString().slice(0, 10)).length === 0 ? (
+                        <div style={{ padding: 18, borderRadius: 10, background: '#f8fafc', color: '#64748b', fontSize: 13 }}>Aucun rendez-vous précédent.</div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {rendezVous.filter(rdv => rdv.date <= new Date().toISOString().slice(0, 10)).sort((a, b) => `${b.date}${b.heure}`.localeCompare(`${a.date}${a.heure}`)).map(rdv => (
+                            <div key={rdv.id} style={{ display: 'grid', gridTemplateColumns: '115px 65px 1fr auto', gap: 10, alignItems: 'center', padding: '10px 12px', border: '1px solid rgba(37,99,235,0.1)', borderRadius: 10, fontSize: 12.5 }}>
+                              <span>{new Date(`${rdv.date}T00:00:00`).toLocaleDateString('fr-DZ')}</span><span>{rdv.heure}</span><span>{rdv.type || 'Consultation'}</span><span style={{ color: '#64748b' }}>{rdv.statut}</span>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   )}

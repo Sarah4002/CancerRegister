@@ -38,6 +38,7 @@ import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AuditLogsPage from './pages/admin/AuditLogsPage';
 import SecretairePage from './pages/secretaire/SecretairePage';
 import NewRendezVousPage from './pages/secretaire/NewRendezVousPage';
+import RendezVousPage from './pages/secretaire/Rendez-vous';
 
 
 import SettingsPage from './pages/settings/SettingsPage';
@@ -349,6 +350,11 @@ function App() {
         <Route path="/secretaire/rendezvous/nouveau" element={
           <PermRoute permission="manageAppointments">
             <NewRendezVousPage />
+          </PermRoute>
+        } />
+        <Route path="/secretaire/rendezvous" element={
+          <PermRoute permission="manageAppointments">
+            <RendezVousPage />
           </PermRoute>
         } />
 

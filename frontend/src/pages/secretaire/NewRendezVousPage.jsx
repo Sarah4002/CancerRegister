@@ -83,7 +83,7 @@ export default function NewRendezVousPage() {
       <div style={{ maxWidth:860, margin:'0 auto' }}>
         <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
-            <span style={{ fontSize:24 }}>📅</span>
+            <span style={{ fontSize:24 }}></span>
             <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'#0f172a' }}>Rendez-vous</h2>
           </div>
 
