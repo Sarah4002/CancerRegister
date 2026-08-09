@@ -10,6 +10,7 @@ from apps.accounts.permissions import (
     can_view_statistics, can_export, can_export_identified_data,
     can_view_map,        can_manage_users,
     can_view_rcp,        can_write_anapath_report, can_validate_diagnosis,
+    can_manage_appointments, can_access_clinical_followup,
 )
 
 User = get_user_model()
@@ -57,6 +58,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'can_view_rcp':         can_view_rcp(user),
                 'can_write_anapath_report': can_write_anapath_report(user),
                 'can_validate_diagnosis': can_validate_diagnosis(user),
+                'can_manage_appointments': can_manage_appointments(user),
+                'can_access_clinical_followup': can_access_clinical_followup(user),
             }
         }
         return data

@@ -41,6 +41,7 @@ class ConsultationSuivi(models.Model):
     type_consultation = models.CharField(max_length=20, choices=TypeConsultation.choices, default='suivi')
     statut            = models.CharField(max_length=20, choices=StatutConsultation.choices, default='planifiee')
     date_consultation = models.DateField()
+    heure             = models.TimeField(null=True, blank=True)
     medecin           = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='consultations_realisees')
     etablissement     = models.CharField(max_length=200, blank=True)
 

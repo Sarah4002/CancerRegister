@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AppLayout } from '../../components/layout/Sidebar';
 import { apiClient } from '../../services/apiClient';
 import ComparaisonFusionModal from '../../components/patients/ComparaisonFusionModal';
@@ -84,6 +85,8 @@ function DoublonCard({ paire, onVoir }) {
 }
 
 export default function DoublonsPage() {
+  const [searchParams] = useSearchParams();
+  const creationRequested = searchParams.get('nouveau') === '1';
   const [paires, setPaires]         = useState([]);
   const [loading, setLoading]       = useState(true);
   const [filtre, setFiltre]         = useState('tous');
@@ -141,6 +144,11 @@ export default function DoublonsPage() {
           <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
             Dossiers suspects identifies par similarite de nom, identite nationale et date de naissance.
           </p>
+          {creationRequested && (
+            <p style={{ fontSize: 12, color: '#2563eb', marginTop: 8 }}>
+              Vérifiez les doublons avant de créer le nouveau dossier.
+            </p>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -156,6 +164,11 @@ export default function DoublonsPage() {
           <button onClick={chargerDoublons} disabled={loading} style={{ padding: '8px 16px', background: '#2563eb', border: 'none', borderRadius: '12px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: loading ? 0.7 : 1 }}>
             {loading ? 'Analyse...' : 'Relancer'}
           </button>
+          <Link to="/patients/nouveau" style={{ textDecoration: 'none' }}>
+            <button style={{ padding: '8px 16px', background: '#16a34a', border: 'none', borderRadius: '12px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+              + Nouveau patient
+            </button>
+          </Link>
         </div>
       </div>
 

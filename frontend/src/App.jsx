@@ -37,6 +37,7 @@ import AdminCustomFieldsPage from './pages/admin/AdminCustomFieldsPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AuditLogsPage from './pages/admin/AuditLogsPage';
 import SecretairePage from './pages/secretaire/SecretairePage';
+import NewRendezVousPage from './pages/secretaire/NewRendezVousPage';
 
 
 import SettingsPage from './pages/settings/SettingsPage';
@@ -226,13 +227,13 @@ function App() {
 
         {/* ───────── Suivi ───────── */}
         <Route path="/suivi" element={
-          <PermRoute permission="readTreatment">
+          <PermRoute permission="accessClinicalFollowup">
             <SuiviPage />
           </PermRoute>
         } />
 
         <Route path="/suivi/consultations/nouveau" element={
-          <PermRoute permission="writeTreatment">
+          <PermRoute permission="accessClinicalFollowup">
             <NewConsultationPage />
           </PermRoute>
         } />
@@ -244,7 +245,7 @@ function App() {
         } />
 
         <Route path="/suivi/evenements/nouveau" element={
-          <PermRoute permission="writeTreatment">
+          <PermRoute permission="accessClinicalFollowup">
             <NewEvenementPage />
           </PermRoute>
         } />
@@ -341,8 +342,13 @@ function App() {
 
         {/* ───────── Page de Secretaire ───────── */}
         <Route path="/secretaire" element={
-          <PermRoute permission="secretaire">
+          <PermRoute permission="manageAppointments">
             <SecretairePage />
+          </PermRoute>
+        } />
+        <Route path="/secretaire/rendezvous/nouveau" element={
+          <PermRoute permission="manageAppointments">
+            <NewRendezVousPage />
           </PermRoute>
         } />
 

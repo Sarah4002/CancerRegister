@@ -110,6 +110,16 @@ def can_view_rcp(user):
     return has_role(user, ROLE_DOCTOR_CHEF, ROLE_DOCTOR)
 
 
+def can_manage_appointments(user):
+    """Consulter et gérer les rendez-vous, sans accéder au suivi clinique."""
+    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_DOCTOR, ROLE_SECRETAIRE)
+
+
+def can_access_clinical_followup(user):
+    """Consulter ou renseigner les consultations et leurs données médicales."""
+    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_DOCTOR)
+
+
 # ── Classes de permission DRF ──────────────────────────────────
 
 class IsAdmin(BasePermission):
@@ -165,6 +175,21 @@ class CanViewStatistics(BasePermission):
     message = "Vous n'avez pas accès aux statistiques."
     def has_permission(self, request, view):
         return can_view_statistics(request.user)
+
+
+class CanManageAppointmentsOrClinicalFollowup(BasePermission):
+    """La secrétaire ne peut utiliser ce module que via le sérialiseur RDV."""
+    message = "Accès aux rendez-vous ou au suivi clinique non autorisé."
+
+    def has_permission(self, request, view):
+        return can_manage_appointments(request.user)
+
+
+class CanAccessClinicalFollowup(BasePermission):
+    message = "Accès aux données de suivi clinique non autorisé."
+
+    def has_permission(self, request, view):
+        return can_access_clinical_followup(request.user)
 
 
 class CanExport(BasePermission):

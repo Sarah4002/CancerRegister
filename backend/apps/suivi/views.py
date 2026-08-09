@@ -12,10 +12,14 @@ from .serializers import (
     QualiteVieSerializer,     EffetIndesirableSerializer,
 )
 from apps.accounts.models import AccessLog
+from apps.accounts.permissions import (
+    CanAccessClinicalFollowup,
+    CanManageAppointmentsOrClinicalFollowup,
+)
 
 
 class ConsultationSuiviViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanManageAppointmentsOrClinicalFollowup]
     filter_backends    = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields   = ['patient', 'statut', 'type_consultation', 'medecin']
     search_fields      = ['patient__nom', 'patient__registration_number', 'motif', 'conclusion']
@@ -29,6 +33,9 @@ class ConsultationSuiviViewSet(viewsets.ModelViewSet):
         return qs
 
     def get_serializer_class(self):
+        if self.request.user.role == 'secretaire':
+            from .serializers import RendezVousSerializer
+            return RendezVousSerializer
         if self.action == 'list':
             return ConsultationSuiviListSerializer
         if self.action in ['create', 'update', 'partial_update']:
@@ -82,7 +89,7 @@ class ConsultationSuiviViewSet(viewsets.ModelViewSet):
 
 
 class QualiteVieViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanAccessClinicalFollowup]
     serializer_class   = QualiteVieSerializer
     filter_backends    = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields   = ['patient']
@@ -114,7 +121,7 @@ class QualiteVieViewSet(viewsets.ModelViewSet):
 
 
 class EffetIndesirableViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanAccessClinicalFollowup]
     serializer_class   = EffetIndesirableSerializer
     filter_backends    = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields   = ['patient', 'type_effet', 'severite', 'resolu', 'impact_traitement']

@@ -83,6 +83,24 @@ class ConsultationSuiviCreateSerializer(serializers.ModelSerializer):
         return instance
 
 
+class RendezVousSerializer(serializers.ModelSerializer):
+    """Vue limitée au secrétariat : aucune donnée clinique n'est exposée ou modifiable."""
+    patient_nom = serializers.CharField(source='patient.get_full_name', read_only=True)
+    medecin_nom = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ConsultationSuivi
+        fields = [
+            'id', 'patient', 'patient_nom', 'type_consultation', 'statut',
+            'date_consultation', 'heure', 'medecin', 'medecin_nom', 'etablissement',
+        ]
+
+    def get_medecin_nom(self, obj):
+        if obj.medecin:
+            return f"{obj.medecin.first_name} {obj.medecin.last_name}".strip() or obj.medecin.username
+        return None
+
+
 class QualiteVieSerializer(serializers.ModelSerializer):
     patient_nom       = serializers.CharField(source='patient.get_full_name', read_only=True)
     patient_numero    = serializers.CharField(source='patient.registration_number', read_only=True)

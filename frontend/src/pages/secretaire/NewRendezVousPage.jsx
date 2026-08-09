@@ -65,9 +65,7 @@ export default function NewRendezVousPage() {
 
       await secretaryService.createRendezVous(payload);
       toast.success('Rendez-vous ajouté au calendrier !');
-      navigate(data.patient ? `/patients/${data.patient}` : '/secretariat', {
-        state: { returnSection: 'rendez-vous' },
-      });
+      navigate('/secretaire');
     } catch (err) {
       toast.error(err.response?.data ? Object.values(err.response.data).flat().join(' ') : 'Erreur');
     } finally { setSubmitting(false); }
@@ -204,7 +202,7 @@ export default function NewRendezVousPage() {
             </Section>
 
             <div style={{ display:'flex', gap:10, paddingTop:20, borderTop:'1px solid rgba(37,99,235,0.12)' }}>
-              <button type="button" onClick={() => navigate('/secretariat')} style={{ flex:'0 0 110px', padding:'12px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:'12px', color:'#334155', fontSize:13, cursor:'pointer' }}>← Annuler</button>
+              <button type="button" onClick={() => navigate('/secretaire')} style={{ flex:'0 0 110px', padding:'12px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:'12px', color:'#334155', fontSize:13, cursor:'pointer' }}>← Annuler</button>
               <button type="submit" disabled={submitting} style={{ flex:1, padding:'12px', background:'linear-gradient(135deg, #2563eb, #1d4ed8)', border:'none', borderRadius:'12px', color:'#fff', fontSize:13.5, fontWeight:600, fontFamily:'var(--font-display)', cursor:submitting?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:submitting?0.7:1 }}>
                 {submitting ? <><Spin/> Enregistrement...</> : 'Ajouter le rendez-vous'}
               </button>

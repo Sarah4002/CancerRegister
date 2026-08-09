@@ -215,7 +215,7 @@ function RdvListPanel({ date, rdvs, onStatusChange }) {
       sub={date ? `${rdvs.length} rendez-vous` : 'Cliquez sur une date dans le calendrier'}
       actions={
         date && (
-          <Link to={`/rendezvous/nouveau?date=${date}`} style={{ textDecoration:'none' }}>
+          <Link to={`/secretaire/rendezvous/nouveau?date=${date}`} style={{ textDecoration:'none' }}>
             <div style={{
               padding:'7px 14px', background:'linear-gradient(135deg,#3b82f6,#2563eb)',
               borderRadius:9, color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer',
@@ -531,7 +531,7 @@ export default function SecretairePage() {
             onToggle={() => setNotifOpen(o => !o)}
             onSelect={handleNotifSelect}
           />
-          <Link to="/rendezvous/nouveau" style={{ textDecoration:'none' }}>
+          <Link to="/secretaire/rendezvous/nouveau" style={{ textDecoration:'none' }}>
             <button style={{
               padding:'9px 18px', background:'linear-gradient(135deg,#3b82f6,#2563eb)',
               border:'none', borderRadius:10, color:'#fff',
@@ -630,8 +630,8 @@ export default function SecretairePage() {
         <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1.2, marginBottom:14 }}>Accès rapides</div>
         <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
           {[
-            { to:'/rendezvous/nouveau',              label:'+ Nouveau rendez-vous', color:'#2563eb' },
-            { to:'/rendezvous',                      label:'Tous les rendez-vous',  color:'#7c3aed' },
+            { to:'/secretaire/rendezvous/nouveau',   label:'+ Nouveau rendez-vous', color:'#2563eb' },
+            { to:'/secretaire',                      label:'Tous les rendez-vous',  color:'#7c3aed' },
             { to:'/patients/nouveau',                label:'+ Nouveau patient',     color:'#16a34a' },
             { to:'/patients',                        label:'Liste patients',        color:'#0891b2' },
           ].map(item => (

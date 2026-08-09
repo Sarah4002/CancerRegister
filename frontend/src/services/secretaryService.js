@@ -50,7 +50,7 @@ function normalizeRdv(item) {
   const date = item.date_consultation || item.date || item.rdv_date || '';
   const statut = STATUS_MAP[item.statut] || item.statut || 'en_attente';
   const type = TYPE_MAP[item.type_consultation] || TYPE_MAP[item.type] || item.type_consultation || item.type || 'consultation';
-  const heure = item.heure || item.heure_rdv || '09:00';
+  const heure = item.heure ? String(item.heure).slice(0, 5) : (item.heure_rdv || '09:00');
 
   return {
     ...item,
@@ -180,7 +180,7 @@ export const secretaryService = {
    * un seul champ. Si votre serializer accepte un champ `heure` distinct,
    * il sera transmis tel quel (voir normalizeRdv qui sait déjà le relire).
    */
-  createRendezVous: async ({ patient, date, heure, type, statut, notes, medecin, salle, motif, consultation_origine, ...rest }) => {
+  createRendezVous: async ({ patient, date, heure, type, statut, medecin, salle }) => {
     const payload = {
       patient,
       date_consultation: date,
@@ -188,11 +188,12 @@ export const secretaryService = {
       type_consultation: normalizeTypeForCreate(type),
       statut: normalizeStatutForCreate(statut),
       etablissement: salle || undefined,
-      motif: motif || notes || undefined,
-      ...rest,
+      // Les notes médicales restent réservées au médecin. Le secrétariat
+      // n'envoie ici que les informations nécessaires à l'organisation.
     };
-    if (consultation_origine) payload.consultation_origine = consultation_origine;
-
+    // Le champ médecin est facultatif. Le formulaire accepte aussi un libellé
+    // libre pour l'organisation, qui ne doit pas être envoyé comme identifiant API.
+    if (medecin && /^\d+$/.test(String(medecin))) payload.medecin = medecin;
     Object.keys(payload).forEach((k) => {
       if (payload[k] === undefined || payload[k] === '') delete payload[k];
     });

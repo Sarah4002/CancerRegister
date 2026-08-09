@@ -21,7 +21,13 @@ const NAV_CONFIG = [
     section: 'Patients',
     items: [
       { path: '/patients', label: 'Liste des patients', icon: UsersIcon, permission: 'readPatient' },
-      //{ path: '/patients/doublons', label: 'Doublons', icon: CopyIcon, permission: 'writePatient' },
+      { path: '/patients/doublons', label: 'Vérifier les doublons', icon: CopyIcon, permission: 'writePatient' },
+    ],
+  },
+  {
+    section: 'Secrétariat',
+    items: [
+      { path: '/secretaire', label: 'Rendez-vous', icon: CalendarIcon, permission: 'manageAppointments', roles: ['secretaire'] },
     ],
   },
   {

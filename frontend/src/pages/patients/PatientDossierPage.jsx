@@ -9,6 +9,7 @@ import { AppLayout } from '../../components/layout/Sidebar';
 import ExamenModal from '../../components/patients/ExamenModal';
 import { WILAYAS, COMMUNES_PAR_WILAYA } from './communesAlgerie';
 import toast from 'react-hot-toast';
+import useAuthStore from '../../hooks/useAuth';
 
 const MOBILE_APP_BASE_URL = (
   import.meta.env.VITE_MOBILE_APP_URL || 'https://patientlifestyleform.vercel.app/patient'
@@ -220,6 +221,8 @@ export default function PatientDossierPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuthStore();
+  const isSecretary = user?.role === 'secretaire';
 
   const [patient, setPatient] = useState(null);
   const [dossier, setDossier] = useState(null);
@@ -270,14 +273,17 @@ export default function PatientDossierPage() {
     if (id === undefined || id === null || id === '' || id === 'undefined') return;
     setLoading(true);
     try {
-      const [ resPatient, resDossier, resExamens, resDiag, resTrt, resSuiv ] = await Promise.all([
+      const requests = [
         patientService.get(id).catch(e => { toast.error('Patient introuvable'); navigate('/patients'); throw e; }),
+      ];
+      if (!isSecretary) requests.push(
         patientService.getDossier(id).catch(() => ({ data: {} })),
         examenService.list({ patient: id }).catch(() => ({ data: [] })),
         diagnosticService.parPatient(id).catch(() => ({ data: [] })),
         traitementService.parPatient(id).catch(() => ({ data: {} })),
-        suiviService.consultations.parPatient(id).catch(() => ({ data: [] }))
-      ]);
+        suiviService.consultations.parPatient(id).catch(() => ({ data: [] })),
+      );
+      const [resPatient, resDossier = { data: {} }, resExamens = { data: [] }, resDiag = { data: [] }, resTrt = { data: {} }, resSuiv = { data: [] }] = await Promise.all(requests);
       setPatient(resPatient.data);
       setDossier(resDossier.data);
       setExamens(resExamens.data?.results || resExamens.data || []);
@@ -362,7 +368,8 @@ export default function PatientDossierPage() {
     }
   };
 
-  const currentSectionLabel = PATIENT_SECTIONS.find(s => s.key === activeSectionKey)?.label || '';
+  const visiblePatientSections = isSecretary ? PATIENT_SECTIONS.filter(s => s.key === 'identite') : PATIENT_SECTIONS;
+  const currentSectionLabel = visiblePatientSections.find(s => s.key === activeSectionKey)?.label || '';
 
   if (loading || !patient) return (
     <AppLayout title="Fiche Patient">
@@ -387,7 +394,7 @@ export default function PatientDossierPage() {
     { key: 'habitudes',   label: 'Habitudes de vie' },
     { key: 'contacts',    label: 'Contacts'         },
     { key: 'qrcode',      label: 'QR Code'          },
-  ];
+  ].filter(tab => !isSecretary || ['identite', 'coordonnees', 'profil'].includes(tab.key));
 
   const DOSSIER_TABS = [
     { key: 'clinique',   label: 'Infos Cliniques' },
@@ -400,7 +407,7 @@ export default function PatientDossierPage() {
       title="Fiche Patient"
       patientContext={{
         patient,
-        sections: PATIENT_SECTIONS,
+        sections: visiblePatientSections,
         activeKey: activeSectionKey,
         onSelect: handleSectionSelect,
       }}
@@ -439,7 +446,12 @@ export default function PatientDossierPage() {
           {/* == IDENTITe & PROFIL == */}
           {activeMainTab === 'identite' && (
             <>
-             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 12 }}>
+               {isSecretary && (
+                 <Link to={`/secretaire/rendezvous/nouveau?patient=${id}`} style={{ textDecoration: 'none' }}>
+                   <button type="button" style={addBtnStyle}>+ Rendez-vous</button>
+                 </Link>
+               )}
                <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
                  Modifier le patient
                </button>

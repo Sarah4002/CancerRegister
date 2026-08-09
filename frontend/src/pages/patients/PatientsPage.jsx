@@ -1081,7 +1081,7 @@ export default function PatientsPage() {
 
           <CanRegImportExport onImportDone={() => fetchPatients()} />
 
-          <Link to="/patients/nouveau" style={{ textDecoration:'none' }}>
+          <Link to="/patients/doublons?nouveau=1" style={{ textDecoration:'none' }}>
             <button style={{
               padding:'9px 18px',
               background:'linear-gradient(135deg,#3b82f6,#2563eb)',
@@ -1093,7 +1093,7 @@ export default function PatientsPage() {
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
               </svg>
-              Nouveau patient
+              Vérifier avant saisie
             </button>
           </Link>
         </div>

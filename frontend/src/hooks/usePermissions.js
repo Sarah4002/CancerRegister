@@ -64,6 +64,7 @@ function buildEmptyCan() {
     viewStatistics: false, export:          false,
     viewMap:        false, manageUsers:     false,
     viewRcp:        false,
+    manageAppointments: false, accessClinicalFollowup: false,
     writeAnapathReport: false, validateDiagnosis: false,
     exportIdentifiedData: false,
   };
@@ -104,6 +105,8 @@ export default function usePermissions() {
     can_view_rcp: ['doctor_chef', 'doctor'].includes(role),
     can_write_anapath_report: role === 'anapath',
     can_validate_diagnosis: role === 'doctor_chef',
+    can_manage_appointments: ['doctor_chef', 'doctor', 'secretaire'].includes(role),
+    can_access_clinical_followup: ['doctor_chef', 'doctor'].includes(role),
   };
   const perms = user.permissions || rolePermissions;
 
@@ -121,6 +124,8 @@ export default function usePermissions() {
     viewRcp:         perms.can_view_rcp         ?? false,
     writeAnapathReport: perms.can_write_anapath_report ?? false,
     validateDiagnosis: perms.can_validate_diagnosis ?? false,
+    manageAppointments: perms.can_manage_appointments ?? false,
+    accessClinicalFollowup: perms.can_access_clinical_followup ?? false,
     exportIdentifiedData: perms.can_export_identified_data ?? false,
   };
 
