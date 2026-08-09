@@ -21,7 +21,6 @@ const NAV_CONFIG = [
     section: 'Patients',
     items: [
       { path: '/patients', label: 'Liste des patients', icon: UsersIcon, permission: 'readPatient' },
-      { path: '/patients/doublons', label: 'Vérifier les doublons', icon: CopyIcon, permission: 'writePatient' },
     ],
   },
   {

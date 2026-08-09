@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -76,11 +76,45 @@ export default function NewPatientPage() {
   const [suspect,     setSuspect]     = useState(null);
   const [donneesForm, setDonneesForm] = useState(null);
   const [showModal,   setShowModal]   = useState(false);
+  const lastDuplicateKey = useRef('');
 
   const { register, handleSubmit, watch, setValue, formState: { errors }, reset } =
     useForm({ mode: 'onSubmit' });
 
   const watchedWilaya = watch('wilaya');
+  const [nom, prenom, sexe, idNational] = watch(['nom', 'prenom', 'sexe', 'id_national']);
+
+  // Vérification en temps réel : elle commence seulement une fois les quatre
+  // éléments d'identification disponibles, afin d'éviter les faux positifs.
+  useEffect(() => {
+    const normalizedId = String(idNational || '').trim();
+    const key = [nom, prenom, sexe, normalizedId].map(value => String(value || '').trim().toUpperCase()).join('|');
+    if (!nom?.trim() || !prenom?.trim() || !sexe || !/^\d{10}$/.test(normalizedId)) {
+      lastDuplicateKey.current = '';
+      return undefined;
+    }
+    if (key === lastDuplicateKey.current) return undefined;
+
+    let cancelled = false;
+    const timeoutId = setTimeout(async () => {
+      try {
+        const { data } = await apiClient.post('/patients/verifier_doublon/', {
+          nom, prenom, sexe, id_national: normalizedId,
+        });
+        if (cancelled) return;
+        lastDuplicateKey.current = key;
+        if (data.has_doublon && data.suspects?.length) {
+          setDonneesForm(buildPayload([...saved.slice(0, step), { nom, prenom, sexe, id_national: normalizedId }]));
+          setSuspect(data.suspects[0]);
+          setShowModal(true);
+        }
+      } catch (err) {
+        console.warn('Verification de doublon en temps reel indisponible', err);
+      }
+    }, 500);
+
+    return () => { cancelled = true; clearTimeout(timeoutId); };
+  }, [nom, prenom, sexe, idNational, saved, step]);
 
   // ── Champs personnalisés ──────────────────────────────────
   const {
@@ -153,6 +187,15 @@ export default function NewPatientPage() {
 
   const handleFusionner = async (idPrincipal, idSecondaire, champsFusion) => {
     try {
+      // Pendant la création, le "secondaire" n'existe pas encore : on enrichit
+      // donc le dossier existant avec les valeurs retenues dans la comparaison.
+      if (!idSecondaire) {
+        await patientService.patch(idPrincipal, champsFusion);
+        toast.success('Dossier existant mis a jour apres verification du doublon');
+        setShowModal(false);
+        navigate('/patients/' + idPrincipal);
+        return;
+      }
       const { data } = await apiClient.post('/patients/' + idPrincipal + '/fusionner/', {
         id_secondaire: idSecondaire, champs_fusion: champsFusion,
       });

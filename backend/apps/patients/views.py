@@ -622,6 +622,7 @@ class PatientViewSet(viewsets.ModelViewSet):
         prenom = request.data.get('prenom', '')
         date_naissance = request.data.get('date_naissance')
         id_national = request.data.get('id_national', '')
+        sexe = request.data.get('sexe', '')
 
         if not nom or not prenom:
             return Response({
@@ -656,6 +657,7 @@ class PatientViewSet(viewsets.ModelViewSet):
                 prenom=prenom,
                 date_naissance=date_naissance,
                 id_national=id_national,
+                sexe=sexe,
                 normalize=normalize,
                 similarity=similarity,
                 apercu=_apercu,
@@ -778,12 +780,18 @@ class PatientViewSet(viewsets.ModelViewSet):
         prenom,
         date_naissance,
         id_national,
+        sexe,
         normalize,
         similarity,
         apercu,
     ):
         score = 0.0
         raisons = []
+
+        # Le sexe est une information de contrôle : une discordance seule ne
+        # masque jamais un numéro d'identité identique, mais empêche un simple
+        # rapprochement par nom de devenir un faux positif.
+        sexe_compatible = not sexe or not patient['sexe'] or sexe == patient['sexe']
 
         # Vérification identité nationale
         if (
@@ -836,7 +844,7 @@ class PatientViewSet(viewsets.ModelViewSet):
             f"{patient['nom']} {patient['prenom']}",
         )
 
-        if nom_sim >= 0.88 and not raisons:
+        if nom_sim >= 0.88 and not raisons and sexe_compatible:
             score = max(score, nom_sim * 0.88)
 
             raisons.append(
