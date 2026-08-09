@@ -26,7 +26,7 @@ const NAV_CONFIG = [
   {
     section: 'Secrétariat',
     items: [
-      { path: '/secretaire', label: 'Rendez-vous', icon: CalendarIcon, permission: 'manageAppointments', roles: ['secretaire'] },
+      { path: '/secretaire/rendezvous/nouveau', label: 'Rendez-vous', icon: CalendarIcon, permission: 'manageAppointments', roles: ['secretaire'] },
     ],
   },
   {
