@@ -413,20 +413,20 @@ export default function ComparaisonFusionModal({
 
             {modeCreation && onForcerCreation && (
               <button onClick={onForcerCreation} style={{
-                padding: '10px 20px', background: 'rgba(124,58,237,0.08)',
-                border: '1px solid rgba(124,58,237,0.25)', borderRadius: 10,
-                color: '#7c3aed', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                padding: '10px 20px', background: 'rgba(37,99,235,0.08)',
+                border: '1px solid rgba(37,99,235,0.25)', borderRadius: 10,
+                color: '#2563eb', fontSize: 13, fontWeight: 600, cursor: 'pointer',
               }}>Créer quand même</button>
             )}
 
             <button onClick={handleFusion} disabled={loading} style={{
               padding: '10px 24px',
-              background: loading ? '#fca5a5' : 'linear-gradient(135deg,#ef4444,#dc2626)',
+              background:'#2563eb',
               border: 'none', borderRadius: 10,
               color: '#fff', fontSize: 13, fontWeight: 700,
               cursor: loading ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', gap: 8,
-              boxShadow: '0 4px 12px rgba(220,38,38,0.3)',
+              boxShadow: '0 4px 12px rgba(37,99,235,0.3)',
             }}>
               {loading ? (
                 <>

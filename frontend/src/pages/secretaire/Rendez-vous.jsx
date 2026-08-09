@@ -280,29 +280,7 @@ export default function RendezVousPage() {
         @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
       `}</style>
 
-      {/* Stats strip */}
-      {stats && (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12, marginBottom:24 }}>
-          {[
-            { label:"Aujourd'hui",    val:stats.rdv_aujourdhui, color:'#2563eb' },
-            { label:'Cette semaine',  val:stats.rdv_semaine,    color:'#0891b2' },
-            { label:'En attente',     val:stats.rdv_en_attente, color:'#d97706' },
-            { label:'Confirmés',      val:stats.rdv_confirmes,  color:'#16a34a' },
-            { label:'Annulés',        val:stats.rdv_annules,    color:'#dc2626' },
-          ].map(({ label, val, color }) => (
-            <div key={label} style={{
-              background:'#fff', border:'1px solid rgba(37,99,235,0.1)',
-              borderRadius:14, padding:'18px 20px', position:'relative', overflow:'hidden',
-              boxShadow:'0 2px 8px rgba(15,23,42,0.06)',
-            }}>
-              <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:`linear-gradient(90deg,${color},${color}88)`, borderRadius:'14px 14px 0 0' }} />
-              <div style={{ minHeight:22, marginBottom:6 }} />
-              <div style={{ fontSize:30, fontWeight:800, color, fontFamily:'var(--font-display)', lineHeight:1, marginBottom:4 }}>{val ?? '—'}</div>
-              <div style={{ fontSize:12, fontWeight:600, color:'#334155' }}>{label}</div>
-            </div>
-          ))}
-        </div>
-      )}
+    
 
       {/* Toolbar */}
       <div style={{
