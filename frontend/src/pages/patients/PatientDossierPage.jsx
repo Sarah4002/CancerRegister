@@ -72,6 +72,23 @@ const EXAMEN_STATUT_LABELS = {
   annule:     'Annulé',
 };
 
+/* ── Config pour la section Rendez-vous (même langage visuel que Diagnostic/Examens) ── */
+const RDV_STATUT_COLORS = {
+  confirme:   { bg: 'rgba(0,168,255,0.1)',   color: '#2563eb' },
+  en_attente: { bg: 'rgba(245,166,35,0.1)',  color: '#d97706' },
+  annule:     { bg: 'rgba(255,77,106,0.1)',  color: '#dc2626' },
+  termine:    { bg: 'rgba(0,229,160,0.1)',   color: '#16a34a' },
+  absent:     { bg: 'rgba(107,114,128,0.1)', color: '#9ca3af' },
+};
+const RDV_STATUT_LABELS = {
+  confirme: 'Confirmé', en_attente: 'En attente', annule: 'Annulé', termine: 'Terminé', absent: 'Absent',
+};
+const RDV_TYPE_LABELS = {
+  consultation: 'Consultation', suivi: 'Suivi', chimio: 'Chimiothérapie',
+  radiotherapie: 'Radiothérapie', examen: 'Examen', rcp: 'RCP',
+  chirurgie: 'Chirurgie', urgence: 'Urgence', autre: 'Autre',
+};
+
 // ── Reprises du design de DiagnosticsPage pour garder une cohérence visuelle ──
 const STADE_COLORS = {
   '0':    { bg: 'rgba(0,229,160,0.1)',   color: '#16a34a', border: 'rgba(0,229,160,0.3)' },
@@ -167,6 +184,7 @@ const PATIENT_SECTIONS = [
   { key: 'examens',     label: 'Examens & Bilans'   },
   { key: 'traitements', label: 'Traitements'        },
   { key: 'suivi',       label: 'Suivi Clinique'     },
+  { key: 'rendezvous',  label: 'Rendez-vous'        },
 ];
 
 function EditField({ field, value, onChange, allValues }) {
@@ -277,6 +295,7 @@ export default function PatientDossierPage() {
     try {
       const requests = [
         patientService.get(id).catch(e => { toast.error('Patient introuvable'); navigate('/patients'); throw e; }),
+        secretaryService.getRendezVous({ patient: id }).catch(() => ({ data: [] })),
       ];
       if (!isSecretary) requests.push(
         patientService.getDossier(id).catch(() => ({ data: {} })),
@@ -285,22 +304,21 @@ export default function PatientDossierPage() {
         traitementService.parPatient(id).catch(() => ({ data: {} })),
         suiviService.consultations.parPatient(id).catch(() => ({ data: [] })),
       );
-      if (isSecretary) requests.push(secretaryService.getRendezVous({ patient: id }).catch(() => ({ data: [] })));
       const responses = await Promise.all(requests);
-      const resPatient = responses[0];
-      const resDossier = isSecretary ? { data: {} } : (responses[1] || { data: {} });
-      const resExamens = isSecretary ? { data: [] } : (responses[2] || { data: [] });
-      const resDiag = isSecretary ? { data: [] } : (responses[3] || { data: [] });
-      const resTrt = isSecretary ? { data: {} } : (responses[4] || { data: {} });
-      const resSuiv = isSecretary ? { data: [] } : (responses[5] || { data: [] });
-      const resRendezVous = isSecretary ? (responses[1] || { data: [] }) : { data: [] };
+      const resPatient    = responses[0];
+      const resRendezVous = responses[1] || { data: [] };
+      const resDossier = isSecretary ? { data: {} } : (responses[2] || { data: {} });
+      const resExamens = isSecretary ? { data: [] } : (responses[3] || { data: [] });
+      const resDiag     = isSecretary ? { data: [] } : (responses[4] || { data: [] });
+      const resTrt       = isSecretary ? { data: {} } : (responses[5] || { data: {} });
+      const resSuiv      = isSecretary ? { data: [] } : (responses[6] || { data: [] });
       setPatient(resPatient.data);
       setDossier(resDossier.data);
       setExamens(resExamens.data?.results || resExamens.data || []);
       setDiagnostics(resDiag.data || []);
       setTraitements(resTrt.data || {});
       setSuivi(resSuiv.data || []);
-      setRendezVous(isSecretary ? (resRendezVous.data || []) : []);
+      setRendezVous(resRendezVous.data || []);
       
       if (location.state?.returnSection === 'diagnostic' && location.state?.newDiagnosticId) {
         setHighlightedDiagnosticId(location.state.newDiagnosticId);
@@ -379,7 +397,7 @@ export default function PatientDossierPage() {
     }
   };
 
-  const visiblePatientSections = isSecretary ? PATIENT_SECTIONS.filter(s => s.key === 'identite') : PATIENT_SECTIONS;
+  const visiblePatientSections = isSecretary ? PATIENT_SECTIONS.filter(s => s.key === 'identite' || s.key === 'rendezvous') : PATIENT_SECTIONS;
   const currentSectionLabel = visiblePatientSections.find(s => s.key === activeSectionKey)?.label || '';
 
   if (loading || !patient) return (
@@ -458,11 +476,7 @@ export default function PatientDossierPage() {
           {activeMainTab === 'identite' && (
             <>
              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 12 }}>
-               {isSecretary && (
-                 <Link to={`/secretaire/rendezvous/nouveau?patient=${id}`} style={{ textDecoration: 'none' }}>
-                   <button type="button" style={addBtnStyle}>+ Rendez-vous</button>
-                 </Link>
-               )}
+               
                <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
                  Modifier le patient
                </button>
@@ -579,25 +593,7 @@ export default function PatientDossierPage() {
                       )}
                     </div>
                   )}
-                  {isSecretary && activeIdentiteTab === 'identite' && (
-                    <div style={{ marginTop: 24, borderTop: '1px solid rgba(37,99,235,0.12)', paddingTop: 20 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <SectionLabel style={{ margin: 0 }}>Rendez-vous précédents</SectionLabel>
-                        <Link to={`/secretaire/rendezvous?patient=${id}`} style={{ fontSize: 12, color: '#2563eb', fontWeight: 600 }}>Voir tous</Link>
-                      </div>
-                      {rendezVous.filter(rdv => rdv.date <= new Date().toISOString().slice(0, 10)).length === 0 ? (
-                        <div style={{ padding: 18, borderRadius: 10, background: '#f8fafc', color: '#64748b', fontSize: 13 }}>Aucun rendez-vous précédent.</div>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {rendezVous.filter(rdv => rdv.date <= new Date().toISOString().slice(0, 10)).sort((a, b) => `${b.date}${b.heure}`.localeCompare(`${a.date}${a.heure}`)).map(rdv => (
-                            <div key={rdv.id} style={{ display: 'grid', gridTemplateColumns: '115px 65px 1fr auto', gap: 10, alignItems: 'center', padding: '10px 12px', border: '1px solid rgba(37,99,235,0.1)', borderRadius: 10, fontSize: 12.5 }}>
-                              <span>{new Date(`${rdv.date}T00:00:00`).toLocaleDateString('fr-DZ')}</span><span>{rdv.heure}</span><span>{rdv.type || 'Consultation'}</span><span style={{ color: '#64748b' }}>{rdv.statut}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  
                 </>
               ) : (
                 <div style={{ animation: 'fadeIn 0.2s ease' }}>
@@ -620,6 +616,80 @@ export default function PatientDossierPage() {
                 </div>
               )}
             </>
+          )}
+
+          {/* == RENDEZ-VOUS == */}
+          {activeMainTab === 'rendezvous' && (
+            <div style={{ animation: 'fadeIn 0.2s ease' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <SectionLabel style={{ margin: 0 }}>Rendez-vous du patient</SectionLabel>
+                <Link to={`/secretaire/rendezvous/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
+                  <button style={addBtnStyle}>
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Ajouter un rendez-vous
+                  </button>
+                </Link>
+              </div>
+
+              {rendezVous.length === 0 ? (
+                <div style={{ padding: 48, textAlign: 'center' }}>
+                  <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
+                  <div style={{ fontSize: 14, color: '#64748b' }}>Aucun rendez-vous enregistré pour ce patient.</div>
+                </div>
+              ) : (
+                <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: '#f1f5f9' }}>
+                        {['Date', 'Heure', 'Type', 'Médecin', 'Statut', ''].map(h => (
+                          <th key={h} style={thStyle}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...rendezVous]
+                        .sort((a, b) => `${b.date}${b.heure}`.localeCompare(`${a.date}${a.heure}`))
+                        .map((rdv, i) => {
+                          const st = RDV_STATUT_COLORS[rdv.statut] || RDV_STATUT_COLORS.en_attente;
+                          const stLabel = RDV_STATUT_LABELS[rdv.statut] || rdv.statut || '—';
+                          const isPast = rdv.date && rdv.date < new Date().toISOString().slice(0, 10);
+                          return (
+                            <tr key={rdv.id}
+                              onClick={() => navigate(`/secretaire/rendezvous?patient=${id}`)}
+                              style={{
+                                cursor: 'pointer', borderBottom: '1px solid rgba(37,99,235,0.12)',
+                                background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
+                                opacity: isPast ? 0.75 : 1,
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
+                              onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'}
+                            >
+                              <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: '#0f172a' }}>
+                                {rdv.date ? new Date(`${rdv.date}T00:00:00`).toLocaleDateString('fr-DZ') : '—'}
+                              </td>
+                              <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12, color: '#334155' }}>{rdv.heure || '—'}</td>
+                              <td style={{ ...tdStyle, fontSize: 12.5, color: '#334155' }}>{RDV_TYPE_LABELS[rdv.type] || rdv.type || 'Consultation'}</td>
+                              <td style={{ ...tdStyle, fontSize: 12, color: '#64748b' }}>{rdv.medecin_nom || '—'}</td>
+                              <td style={tdStyle}>
+                                <span style={{ padding: '4px 10px', borderRadius: 20, background: st.bg, color: st.color, fontSize: 11, fontWeight: 600 }}>
+                                  {stLabel}
+                                </span>
+                              </td>
+                              <td style={tdStyle} onClick={e => e.stopPropagation()}>
+                                <Link to={`/secretaire/rendezvous?patient=${id}`} style={{ textDecoration: 'none' }}>
+                                  <button style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: 'pointer' }}>Voir</button>
+                                </Link>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           )}
 
           {/* == DOSSIER MeDICAL == */}
