@@ -142,38 +142,7 @@ function EditField({ field, value, onChange, allValues }) {
   return <input type={field.type || 'text'} value={value || ''} onChange={e => onChange(e.target.value)} style={base} />;
 }
 
-function QRCodeCard({ patient }) {
-  const publicUrl = `${MOBILE_APP_BASE_URL}/${encodeURIComponent(patient.id)}`;
-  const mobileUrl = `${publicUrl}?ref=${encodeURIComponent(patient.registration_number)}&token=${encodeURIComponent(patient.registration_number)}`;
-  const qrApiUrl  = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(mobileUrl) + '&color=2d5a3d&bgcolor=ffffff&format=png';
-  const [copied, setCopied] = useState(false);
-  const copyUrl = () => {
-    navigator.clipboard.writeText(mobileUrl).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
-  };
-  return (
-    <div style={{ border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '20px 24px', display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 20 }}>
-      <div style={{ width: 120, height: 120, borderRadius: '12px', border: '2px solid rgba(37,99,235,0.08)', overflow: 'hidden', flexShrink: 0, background: '#fff' }}>
-        <img src={qrApiUrl} alt="QR Code" width={120} height={120} style={{ display: 'block' }} onError={e => { e.target.style.display = 'none'; }} />
-      </div>
-      <div style={{ flex: 1, minWidth: 200 }}>
-        <div style={{ fontWeight: 600, fontSize: 14, color: '#0f172a', marginBottom: 8 }}>QR Code — Application mobile</div>
-        <p style={{ fontSize: 12, color: '#334155', marginBottom: 12, lineHeight: 1.6 }}>
-          Presentez ce code au patient pour qu'il renseigne ses habitudes de vie via son smartphone. Son identite sera pre-remplie automatiquement.
-        </p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px', padding: '8px 12px', marginBottom: 10 }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#64748b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{mobileUrl}</span>
-          <button onClick={copyUrl} style={{ flexShrink: 0, padding: '4px 10px', background: copied ? 'rgba(0,229,160,0.1)' : '#ffffff', border: '1px solid ' + (copied ? 'rgba(0,229,160,0.4)' : 'rgba(37,99,235,0.12)'), borderRadius: 6, fontSize: 11, cursor: 'pointer', color: copied ? '#16a34a' : '#334155' }}>
-            {copied ? 'Copie' : 'Copier'}
-          </button>
-        </div>
-        <a href={qrApiUrl} download={'qr-' + patient.registration_number + '.png'} target="_blank" rel="noreferrer"
-          style={{ display: 'inline-block', padding: '7px 14px', background: 'rgba(0,168,255,0.08)', border: '1px solid rgba(0,168,255,0.25)', borderRadius: '12px', color: '#2563eb', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
-          Telecharger le QR code
-        </a>
-      </div>
-    </div>
-  );
-}
+
 
 export default function PatientDetailPage() {
   const { id }   = useParams();
@@ -428,19 +397,7 @@ export default function PatientDetailPage() {
                 )}
               </div>
             )}
-            {activeTab === 'qrcode' && (
-              <div>
-                <QRCodeCard patient={patient} />
-                <div style={{ fontSize: 12, color: '#64748b', lineHeight: 2 }}>
-                  <strong style={{ color: '#334155', display: 'block', marginBottom: 6 }}>Comment ca marche</strong>
-                  1. Presentez le QR code au patient sur tablette ou imprime-le.<br />
-                  2. Le patient scanne avec son smartphone.<br />
-                  3. La page web s'ouvre avec son identite pre-remplie.<br />
-                  4. Il coche ses habitudes de vie section par section.<br />
-                  5. Les donnees sont enregistrees dans son dossier en temps reel.
-                </div>
-              </div>
-            )}
+           
             {activeTab === 'contacts' && (
               <div>
                 {patient.contacts_urgence?.length > 0 ? (
