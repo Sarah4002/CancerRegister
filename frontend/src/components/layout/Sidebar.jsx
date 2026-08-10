@@ -22,8 +22,8 @@ const NAV_CONFIG = [
     items: [
       { path: '/patients', label: 'Liste des patients', icon: UsersIcon, permission: 'readPatient' },
       { path: '/secretaire/rendezvous', label: 'Rendez-vous', icon: CalendarIcon, permission: 'manageAppointments', roles: ['secretaire'] },
-      { path: '/secretaire/documents', label: 'Documents administratifs', icon: CopyIcon, roles: ['secretaire'] },
-      { path: '/secretaire/validations', label: 'Dossiers à valider', icon: CheckCircleIcon, roles: ['secretaire'] },
+      //{ path: '/secretaire/documents', label: 'Documents administratifs', icon: CopyIcon, roles: ['secretaire'] },
+      //{ path: '/secretaire/validations', label: 'Dossiers à valider', icon: CheckCircleIcon, roles: ['secretaire'] },
     ],
     
   },
