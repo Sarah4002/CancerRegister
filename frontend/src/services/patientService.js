@@ -30,4 +30,7 @@ export const patientService = {
   // Changer statut
   changerStatut: (id, statut_dossier) =>
     api.post(`/patients/${id}/changer_statut/`, { statut_dossier }),
+
+  // à ajouter dans services/patientService.js
+  envoyerPourValidation: (id, payload) => api.post(`/patients/${id}/envoyer_validation/`, payload),
 };

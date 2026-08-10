@@ -271,3 +271,36 @@ class DossierMedical(models.Model):
 
     def __str__(self):
         return f"Dossier Médical - {self.patient.registration_number}"
+
+
+class DocumentAdministratif(models.Model):
+    class Type(models.TextChoices):
+        IDENTITE = 'identite', "Pièce d'identité"
+        ASSURANCE = 'assurance', "Attestation d'assurance"
+        ORIENTATION = 'orientation', "Lettre d'orientation"
+        AUTRE = 'autre', 'Autre document'
+
+    class Statut(models.TextChoices):
+        BROUILLON = 'brouillon', 'Brouillon'
+        ENVOYE = 'envoye', 'Envoyé pour validation'
+        VALIDE = 'valide', 'Validé'
+        REFUSE = 'refuse', 'Refusé'
+
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='documents_administratifs')
+    fichier = models.FileField(upload_to='patients/documents_administratifs/%Y/%m/')
+    nom = models.CharField(max_length=200)
+    type_document = models.CharField(max_length=20, choices=Type.choices, default=Type.AUTRE)
+    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.BROUILLON)
+    ajoute_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='documents_administratifs_ajoutes')
+    medecin_validateur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='documents_administratifs_a_valider')
+    commentaire = models.TextField(blank=True)
+    date_ajout = models.DateTimeField(auto_now_add=True)
+    date_envoi = models.DateTimeField(null=True, blank=True)
+    date_validation = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'documents_administratifs'
+        ordering = ['-date_ajout']
+
+    def __str__(self):
+        return f"{self.nom} - {self.patient}"

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Patient, ContactUrgence, DossierMedical
+from .models import Patient, ContactUrgence, DossierMedical, DocumentAdministratif
 from apps.accounts.serializers import UserSummarySerializer
 
 
@@ -15,6 +15,18 @@ class DossierMedicalSerializer(serializers.ModelSerializer):
         model = DossierMedical
         fields = '__all__'
         read_only_fields = ['id', 'patient', 'date_creation', 'date_mise_a_jour']
+
+
+class DocumentAdministratifSerializer(serializers.ModelSerializer):
+    patient_nom = serializers.CharField(source='patient.get_full_name', read_only=True)
+    patient_numero = serializers.CharField(source='patient.registration_number', read_only=True)
+    ajoute_par_nom = serializers.CharField(source='ajoute_par.get_display_name', read_only=True)
+    medecin_validateur_nom = serializers.CharField(source='medecin_validateur.get_display_name', read_only=True)
+
+    class Meta:
+        model = DocumentAdministratif
+        fields = ['id', 'patient', 'patient_nom', 'patient_numero', 'fichier', 'nom', 'type_document', 'statut', 'ajoute_par', 'ajoute_par_nom', 'medecin_validateur', 'medecin_validateur_nom', 'commentaire', 'date_ajout', 'date_envoi', 'date_validation']
+        read_only_fields = ['id', 'statut', 'ajoute_par', 'date_ajout', 'date_envoi', 'date_validation']
 
 
 class PatientListSerializer(serializers.ModelSerializer):

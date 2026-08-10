@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { patientService } from '../../services/patientService';
 import { examenService } from '../../services/examenService';
 import { diagnosticService } from '../../services/diagnosticService';
 import { traitementService } from '../../services/traitementService';
 import { suiviService } from '../../services/suiviService';
+import { documentService } from '../../services/documentService';
+import { medecinService } from '../../services/medecinService'; // ⚠️ adapte si le service s'appelle autrement
 import { AppLayout } from '../../components/layout/Sidebar';
 import ExamenModal from '../../components/patients/ExamenModal';
 import { WILAYAS, COMMUNES_PAR_WILAYA } from './communesAlgerie';
@@ -87,6 +89,25 @@ const RDV_TYPE_LABELS = {
   consultation: 'Consultation', suivi: 'Suivi', chimio: 'Chimiothérapie',
   radiotherapie: 'Radiothérapie', examen: 'Examen', rcp: 'RCP',
   chirurgie: 'Chirurgie', urgence: 'Urgence', autre: 'Autre',
+};
+
+/* ── Config pour la section Documents administratifs (rôle secrétaire) ── */
+const DOCUMENT_TYPE_OPTIONS = [
+  { v: 'carte_identite', l: "Carte d'identité / Extrait de naissance" },
+  { v: 'carte_chifa',    l: 'Carte Chifa / Sécurité sociale' },
+  { v: 'ordonnance',     l: 'Ordonnance médicale' },
+  { v: 'compte_rendu',   l: 'Compte rendu médical' },
+  { v: 'imagerie',       l: "Résultat d'imagerie" },
+  { v: 'biologie',       l: 'Résultat de biologie' },
+  { v: 'prise_charge',   l: 'Attestation de prise en charge' },
+  { v: 'autre',          l: 'Autre document' },
+];
+
+/* ── Config pour le statut d'envoi au médecin pour validation ── */
+const VALIDATION_STATUT_CFG = {
+  en_attente: { bg: 'rgba(217,119,6,0.08)', color: '#d97706', border: 'rgba(217,119,6,0.2)', label: 'En attente de validation' },
+  valide:     { bg: 'rgba(22,163,74,0.08)', color: '#16a34a', border: 'rgba(22,163,74,0.2)', label: 'Validé par le médecin' },
+  rejete:     { bg: 'rgba(220,38,38,0.08)', color: '#dc2626', border: 'rgba(220,38,38,0.2)', label: 'À corriger' },
 };
 
 // ── Reprises du design de DiagnosticsPage pour garder une cohérence visuelle ──
@@ -236,6 +257,108 @@ function QRCodeCard({ patient }) {
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   MODAL — Ajouter un document administratif
+───────────────────────────────────────────────────────────────────────────── */
+function UploadDocumentModal({ onClose, onSubmit, loading }) {
+  const [file, setFile] = useState(null);
+  const [type, setType] = useState('autre');
+  const [libelle, setLibelle] = useState('');
+  const overlayRef = useRef(null);
+
+  return (
+    <div ref={overlayRef} onClick={e => { if (e.target === overlayRef.current) onClose(); }} style={{
+      position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(4px)',
+      zIndex: 1500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, animation: 'fadeIn .15s ease',
+    }}>
+      <div style={{ background: '#fff', borderRadius: 18, width: '100%', maxWidth: 460, boxShadow: '0 24px 64px rgba(15,23,42,0.22)', overflow: 'hidden', animation: 'slideUp .2s ease' }}>
+        <div style={{ height: 4, background: 'linear-gradient(90deg,#3b82f6,#2563eb)' }} />
+        <div style={{ padding: '24px 26px' }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginBottom: 16 }}>Ajouter un document administratif</div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: .5 }}>Type de document</label>
+            <select value={type} onChange={e => setType(e.target.value)} style={{ width: '100%', padding: '9px 12px', background: '#f8fafc', border: '1px solid rgba(37,99,235,0.15)', borderRadius: 9, color: '#0f172a', fontSize: 13, outline: 'none', cursor: 'pointer' }}>
+              {DOCUMENT_TYPE_OPTIONS.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+            </select>
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: .5 }}>Libellé (optionnel)</label>
+            <input value={libelle} onChange={e => setLibelle(e.target.value)} placeholder="Ex: Carte Chifa recto-verso" style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', background: '#f8fafc', border: '1px solid rgba(37,99,235,0.15)', borderRadius: 9, color: '#0f172a', fontSize: 13, outline: 'none' }} />
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: .5 }}>Fichier</label>
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setFile(e.target.files?.[0] || null)} style={{ width: '100%', fontSize: 12.5, color: '#334155' }} />
+          </div>
+
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={onClose} disabled={loading} style={{ flex: 1, padding: '11px', borderRadius: 10, border: '1px solid rgba(37,99,235,0.2)', background: 'transparent', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Annuler</button>
+            <button
+              onClick={() => { if (!file) { toast.error('Veuillez sélectionner un fichier'); return; } onSubmit({ file, type, libelle }); }}
+              disabled={loading}
+              style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', background: loading ? '#93c5fd' : 'linear-gradient(135deg,#3b82f6,#2563eb)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer' }}
+            >
+              {loading ? 'Envoi…' : 'Ajouter le document'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MODAL — Envoyer le dossier pour validation
+───────────────────────────────────────────────────────────────────────────── */
+function SendValidationModal({ patient, medecins, onClose, onSubmit, loading }) {
+  const [medecinId, setMedecinId] = useState('');
+  const [note, setNote] = useState('');
+  const overlayRef = useRef(null);
+
+  return (
+    <div ref={overlayRef} onClick={e => { if (e.target === overlayRef.current) onClose(); }} style={{
+      position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(4px)',
+      zIndex: 1500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, animation: 'fadeIn .15s ease',
+    }}>
+      <div style={{ background: '#fff', borderRadius: 18, width: '100%', maxWidth: 460, boxShadow: '0 24px 64px rgba(124,58,237,0.18)', overflow: 'hidden', animation: 'slideUp .2s ease' }}>
+        <div style={{ height: 4, background: 'linear-gradient(90deg,#a78bfa,#7c3aed)' }} />
+        <div style={{ padding: '24px 26px' }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>Envoyer le dossier pour validation</div>
+          <div style={{ fontSize: 12.5, color: '#64748b', marginBottom: 16 }}>{patient?.nom} {patient?.prenom} — {patient?.registration_number}</div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: .5 }}>Médecin destinataire</label>
+            <select value={medecinId} onChange={e => setMedecinId(e.target.value)} style={{ width: '100%', padding: '9px 12px', background: '#f8fafc', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 9, color: '#0f172a', fontSize: 13, outline: 'none', cursor: 'pointer' }}>
+              <option value="">— Sélectionner un médecin —</option>
+              {medecins.map(m => (
+                <option key={m.id} value={m.id}>{m.full_name || `${m.first_name || ''} ${m.last_name || ''}`.trim()}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: .5 }}>Note (optionnel)</label>
+            <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} placeholder="Précisions pour le médecin..." style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', background: '#f8fafc', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 9, color: '#0f172a', fontSize: 13, outline: 'none', resize: 'vertical' }} />
+          </div>
+
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={onClose} disabled={loading} style={{ flex: 1, padding: '11px', borderRadius: 10, border: '1px solid rgba(37,99,235,0.2)', background: 'transparent', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Annuler</button>
+            <button
+              onClick={() => { if (!medecinId) { toast.error('Veuillez sélectionner un médecin'); return; } onSubmit({ medecinId, note }); }}
+              disabled={loading}
+              style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', background: loading ? '#c4b5fd' : 'linear-gradient(135deg,#a78bfa,#7c3aed)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer' }}
+            >
+              {loading ? 'Envoi…' : 'Envoyer pour validation'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PatientDossierPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -250,14 +373,15 @@ export default function PatientDossierPage() {
   const [traitements, setTraitements] = useState({});
   const [suivi, setSuivi] = useState([]);
   const [rendezVous, setRendezVous] = useState([]);
-  
+  const [documents, setDocuments] = useState([]);
+
   const [loading, setLoading] = useState(true);
-  
+
   const [activeMainTab, setActiveMainTab] = useState('identite');
   const [activeSubTab, setActiveSubTab] = useState('clinique');
   const [activeIdentiteTab, setActiveIdentiteTab] = useState('identite');
   const [highlightedDiagnosticId, setHighlightedDiagnosticId] = useState(null);
-  
+
   const [showExamenModal, setShowExamenModal] = useState(false);
   const [editingExamen, setEditingExamen] = useState(null);
 
@@ -267,6 +391,16 @@ export default function PatientDossierPage() {
 
   const [dossierEditMode, setDossierEditMode] = useState(false);
   const [dossierForm, setDossierForm] = useState({});
+
+  // ── Documents administratifs (secrétaire) ──
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [deletingDocId, setDeletingDocId] = useState(null);
+
+  // ── Envoi au médecin pour validation (secrétaire) ──
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [medecins, setMedecins] = useState([]);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     const invalid = id === undefined || id === null || id === '' || id === 'undefined';
@@ -278,7 +412,7 @@ export default function PatientDossierPage() {
     }
 
     loadAllData();
-    
+
     if (location.state?.returnSection === 'diagnostic') {
       setActiveMainTab('dossier');
       setActiveSubTab('diagnostic');
@@ -296,6 +430,7 @@ export default function PatientDossierPage() {
       const requests = [
         patientService.get(id).catch(e => { toast.error('Patient introuvable'); navigate('/patients'); throw e; }),
         secretaryService.getRendezVous({ patient: id }).catch(() => ({ data: [] })),
+        documentService.list(id).catch(() => ({ data: [] })),
       ];
       if (!isSecretary) requests.push(
         patientService.getDossier(id).catch(() => ({ data: {} })),
@@ -307,11 +442,12 @@ export default function PatientDossierPage() {
       const responses = await Promise.all(requests);
       const resPatient    = responses[0];
       const resRendezVous = responses[1] || { data: [] };
-      const resDossier = isSecretary ? { data: {} } : (responses[2] || { data: {} });
-      const resExamens = isSecretary ? { data: [] } : (responses[3] || { data: [] });
-      const resDiag     = isSecretary ? { data: [] } : (responses[4] || { data: [] });
-      const resTrt       = isSecretary ? { data: {} } : (responses[5] || { data: {} });
-      const resSuiv      = isSecretary ? { data: [] } : (responses[6] || { data: [] });
+      const resDocuments  = responses[2] || { data: [] };
+      const resDossier = isSecretary ? { data: {} } : (responses[3] || { data: {} });
+      const resExamens = isSecretary ? { data: [] } : (responses[4] || { data: [] });
+      const resDiag     = isSecretary ? { data: [] } : (responses[5] || { data: [] });
+      const resTrt       = isSecretary ? { data: {} } : (responses[6] || { data: {} });
+      const resSuiv      = isSecretary ? { data: [] } : (responses[7] || { data: [] });
       setPatient(resPatient.data);
       setDossier(resDossier.data);
       setExamens(resExamens.data?.results || resExamens.data || []);
@@ -319,7 +455,8 @@ export default function PatientDossierPage() {
       setTraitements(resTrt.data || {});
       setSuivi(resSuiv.data || []);
       setRendezVous(resRendezVous.data || []);
-      
+      setDocuments(resDocuments.data?.results || resDocuments.data || []);
+
       if (location.state?.returnSection === 'diagnostic' && location.state?.newDiagnosticId) {
         setHighlightedDiagnosticId(location.state.newDiagnosticId);
         setTimeout(() => setHighlightedDiagnosticId(null), 3000);
@@ -381,6 +518,67 @@ export default function PatientDossierPage() {
     });
   };
 
+  /* ── Documents administratifs ── */
+  const handleUploadDocument = async ({ file, type, libelle }) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type_document', type);
+      formData.append('libelle', libelle || file.name);
+      formData.append('patient', id);
+      await documentService.upload(id, formData);
+      toast.success('Document ajouté avec succès');
+      setShowUploadModal(false);
+      const { data } = await documentService.list(id);
+      setDocuments(data?.results || data || []);
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Erreur lors de l'ajout du document");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteDocument = async (docId) => {
+    setDeletingDocId(docId);
+    try {
+      await documentService.delete(docId);
+      toast.success('Document supprimé');
+      setDocuments(prev => prev.filter(d => d.id !== docId));
+    } catch (err) {
+      toast.error('Erreur lors de la suppression');
+    } finally {
+      setDeletingDocId(null);
+    }
+  };
+
+  /* ── Envoi pour validation ── */
+  const openSendModal = async () => {
+    setShowSendModal(true);
+    if (medecins.length === 0) {
+      try {
+        const { data } = await medecinService.list();
+        setMedecins(data?.results || data || []);
+      } catch {
+        toast.error('Impossible de charger la liste des médecins');
+      }
+    }
+  };
+
+  const handleSendForValidation = async ({ medecinId, note }) => {
+    setSending(true);
+    try {
+      await patientService.envoyerPourValidation(id, { medecin: medecinId, note });
+      toast.success('Dossier envoyé au médecin pour validation');
+      setShowSendModal(false);
+      await loadAllData();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Erreur lors de l'envoi du dossier");
+    } finally {
+      setSending(false);
+    }
+  };
+
   // ── Mapping entre les sections du sidebar global et les onglets internes ──
   const activeSectionKey = activeMainTab === 'dossier' ? activeSubTab : activeMainTab;
 
@@ -414,6 +612,7 @@ export default function PatientDossierPage() {
   const sc = STATUT_COLORS[patient.statut_dossier] || STATUT_COLORS.archive;
   const { coches, commentaire } = parseAntecedents(patient.antecedents_familiaux);
   const tabHasEdit = !!EDIT_FIELDS[activeIdentiteTab];
+  const vs = VALIDATION_STATUT_CFG[patient.validation_statut];
 
   const ID_TABS = [
     { key: 'identite',    label: 'Identite'        },
@@ -422,8 +621,9 @@ export default function PatientDossierPage() {
     { key: 'antecedents', label: 'Antecedents'      },
     { key: 'habitudes',   label: 'Habitudes de vie' },
     { key: 'contacts',    label: 'Contacts'         },
+    { key: 'documents',   label: 'Documents administratifs' },
     { key: 'qrcode',      label: 'QR Code'          },
-  ].filter(tab => !isSecretary || ['identite', 'coordonnees', 'profil'].includes(tab.key));
+  ].filter(tab => !isSecretary || ['identite', 'coordonnees', 'profil', 'documents'].includes(tab.key));
 
   const DOSSIER_TABS = [
     { key: 'clinique',   label: 'Infos Cliniques' },
@@ -449,6 +649,7 @@ export default function PatientDossierPage() {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
         .main-content { flex: 1; background: #ffffff; border: 1px solid rgba(37,99,235,0.08); border-radius: 12px; padding: 24px; min-height: 500px; }
         .input-st { width: 100%; padding: 8px 12px; background: #f1f5f9; border: 1px solid rgba(37,99,235,0.12); border-radius: 6px; color: #0f172a; font-size: 13px; outline: none; box-sizing: border-box; }
         .label-st { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 6px; font-weight: 600; }
@@ -475,11 +676,37 @@ export default function PatientDossierPage() {
           {/* == IDENTITe & PROFIL == */}
           {activeMainTab === 'identite' && (
             <>
-             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 12 }}>
-               
-               <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
-                 Modifier le patient
-               </button>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+               <div>
+                 {isSecretary && vs && (
+                   <span style={{
+                     display: 'inline-block', padding: '4px 12px', borderRadius: 20, fontSize: 11.5, fontWeight: 600,
+                     background: vs.bg, color: vs.color, border: `1px solid ${vs.border}`,
+                   }}>{vs.label}</span>
+                 )}
+               </div>
+               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                 {isSecretary && (
+                   <>
+                     <button type="button" onClick={() => setShowUploadModal(true)} style={addBtnStyleOutline}>
+                       <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                       </svg>
+                       Document administratif
+                     </button>
+                     <button type="button" onClick={openSendModal} style={sendBtnStyle}>
+                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                         <line x1="22" y1="2" x2="11" y2="13" />
+                         <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                       </svg>
+                       Envoyer au médecin pour validation
+                     </button>
+                   </>
+                 )}
+                 <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
+                   Modifier le patient
+                 </button>
+               </div>
              </div>
               <div style={{ display: 'flex', marginBottom: 16, background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
                 {ID_TABS.map(t => (
@@ -593,7 +820,55 @@ export default function PatientDossierPage() {
                       )}
                     </div>
                   )}
-                  
+                  {activeIdentiteTab === 'documents' && (
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                        <SectionLabel style={{ margin: 0 }}>Documents administratifs</SectionLabel>
+                        <button onClick={() => setShowUploadModal(true)} style={addBtnStyle}>
+                          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                          </svg>
+                          Ajouter un document
+                        </button>
+                      </div>
+
+                      {documents.length === 0 ? (
+                        <div style={{ padding: 40, textAlign: 'center' }}>
+                          <div style={{ fontSize: 30, marginBottom: 10 }}>📄</div>
+                          <div style={{ fontSize: 14, color: '#64748b' }}>Aucun document administratif enregistré.</div>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {documents.map(doc => (
+                            <div key={doc.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', border: '1px solid rgba(37,99,235,0.1)', borderRadius: 12, background: '#fff' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(37,99,235,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📄</div>
+                                <div>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>{doc.libelle || doc.file_name || 'Document'}</div>
+                                  <div style={{ fontSize: 11, color: '#94a3b8' }}>
+                                    {DOCUMENT_TYPE_OPTIONS.find(t => t.v === doc.type_document)?.l || doc.type_document || '—'}
+                                    {doc.date_ajout ? ` · ${new Date(doc.date_ajout).toLocaleDateString('fr-DZ')}` : ''}
+                                  </div>
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                {doc.url && (
+                                  <a href={doc.url} target="_blank" rel="noreferrer" style={{ padding: '6px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 8, color: '#334155', fontSize: 11.5, textDecoration: 'none' }}>Voir</a>
+                                )}
+                                <button
+                                  onClick={() => handleDeleteDocument(doc.id)}
+                                  disabled={deletingDocId === doc.id}
+                                  style={{ padding: '6px 12px', background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 8, color: '#dc2626', fontSize: 11.5, cursor: deletingDocId === doc.id ? 'not-allowed' : 'pointer' }}
+                                >
+                                  {deletingDocId === doc.id ? '...' : 'Supprimer'}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </>
               ) : (
                 <div style={{ animation: 'fadeIn 0.2s ease' }}>
@@ -1000,6 +1275,24 @@ export default function PatientDossierPage() {
           onSuccess={() => { loadAllData(); setShowExamenModal(false); setEditingExamen(null); }}
         />
       )}
+
+      {showUploadModal && (
+        <UploadDocumentModal
+          onClose={() => setShowUploadModal(false)}
+          onSubmit={handleUploadDocument}
+          loading={uploading}
+        />
+      )}
+
+      {showSendModal && (
+        <SendValidationModal
+          patient={patient}
+          medecins={medecins}
+          onClose={() => setShowSendModal(false)}
+          onSubmit={handleSendForValidation}
+          loading={sending}
+        />
+      )}
     </AppLayout>
   );
 }
@@ -1032,5 +1325,7 @@ const btnSt = { padding: '8px 16px', background: '#2563eb', color: 'white', bord
 const btnStSecondary = { padding: '8px 16px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', color: '#334155', borderRadius: 6, cursor: 'pointer', fontSize: 13 };
 const btnStSuccess = { padding: '8px 16px', background: 'linear-gradient(135deg, #16a34a, #00b38a)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500 };
 const addBtnStyle = { padding: '9px 18px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-display)' };
+const addBtnStyleOutline = { padding: '9px 16px', background: '#fff', border: '1px solid rgba(37,99,235,0.25)', borderRadius: '12px', color: '#2563eb', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-display)' };
+const sendBtnStyle = { padding: '9px 18px', background: 'linear-gradient(135deg, #a78bfa, #7c3aed)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-display)' };
 const thStyle = { padding: '10px 12px', textAlign: 'left', fontSize: 10, fontWeight: 600, letterSpacing: 0.5, color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid rgba(37,99,235,0.12)', whiteSpace: 'nowrap' };
 const tdStyle = { padding: '11px 12px', verticalAlign: 'middle' };

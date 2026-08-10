@@ -18,7 +18,7 @@ from apps.accounts.permissions import (
 )
 
 from .duplicate_service import detecter_doublons, fusionner_patients
-from .models import ContactUrgence, DossierMedical, Patient
+from .models import ContactUrgence, DossierMedical, Patient, DocumentAdministratif
 from .serializers import (
     ContactUrgenceSerializer,
     DossierMedicalSerializer,
@@ -28,7 +28,48 @@ from .serializers import (
     PatientClinicalContextSerializer,
     PatientDetailSerializer,
     PatientListSerializer,
+    DocumentAdministratifSerializer,
 )
+
+
+class DocumentAdministratifViewSet(viewsets.ModelViewSet):
+    serializer_class = DocumentAdministratifSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['patient', 'statut', 'medecin_validateur']
+    search_fields = ['nom', 'patient__nom', 'patient__prenom', 'patient__registration_number']
+    ordering = ['-date_ajout']
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = DocumentAdministratif.objects.select_related('patient', 'ajoute_par', 'medecin_validateur')
+        if user.role == 'secretaire':
+            return qs.filter(ajoute_par=user)
+        if user.role in ['doctor', 'doctor_chef']:
+            return qs.filter(medecin_validateur=user)
+        return qs.none()
+
+    def perform_create(self, serializer):
+        if self.request.user.role != 'secretaire':
+            raise PermissionDenied("Ajout de documents réservé au secrétariat.")
+        serializer.save(ajoute_par=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def envoyer_validation(self, request, pk=None):
+        document = self.get_object()
+        if request.user.role != 'secretaire' or document.ajoute_par_id != request.user.id:
+            raise PermissionDenied("Envoi pour validation réservé à la secrétaire ayant ajouté le document.")
+        medecin_id = request.data.get('medecin_validateur')
+        from apps.accounts.models import User
+        medecin = User.objects.filter(id=medecin_id, role__in=['doctor', 'doctor_chef'], is_active=True).first()
+        if not medecin:
+            return Response({'detail': 'Médecin valide requis.'}, status=status.HTTP_400_BAD_REQUEST)
+        from django.utils import timezone
+        document.medecin_validateur = medecin
+        document.statut = DocumentAdministratif.Statut.ENVOYE
+        document.date_envoi = timezone.now()
+        document.save(update_fields=['medecin_validateur', 'statut', 'date_envoi'])
+        return Response(self.get_serializer(document).data)
 
 
 class PatientViewSet(viewsets.ModelViewSet):

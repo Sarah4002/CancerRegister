@@ -21,14 +21,13 @@ const NAV_CONFIG = [
     section: 'Patients',
     items: [
       { path: '/patients', label: 'Liste des patients', icon: UsersIcon, permission: 'readPatient' },
-    ],
-  },
-  {
-    section: 'Secrétariat',
-    items: [
       { path: '/secretaire/rendezvous', label: 'Rendez-vous', icon: CalendarIcon, permission: 'manageAppointments', roles: ['secretaire'] },
+      { path: '/secretaire/documents', label: 'Documents administratifs', icon: CopyIcon, roles: ['secretaire'] },
+      { path: '/secretaire/validations', label: 'Dossiers à valider', icon: CheckCircleIcon, roles: ['secretaire'] },
     ],
+    
   },
+ 
   {
     section: 'Analyses',
     items: [
@@ -681,6 +680,9 @@ function UsersIcon({ size = 16 }) {
 }
 function CopyIcon({ size = 16 }) {
   return <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 00-2-2H5a2 2 0 00-2 2v9a2 2 0 002 2h3"/></svg>;
+}
+function CheckCircleIcon({ size = 16 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={1.8}><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 }
 function MicroscopeIcon({ size = 16 }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth={1.8}><path d="M6 21h12M12 3v12M9 6l3-3 3 3M5 21a7 7 0 0114 0"/></svg>;
