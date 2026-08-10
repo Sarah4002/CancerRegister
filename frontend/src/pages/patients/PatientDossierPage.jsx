@@ -554,16 +554,16 @@ export default function PatientDossierPage() {
 
   /* ── Envoi pour validation ── */
   const openSendModal = async () => {
-    setShowSendModal(true);
-    if (medecins.length === 0) {
-      try {
-        const { data } = await medecinService.list();
-        setMedecins(data?.results || data || []);
-      } catch {
-        toast.error('Impossible de charger la liste des médecins');
-      }
+  setShowSendModal(true);
+  if (medecins.length === 0) {
+    try {
+      const { data } = await medecinService.list();
+      setMedecins(data?.results || data || []);
+    } catch {
+      toast.error('Impossible de charger la liste des médecins');
     }
-  };
+  }
+};
 
   const handleSendForValidation = async ({ medecinId, note }) => {
     setSending(true);
