@@ -6,7 +6,7 @@ import { diagnosticService } from '../../services/diagnosticService';
 import { traitementService } from '../../services/traitementService';
 import { suiviService } from '../../services/suiviService';
 import { documentService } from '../../services/documentService';
-import { medecinService } from '../../services/medecinService'; // ⚠️ adapte si le service s'appelle autrement
+import { medecinService } from '../../services/accountsService'; // ⚠️ adapte si le service s'appelle autrement
 import { AppLayout } from '../../components/layout/Sidebar';
 import ExamenModal from '../../components/patients/ExamenModal';
 import { WILAYAS, COMMUNES_PAR_WILAYA } from './communesAlgerie';
