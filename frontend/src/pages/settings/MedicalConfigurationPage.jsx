@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { AppLayout } from '../../components/layout/Sidebar';
 import { validationRulesService } from '../../services/validationRulesService';
 import api from '../../services/api';
 
@@ -71,6 +70,7 @@ function PrimaryButton({ children, onClick, disabled, color = '#2563eb', variant
 function Toggle({ checked, onChange }) {
   return (
     <button
+      type="button"
       onClick={() => onChange(!checked)}
       style={{
         width:42, height:24, borderRadius:20, border:'none', cursor:'pointer', position:'relative',
@@ -180,7 +180,7 @@ function ConfigForm({ tab, form, setForm, onSubmit, onCancel, saving }) {
 /* ══════════════════════════════════════════════
    MAIN — MedicalConfigurationPage
    ══════════════════════════════════════════════ */
-export default function MedicalConfigurationPage() {
+export function MedicalConfigurationPanel() {
   const [tab, setTab] = useState('rules');
   const [rules, setRules] = useState([]);
   const [fields, setFields] = useState([]);
@@ -252,7 +252,7 @@ export default function MedicalConfigurationPage() {
   const activeCount = items.filter(item => tab === 'rules' ? item.active : item.actif).length;
 
   return (
-    <AppLayout title="Paramètres & configuration médicale">
+    <section style={{ gridColumn: '1 / -1', marginTop: 8 }}>
       <div style={{ marginBottom:6 }}>
         <h2 style={{ fontFamily:'var(--font-display)', fontSize:20, fontWeight:800, color:'#0f172a', marginBottom:3 }}>
           Configuration médicale
@@ -324,6 +324,6 @@ export default function MedicalConfigurationPage() {
           </div>
         )}
       </div>
-    </AppLayout>
+    </section>
   );
 }

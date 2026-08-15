@@ -24,6 +24,7 @@ import useAuthStore from '../../hooks/useAuth';
 import usePermissions from '../../hooks/usePermissions';
 import usePreferences from '../../hooks/usePreferences';
 import { authService } from '../../services/api';
+import { MedicalConfigurationPanel } from './MedicalConfigurationPage';
 
 const NOTIFICATIONS = [
   'Nouveaux patients',
@@ -130,7 +131,7 @@ export default function DoctorSettingsPage() {
     localStorage.setItem('doctor_audio_sensitivity', String(sensitivity));
   }, [sensitivity]);
 
-  if (role && role !== 'doctor') {
+  if (role && !['doctor', 'doctor_chef'].includes(role)) {
     return <AccessDenied message="Cette page est reservee au profil medecin." />;
   }
 
@@ -372,6 +373,7 @@ export default function DoctorSettingsPage() {
             </div>
             <div style={tipStyle}>Simplicite, rapidite, securite et saisie vocale : la page est pensee pour le confort du medecin.</div>
           </Panel>
+          {role === 'doctor_chef' && <MedicalConfigurationPanel />}
         </div>
       </div>
     </AppLayout>
