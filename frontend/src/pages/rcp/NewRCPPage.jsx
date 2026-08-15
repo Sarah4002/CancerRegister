@@ -8,20 +8,61 @@ import { AppLayout } from '../../components/layout/Sidebar';
 
 // ── Nouvelle Réunion RCP ──────────────────────────────────────────
 export default function NewRCPPage() {
-  const navigate    = useNavigate();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Si la page a été ouverte depuis la fiche d'un patient (?patient=<id>),
+  // on rattache automatiquement ce patient à la réunion une fois créée.
+  const patientId = searchParams.get('patient');
+
+  const [patientPreview, setPatientPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
   const { register, handleSubmit, formState: { errors } } = useForm({
-    defaultValues: { type_rcp:'generale', statut:'planifiee', heure_debut:'09:00', nombre_dossiers_prevus:0 }
+    defaultValues: { type_rcp: 'generale', statut: 'planifiee', heure_debut: '09:00', nombre_dossiers_prevus: 0 }
   });
+
+  // Charge un aperçu du patient concerné, pour affichage informatif uniquement
+  useEffect(() => {
+    if (!patientId) return;
+    patientService.get(patientId)
+      .then(({ data }) => setPatientPreview(data))
+      .catch(() => setPatientPreview(null));
+  }, [patientId]);
 
   const onSubmit = async (data) => {
     setSubmitting(true);
     try {
       const payload = { ...data };
       Object.keys(payload).forEach(k => { if (payload[k] === '') delete payload[k]; });
-      const { data: result } = await rcpService.reunions.create(payload);
-      toast.success('Réunion RCP créée !');
-      navigate(`/rcp/${result.id}`);
+
+      const { data: reunion } = await rcpService.reunions.create(payload);
+
+      // Si un patient était rattaché à l'ouverture du formulaire,
+      // on crée automatiquement son dossier dans cette nouvelle réunion.
+      if (patientId) {
+        try {
+          await rcpService.dossiers.create({
+            reunion: reunion.id,
+            patient: patientId,
+            type_presentation: 'nouveau',
+            statut: 'attente',
+            ordre_passage: 1,
+          });
+          toast.success('Réunion créée et patient ajouté à la RCP !');
+        } catch (dossierErr) {
+          // La réunion a bien été créée : on informe l'utilisateur que
+          // seul le rattachement automatique du patient a échoué, sans bloquer le flux.
+          console.error(dossierErr);
+          toast.error(
+            "Réunion créée, mais l'ajout automatique du patient a échoué. Vous pouvez l'ajouter manuellement depuis la réunion."
+          );
+        }
+      } else {
+        toast.success('Réunion RCP créée !');
+      }
+
+      navigate(`/rcp/${reunion.id}`);
     } catch (err) {
       toast.error(err.response?.data ? Object.values(err.response.data).flat().join(' ') : 'Erreur');
     } finally { setSubmitting(false); }
@@ -29,16 +70,34 @@ export default function NewRCPPage() {
 
   return (
     <AppLayout title="Nouvelle Réunion RCP">
-      <div style={{ maxWidth:700, margin:'0 auto' }}>
-        <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
-            <span style={{ fontSize:24 }}></span>
-            <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'#0f172a' }}>Planifier une réunion RCP</h2>
+      <div style={{ maxWidth: 700, margin: '0 auto' }}>
+        <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '28px 32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(37,99,235,0.12)' }}>
+            <span style={{ fontSize: 24 }}></span>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#0f172a' }}>Planifier une réunion RCP</h2>
           </div>
+
+          {patientId && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20,
+              padding: '10px 14px', background: 'rgba(0,168,255,0.06)', border: '1px solid rgba(0,168,255,0.15)',
+              borderRadius: '12px', fontSize: 12.5, color: '#334155',
+            }}>
+              <span style={{ fontSize: 16 }}>ℹ️</span>
+              <span>
+                Cette réunion sera automatiquement associée au dossier de{' '}
+                <strong style={{ color: '#2563eb' }}>
+                  {patientPreview ? `${patientPreview.nom} ${patientPreview.prenom}` : 'ce patient'}
+                </strong>
+                {patientPreview?.registration_number ? ` (${patientPreview.registration_number})` : ''}.
+              </span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit(onSubmit)}>
             <Section title="Informations générales">
               <Field label="Titre de la réunion *" error={errors.titre?.message}>
-                <input {...register('titre', { required:'Champ requis' })} placeholder="Ex: RCP Sein – Janvier 2026" style={inputSt} />
+                <input {...register('titre', { required: 'Champ requis' })} placeholder="Ex: RCP Sein – Janvier 2026" style={inputSt} />
               </Field>
               <Row2>
                 <Field label="Type de RCP">
@@ -69,10 +128,10 @@ export default function NewRCPPage() {
             <Section title="Date & Lieu">
               <Row3>
                 <Field label="Date *" error={errors.date_reunion?.message}>
-                  <input type="date" {...register('date_reunion', { required:'Champ requis' })} style={inputSt} />
+                  <input type="date" {...register('date_reunion', { required: 'Champ requis' })} style={inputSt} />
                 </Field>
                 <Field label="Heure début *" error={errors.heure_debut?.message}>
-                  <input type="time" {...register('heure_debut', { required:'Champ requis' })} style={inputSt} />
+                  <input type="time" {...register('heure_debut', { required: 'Champ requis' })} style={inputSt} />
                 </Field>
                 <Field label="Heure fin">
                   <input type="time" {...register('heure_fin')} style={inputSt} />
@@ -98,14 +157,14 @@ export default function NewRCPPage() {
                 </Field>
               </Row2>
               <Field label="Ordre du jour / Objectifs">
-                <textarea {...register('objectif')} rows={3} placeholder="Présentation de 5 nouveaux dossiers sein, 2 récidives digestives..." style={{ ...inputSt, resize:'vertical', lineHeight:1.6 }} />
+                <textarea {...register('objectif')} rows={3} placeholder="Présentation de 5 nouveaux dossiers sein, 2 récidives digestives..." style={{ ...inputSt, resize: 'vertical', lineHeight: 1.6 }} />
               </Field>
             </Section>
 
-            <div style={{ display:'flex', gap:10, paddingTop:20, borderTop:'1px solid rgba(37,99,235,0.12)' }}>
-              <button type="button" onClick={() => navigate('/rcp')} style={{ flex:'0 0 110px', padding:'12px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:'12px', color:'#334155', fontSize:13, cursor:'pointer' }}>← Annuler</button>
-              <button type="submit" disabled={submitting} style={{ flex:1, padding:'12px', background:'linear-gradient(135deg, #2563eb, #1d4ed8)', border:'none', borderRadius:'12px', color:'#fff', fontSize:13.5, fontWeight:600, cursor:submitting?'not-allowed':'pointer', fontFamily:'var(--font-display)', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:submitting?0.7:1 }}>
-                {submitting ? <><Spin/>Enregistrement...</> : 'Créer la réunion RCP'}
+            <div style={{ display: 'flex', gap: 10, paddingTop: 20, borderTop: '1px solid rgba(37,99,235,0.12)' }}>
+              <button type="button" onClick={() => navigate('/rcp')} style={{ flex: '0 0 110px', padding: '12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px', color: '#334155', fontSize: 13, cursor: 'pointer' }}>← Annuler</button>
+              <button type="submit" disabled={submitting} style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: submitting ? 0.7 : 1 }}>
+                {submitting ? <><Spin />Enregistrement...</> : 'Créer la réunion RCP'}
               </button>
             </div>
           </form>
@@ -120,15 +179,22 @@ export function NewDossierRCPPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const reunionId = searchParams.get('reunion');
+  const preselectedPatientId = searchParams.get('patient');
   const [submitting, setSubmitting] = useState(false);
-  const [patients, setPatients]     = useState([]);
+  const [patients, setPatients] = useState([]);
 
   const { register, handleSubmit, formState: { errors } } = useForm({
-    defaultValues: { reunion: reunionId || '', type_presentation:'nouveau', statut:'attente', ordre_passage:1 }
+    defaultValues: {
+      reunion: reunionId || '',
+      patient: preselectedPatientId || '',
+      type_presentation: 'nouveau',
+      statut: 'attente',
+      ordre_passage: 1,
+    }
   });
 
   useEffect(() => {
-    patientService.list({ page_size:200 }).then(({ data }) => setPatients(data.results || data)).catch(() => {});
+    patientService.list({ page_size: 200 }).then(({ data }) => setPatients(data.results || data)).catch(() => {});
   }, []);
 
   const onSubmit = async (data) => {
@@ -146,16 +212,16 @@ export function NewDossierRCPPage() {
 
   return (
     <AppLayout title="Ajouter un dossier à la RCP">
-      <div style={{ maxWidth:660, margin:'0 auto' }}>
-        <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
-            <span style={{ fontSize:24 }}></span>
-            <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'#0f172a' }}>Nouveau dossier RCP</h2>
+      <div style={{ maxWidth: 660, margin: '0 auto' }}>
+        <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '28px 32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid rgba(37,99,235,0.12)' }}>
+            <span style={{ fontSize: 24 }}></span>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#0f172a' }}>Nouveau dossier RCP</h2>
           </div>
           <form onSubmit={handleSubmit(onSubmit)}>
             <Section title="Patient & Présentation">
               <Field label="Patient *" error={errors.patient?.message}>
-                <select {...register('patient', { required:'Champ requis' })} style={selSt}>
+                <select {...register('patient', { required: 'Champ requis' })} style={selSt}>
                   <option value="">Sélectionner un patient...</option>
                   {patients.map(p => <option key={p.id} value={p.id}>{p.registration_number} – {p.full_name}</option>)}
                 </select>
@@ -176,17 +242,17 @@ export function NewDossierRCPPage() {
                 </Field>
               </Row2>
               <Field label="Question clinique posée à la RCP">
-                <textarea {...register('question_posee')} rows={2} placeholder="Quelle stratégie thérapeutique pour cette patiente HER2+ stade III ?" style={{ ...inputSt, resize:'vertical' }} />
+                <textarea {...register('question_posee')} rows={2} placeholder="Quelle stratégie thérapeutique pour cette patiente HER2+ stade III ?" style={{ ...inputSt, resize: 'vertical' }} />
               </Field>
               <Field label="Résumé clinique">
-                <textarea {...register('resume_clinique')} rows={4} placeholder="Patiente de 52 ans, cancer du sein droit HER2+, cT3N1M0, bilan d'extension négatif. Traitement chimio néo-adjuvant AC×4 terminé. Réponse partielle à l'imagerie..." style={{ ...inputSt, resize:'vertical', lineHeight:1.6 }} />
+                <textarea {...register('resume_clinique')} rows={4} placeholder="Patiente de 52 ans, cancer du sein droit HER2+, cT3N1M0, bilan d'extension négatif. Traitement chimio néo-adjuvant AC×4 terminé. Réponse partielle à l'imagerie..." style={{ ...inputSt, resize: 'vertical', lineHeight: 1.6 }} />
               </Field>
             </Section>
 
-            <div style={{ display:'flex', gap:10, paddingTop:16, borderTop:'1px solid rgba(37,99,235,0.12)' }}>
-              <button type="button" onClick={() => navigate(reunionId ? `/rcp/${reunionId}` : '/rcp')} style={{ flex:'0 0 110px', padding:'11px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:'12px', color:'#334155', fontSize:13, cursor:'pointer' }}>← Annuler</button>
-              <button type="submit" disabled={submitting} style={{ flex:1, padding:'11px', background:'linear-gradient(135deg, #2563eb, #1d4ed8)', border:'none', borderRadius:'12px', color:'#fff', fontSize:13, fontWeight:600, cursor:submitting?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:submitting?0.7:1 }}>
-                {submitting ? <><Spin/>Enregistrement...</> : 'Ajouter le dossier'}
+            <div style={{ display: 'flex', gap: 10, paddingTop: 16, borderTop: '1px solid rgba(37,99,235,0.12)' }}>
+              <button type="button" onClick={() => navigate(reunionId ? `/rcp/${reunionId}` : '/rcp')} style={{ flex: '0 0 110px', padding: '11px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px', color: '#334155', fontSize: 13, cursor: 'pointer' }}>← Annuler</button>
+              <button type="submit" disabled={submitting} style={{ flex: 1, padding: '11px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: submitting ? 0.7 : 1 }}>
+                {submitting ? <><Spin />Enregistrement...</> : 'Ajouter le dossier'}
               </button>
             </div>
           </form>
@@ -199,23 +265,23 @@ export function NewDossierRCPPage() {
 // ── Helpers ───────────────────────────────────────────────────────
 function Section({ title, children }) {
   return (
-    <div style={{ marginBottom:24 }}>
-      <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:0.8, marginBottom:12, paddingBottom:8, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>{title}</div>
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid rgba(37,99,235,0.12)' }}>{title}</div>
       {children}
     </div>
   );
 }
-function Row2({ children }) { return <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 16px' }}>{children}</div>; }
-function Row3({ children }) { return <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'0 12px' }}>{children}</div>; }
+function Row2({ children }) { return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>{children}</div>; }
+function Row3({ children }) { return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 12px' }}>{children}</div>; }
 function Field({ label, error, children }) {
   return (
-    <div style={{ marginBottom:14 }}>
-      {label && <label style={{ display:'block', fontSize:11.5, fontWeight:500, color:'#334155', marginBottom:5 }}>{label}</label>}
+    <div style={{ marginBottom: 14 }}>
+      {label && <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#334155', marginBottom: 5 }}>{label}</label>}
       {children}
-      {error && <p style={{ marginTop:3, fontSize:11, color:'#dc2626' }}>⚠ {error}</p>}
+      {error && <p style={{ marginTop: 3, fontSize: 11, color: '#dc2626' }}>⚠ {error}</p>}
     </div>
   );
 }
-function Spin() { return <div style={{ width:13, height:13, border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />; }
-const inputSt = { width:'100%', padding:'9px 12px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', color:'#0f172a', fontSize:13, outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' };
-const selSt   = { ...inputSt, cursor:'pointer' };
+function Spin() { return <div style={{ width: 13, height: 13, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />; }
+const inputSt = { width: '100%', padding: '9px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', color: '#0f172a', fontSize: 13, outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' };
+const selSt = { ...inputSt, cursor: 'pointer' };
