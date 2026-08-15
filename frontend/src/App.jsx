@@ -44,6 +44,7 @@ import RendezVousPage from './pages/secretaire/Rendez-vous';
 import SettingsPage from './pages/settings/SettingsPage';
 import HelpCenterPage from './pages/help/HelpCenterPage';
 import DoctorSettingsPage from './pages/settings/DoctorSettingsPage';
+import MedicalConfigurationPage from './pages/settings/MedicalConfigurationPage';
 
 import { AppLayout } from './components/layout/Sidebar';
 import AccessDenied, { RequirePermission } from './components/auth/AccessDenied';
@@ -339,6 +340,11 @@ function App() {
           <ProtectedRoute>
             <DoctorSettingsPage />
           </ProtectedRoute>
+        } />
+        <Route path="/parametres-configuration" element={
+          <PermRoute permission="manageMedicalConfiguration">
+            <MedicalConfigurationPage />
+          </PermRoute>
         } />
 
         {/* ───────── Page de Secretaire ───────── */}

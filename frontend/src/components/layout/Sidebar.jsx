@@ -38,7 +38,13 @@ const NAV_CONFIG = [
     ],
   },
   {
-    section: 'Profil & Assistance',
+    section: 'Validation & Configuration médicale',
+    items: [
+      { path: '/parametres-configuration', label: 'Règles & champs personnalisés', icon: SlidersIcon, permission: 'manageMedicalConfiguration' },
+    ],
+  },
+  {
+    section: 'Système',
     items: [
       { path: '/aide', label: "Centre d'aide", labelKey: 'help', icon: HelpIcon, roles: ['doctor', 'doctor_chef', 'anapath', 'epidemiologist', 'pharmacist', 'secretaire', 'readonly'] },
       { path: '/parametres-medecin', label: 'Profil', icon: DoctorSettingsIcon, roles: ['doctor', 'doctor_chef'] },

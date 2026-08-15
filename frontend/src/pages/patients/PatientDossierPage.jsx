@@ -934,7 +934,7 @@ export default function PatientDossierPage() {
 
               {rendezVous.length === 0 ? (
                 <div style={{ padding: 48, textAlign: 'center' }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
+                  <div style={{ fontSize: 40, marginBottom: 12 }}></div>
                   <div style={{ fontSize: 14, color: '#64748b' }}>Aucun rendez-vous enregistré pour ce patient.</div>
                 </div>
               ) : (

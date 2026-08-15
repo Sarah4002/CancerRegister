@@ -20,12 +20,12 @@ const WILAYAS = [
 ];
 
 const ROLES = [
-  { value: 'doctor_chef', label: 'Medecin Chef', icon: '👨‍⚕️' },
-  { value: 'doctor', label: 'Medecin Oncologue', icon: '🩺' },
-  { value: 'anapath', label: 'Medecin Anatomopathologiste', icon: '🔬' },
-  { value: 'epidemiologist', label: 'Epidemiologiste', icon: '📊' },
-  { value: 'pharmacist', label: 'Pharmacien', icon: '💊' },
-  { value: 'secretaire', label: 'Secretaire', icon: '📋' },
+  { value: 'doctor_chef', label: 'Medecin Chef', icon: '' },
+  { value: 'doctor', label: 'Medecin Oncologue', icon: '' },
+  { value: 'anapath', label: 'Medecin Anatomopathologiste', icon: '' },
+  { value: 'epidemiologist', label: 'Epidemiologiste', icon: '' },
+  { value: 'pharmacist', label: 'Pharmacien', icon: '' },
+  { value: 'secretaire', label: 'Secretaire', icon: '' },
 ];
 
 const SPECIALITIES = [

@@ -108,6 +108,7 @@ export default function usePermissions() {
     can_manage_appointments: ['doctor_chef', 'doctor', 'secretaire'].includes(role),
     can_access_clinical_followup: ['doctor_chef', 'doctor'].includes(role),
     can_manage_canreg: ['admin', 'doctor_chef'].includes(role),
+    can_manage_medical_configuration: ['admin', 'doctor_chef'].includes(role),
   };
   const perms = user.permissions || rolePermissions;
 
@@ -129,6 +130,7 @@ export default function usePermissions() {
     manageAppointments: perms.can_manage_appointments ?? rolePermissions.can_manage_appointments,
     accessClinicalFollowup: perms.can_access_clinical_followup ?? rolePermissions.can_access_clinical_followup,
     manageCanReg: perms.can_manage_canreg ?? rolePermissions.can_manage_canreg,
+    manageMedicalConfiguration: perms.can_manage_medical_configuration ?? rolePermissions.can_manage_medical_configuration,
     exportIdentifiedData: perms.can_export_identified_data ?? false,
   };
 

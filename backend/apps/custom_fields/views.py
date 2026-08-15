@@ -13,7 +13,7 @@ from .serializers import (
     ValeurChampSerializer,
     ValeurChampBulkSerializer,
 )
-from apps.accounts.permissions import IsAdmin
+from apps.accounts.permissions import CanManageMedicalConfiguration
 
 
 class ChampPersonnaliseViewSet(viewsets.ModelViewSet):
@@ -50,7 +50,7 @@ class ChampPersonnaliseViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy', 'reordonner']:
-            return [IsAuthenticated(), IsAdmin()]
+            return [IsAuthenticated(), CanManageMedicalConfiguration()]
         return [IsAuthenticated()]
 
     @action(detail=False, methods=['post'], url_path='reordonner')

@@ -14,7 +14,7 @@ from .serializers import (
 from apps.accounts.models import AccessLog
 from apps.accounts.permissions import (
     CanReadOrWriteDiagnostic, can_write_diagnostic, can_validate_diagnosis,
-    IsAdmin,
+    CanManageMedicalConfiguration,
 )
 
 
@@ -80,7 +80,7 @@ class MorphologieViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class DiagnosticValidationRuleViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, CanManageMedicalConfiguration]
     serializer_class = DiagnosticValidationRuleSerializer
     queryset = DiagnosticValidationRule.objects.all()
     filterset_fields = ['active', 'severity', 'code']

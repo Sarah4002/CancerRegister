@@ -125,6 +125,11 @@ def can_manage_canreg(user):
     return has_role(user, ROLE_ADMIN, ROLE_DOCTOR_CHEF)
 
 
+def can_manage_medical_configuration(user):
+    """Gérer les règles de validation et champs médicaux configurables."""
+    return has_role(user, ROLE_ADMIN, ROLE_DOCTOR_CHEF)
+
+
 # ── Classes de permission DRF ──────────────────────────────────
 
 class IsAdmin(BasePermission):
@@ -202,6 +207,13 @@ class CanManageCanReg(BasePermission):
 
     def has_permission(self, request, view):
         return can_manage_canreg(request.user)
+
+
+class CanManageMedicalConfiguration(BasePermission):
+    message = "Configuration médicale réservée au médecin chef et à l'administrateur."
+
+    def has_permission(self, request, view):
+        return can_manage_medical_configuration(request.user)
 
 
 class CanExport(BasePermission):

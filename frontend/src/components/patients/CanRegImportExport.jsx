@@ -405,7 +405,7 @@ export default function CanRegImportExport({ onImportDone }) {
               {step === STEPS.RESULT && result && (
                 <div style={{ textAlign: 'center', padding: '10px 0' }}>
                   <div style={{ fontSize: 48, marginBottom: 16 }}>
-                    {result.erreurs === 0 ? '🎉' : '⚠️'}
+                    {result.erreurs === 0 ? '' : ''}
                   </div>
                   <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 20 }}>
                     Import terminé
