@@ -1008,7 +1008,7 @@ export default function PatientDossierPage() {
 
               {rcp.length === 0 ? (
                 <div style={{ padding: 48, textAlign: 'center' }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>🗂️</div>
+                  <div style={{ fontSize: 40, marginBottom: 12 }}></div>
                   <div style={{ fontSize: 14, color: '#64748b' }}>Aucun passage en RCP enregistré pour ce patient.</div>
                 </div>
               ) : (

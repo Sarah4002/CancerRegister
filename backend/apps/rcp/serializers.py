@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import ReunionRCP, PresenceRCP, DossierRCP, DecisionRCP, MessageRCP, FichierDossierRCP
+from apps.accounts.models import User
+from apps.notifications.models import Notification
 
 
 class PresenceRCPSerializer(serializers.ModelSerializer):
@@ -190,11 +192,42 @@ class ReunionRCPDetailSerializer(serializers.ModelSerializer):
 
 
 class ReunionRCPCreateSerializer(serializers.ModelSerializer):
+    membres = serializers.PrimaryKeyRelatedField(
+        many=True,
+        write_only=True,
+        queryset=User.objects.filter(
+            is_active=True,
+            role__in=[User.Role.DOCTOR, User.Role.DOCTOR_CHEF],
+        ),
+        required=True,
+        allow_empty=False,
+    )
+
     class Meta:
         model   = ReunionRCP
         exclude = ['cree_par', 'date_creation', 'date_modification']
 
     def create(self, validated_data):
+        membres = validated_data.pop('membres')
         if self.context.get('request'):
             validated_data['cree_par'] = self.context['request'].user
-        return super().create(validated_data)
+        reunion = super().create(validated_data)
+
+        PresenceRCP.objects.bulk_create([
+            PresenceRCP(reunion=reunion, medecin=medecin)
+            for medecin in membres
+        ])
+        Notification.objects.bulk_create([
+            Notification(
+                destinataire=medecin,
+                type=Notification.Type.RCP_INVITE,
+                titre=f"Invitation à la RCP : {reunion.titre}",
+                message=(
+                    f"Vous êtes invité(e) à la réunion '{reunion.titre}' "
+                    f"du {reunion.date_reunion} à {reunion.heure_debut}."
+                ),
+                reunion_id=reunion.id,
+            )
+            for medecin in membres
+        ])
+        return reunion

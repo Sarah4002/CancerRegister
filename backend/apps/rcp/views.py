@@ -111,11 +111,14 @@ class ReunionRCPViewSet(viewsets.ModelViewSet):
     # -------------------------------------------------------------------------
 
     def get_queryset(self):
-        return (
+        queryset = (
             ReunionRCP.objects
             .select_related("coordinateur", "cree_par")
             .prefetch_related("presences", "dossiers")
         )
+        if self.request.user.role in {"doctor", "doctor_chef"}:
+            queryset = queryset.filter(presences__medecin=self.request.user).distinct()
+        return queryset
 
     # -------------------------------------------------------------------------
     # SERIALIZER
@@ -126,7 +129,7 @@ class ReunionRCPViewSet(viewsets.ModelViewSet):
         if self.action == "list":
             return ReunionRCPListSerializer
 
-        if self.action in ["create", "update", "partial_update"]:
+        if self.action == "create":
             return ReunionRCPCreateSerializer
 
         return ReunionRCPDetailSerializer
@@ -148,7 +151,7 @@ class ReunionRCPViewSet(viewsets.ModelViewSet):
         today = timezone.now().date()
 
         reunions = (
-            ReunionRCP.objects
+            self.get_queryset()
             .filter(
                 statut="planifiee",
                 date_reunion__gte=today,
@@ -163,30 +166,31 @@ class ReunionRCPViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def stats(self, request):
 
-        total = ReunionRCP.objects.count()
+        reunions = self.get_queryset()
+        reunion_ids = reunions.values("id")
 
         return Response({
-            "total": total,
+            "total": reunions.count(),
 
             "par_statut": list(
-                ReunionRCP.objects
+                reunions
                 .values("statut")
                 .annotate(n=Count("id"))
             ),
 
             "par_type": list(
-                ReunionRCP.objects
+                reunions
                 .values("type_rcp")
                 .annotate(n=Count("id"))
                 .order_by("-n")
             ),
 
-            "total_dossiers": DossierRCP.objects.count(),
+            "total_dossiers": DossierRCP.objects.filter(reunion_id__in=reunion_ids).count(),
 
-            "total_decisions": DecisionRCP.objects.count(),
+            "total_decisions": DecisionRCP.objects.filter(dossier__reunion_id__in=reunion_ids).count(),
 
             "decisions_en_attente":
-                DecisionRCP.objects.filter(realise=False).count(),
+                DecisionRCP.objects.filter(realise=False, dossier__reunion_id__in=reunion_ids).count(),
         })
 
     @action(detail=True, methods=["post"])

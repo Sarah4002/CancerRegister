@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { rcpService } from '../../services/rcpService';
 import { patientService } from '../../services/patientService';
+import { accountsService } from '../../services/accountsService';
 import { AppLayout } from '../../components/layout/Sidebar';
 
 // ── Nouvelle Réunion RCP ──────────────────────────────────────────
@@ -16,6 +17,8 @@ export default function NewRCPPage() {
   const patientId = searchParams.get('patient');
 
   const [patientPreview, setPatientPreview] = useState(null);
+  const [medecins, setMedecins] = useState([]);
+  const [membres, setMembres] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm({
@@ -30,10 +33,19 @@ export default function NewRCPPage() {
       .catch(() => setPatientPreview(null));
   }, [patientId]);
 
+  useEffect(() => {
+    accountsService.medecins()
+      .then(({ data }) => {
+        const participants = data.medecins || data.results || data || [];
+        setMedecins(participants.filter(m => ['doctor', 'doctor_chef'].includes(m.role)));
+      })
+      .catch(() => toast.error('Impossible de charger la liste des médecins'));
+  }, []);
+
   const onSubmit = async (data) => {
     setSubmitting(true);
     try {
-      const payload = { ...data };
+      const payload = { ...data, membres };
       Object.keys(payload).forEach(k => { if (payload[k] === '') delete payload[k]; });
 
       const { data: reunion } = await rcpService.reunions.create(payload);
@@ -161,9 +173,29 @@ export default function NewRCPPage() {
               </Field>
             </Section>
 
+            <Section title="Membres médecins *">
+              <Field label="Sélectionnez les médecins à inviter" error={membres.length === 0 ? 'Sélectionnez au moins un médecin.' : ''}>
+                <select
+                  multiple
+                  value={membres.map(String)}
+                  onChange={e => setMembres(Array.from(e.target.selectedOptions, option => Number(option.value)))}
+                  style={{ ...selSt, minHeight: 150 }}
+                >
+                  {medecins.map(medecin => (
+                    <option key={medecin.id} value={medecin.id}>
+                      {medecin.full_name}{medecin.speciality ? ` — ${medecin.speciality}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: -8 }}>
+                Utilisez Ctrl (ou Cmd) pour sélectionner plusieurs médecins. Chaque membre recevra une notification d'invitation.
+              </div>
+            </Section>
+
             <div style={{ display: 'flex', gap: 10, paddingTop: 20, borderTop: '1px solid rgba(37,99,235,0.12)' }}>
               <button type="button" onClick={() => navigate('/rcp')} style={{ flex: '0 0 110px', padding: '12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px', color: '#334155', fontSize: 13, cursor: 'pointer' }}>← Annuler</button>
-              <button type="submit" disabled={submitting} style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: submitting ? 0.7 : 1 }}>
+              <button type="submit" disabled={submitting || membres.length === 0} style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: submitting || membres.length === 0 ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: submitting || membres.length === 0 ? 0.7 : 1 }}>
                 {submitting ? <><Spin />Enregistrement...</> : 'Créer la réunion RCP'}
               </button>
             </div>
