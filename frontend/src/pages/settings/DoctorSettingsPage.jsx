@@ -1,22 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Bell,
-  Camera,
-  Check,
-  Clock,
-  Headphones,
-  KeyRound,
-  LockKeyhole,
-  Mail,
-  Mic,
-  Moon,
-  Phone,
-  RefreshCw,
-  ShieldCheck,
-  Stethoscope,
-  Sun,
-  UserRound,
-} from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { AppLayout } from '../../components/layout/Sidebar';
 import AccessDenied from '../../components/auth/AccessDenied';
@@ -27,6 +9,142 @@ import { authService } from '../../services/api';
 import { validationRulesService } from '../../services/validationRulesService';
 import api from '../../services/api';
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   PRIMITIVES PARTAGÉES — identiques à AdminSettingsPage, pour garder le même
+   design entre l'espace admin et l'espace médecin.
+───────────────────────────────────────────────────────────────────────────── */
+const cardSt = {
+  background: '#fff', border: '1px solid rgba(37,99,235,0.08)',
+  borderRadius: 14, padding: '22px 24px',
+  boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
+};
+
+function SectionTitle({ children, sub }) {
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', fontFamily: 'var(--font-display)' }}>{children}</div>
+      {sub && <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 3 }}>{sub}</div>}
+    </div>
+  );
+}
+
+function FieldRow({ label, hint, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24, padding: '14px 0', borderBottom: '1px solid rgba(37,99,235,0.06)' }}>
+      <div style={{ maxWidth: 340 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 3 }}>{label}</div>
+        {hint && <div style={{ fontSize: 11.5, color: '#94a3b8', lineHeight: 1.5 }}>{hint}</div>}
+      </div>
+      <div style={{ flexShrink: 0 }}>{children}</div>
+    </div>
+  );
+}
+
+const inputSt = {
+  padding: '8px 12px', background: '#f8fafc', border: '1px solid rgba(37,99,235,0.15)',
+  borderRadius: 9, color: '#0f172a', fontSize: 12.5, outline: 'none', minWidth: 220,
+};
+
+function PrimaryButton({ children, onClick, disabled, color = '#2563eb', variant = 'solid', type = 'button' }) {
+  const solid = variant === 'solid';
+  return (
+    <button
+      type={type}
+      onClick={onClick} disabled={disabled}
+      style={{
+        padding: '9px 18px', borderRadius: 10, fontSize: 12.5, fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer',
+        border: solid ? 'none' : `1px solid ${color}30`,
+        background: solid ? (disabled ? '#93c5fd' : `linear-gradient(135deg,${color}dd,${color})`) : `${color}0c`,
+        color: solid ? '#fff' : color,
+        opacity: disabled ? 0.7 : 1,
+        boxShadow: solid ? `0 3px 10px ${color}30` : 'none',
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Toggle({ checked, onChange }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      style={{
+        width: 42, height: 24, borderRadius: 20, border: 'none', cursor: 'pointer', position: 'relative',
+        background: checked ? '#2563eb' : '#cbd5e1', transition: 'background .15s', flexShrink: 0,
+      }}
+    >
+      <div style={{
+        width: 18, height: 18, borderRadius: '50%', background: '#fff',
+        position: 'absolute', top: 3, left: checked ? 21 : 3, transition: 'left .15s',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+      }} />
+    </button>
+  );
+}
+
+function DataTable({ headers, rows, empty, actions }) {
+  if (!rows.length) {
+    return <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8', fontSize: 12 }}>{empty}</div>;
+  }
+  return (
+    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <thead>
+        <tr>
+          {headers.map((h, i) => (
+            <th key={i} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10.5, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid rgba(37,99,235,0.08)' }}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((cells, i) => (
+          <tr key={i} style={{ borderBottom: '1px solid rgba(37,99,235,0.06)' }}>
+            {cells.map((cell, j) => (
+              <td key={j} style={{ padding: '10px', fontSize: 12, color: '#0f172a' }}>{cell}</td>
+            ))}
+            {actions && <td style={{ padding: '10px' }}>{actions[i]}</td>}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TABS NAVIGATION — même composant que dans AdminSettingsPage
+───────────────────────────────────────────────────────────────────────────── */
+function TabsNav({ tabs, active, onChange }) {
+  return (
+    <div style={{ display: 'flex', gap: 6, marginBottom: 20, background: '#fff', padding: 6, borderRadius: 12, border: '1px solid rgba(37,99,235,0.08)', boxShadow: '0 2px 8px rgba(15,23,42,0.06)', width: 'fit-content', flexWrap: 'wrap' }}>
+      {tabs.map((t) => {
+        const isActive = active === t.key;
+        return (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => onChange(t.key)}
+            style={{
+              padding: '9px 16px', borderRadius: 9, border: 'none', cursor: 'pointer',
+              fontSize: 12.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 7,
+              background: isActive ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : 'transparent',
+              color: isActive ? '#fff' : '#64748b',
+              boxShadow: isActive ? '0 3px 10px rgba(37,99,235,0.3)' : 'none',
+              transition: 'all .15s',
+            }}
+          >
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DONNÉES STATIQUES
+───────────────────────────────────────────────────────────────────────────── */
 const NOTIFICATIONS = [
   'Nouveaux patients',
   'Nouveaux diagnostics',
@@ -47,7 +165,6 @@ const ACTION_LABELS = {
   report: 'Rapport',
 };
 
-/* ── Configuration médicale (règles de validation / champs personnalisés) ── */
 const MODULES = {
   patient: 'Dossier patient', diagnostic: 'Diagnostic',
   traitement: 'Traitement', suivi: 'Suivi / consultation',
@@ -56,347 +173,251 @@ const TYPES = { texte: 'Texte', nombre: 'Nombre', date: 'Date', booleen: 'Oui / 
 const emptyRule = { code: '', label: '', module: 'diagnostic', field_name: '', severity: 'warning', description: '', active: true, conditions: [] };
 const emptyField = { nom: '', description: '', type_champ: 'texte', module: 'patient', obligatoire: false, actif: true, ordre: 0, options: [] };
 
-export default function DoctorSettingsPage() {
-  const { user, setUser, logout } = useAuthStore();
-  const { role } = usePermissions();
-  const { theme, language, dateFormat, interfaceSize, updatePreference } = usePreferences();
-  const fileInputRef = useRef(null);
-  const [profile, setProfile] = useState(null);
-  const [profileForm, setProfileForm] = useState({});
-  const [passwordForm, setPasswordForm] = useState({ old_password: '', new_password: '', confirm_password: '' });
-  const [devices, setDevices] = useState([]);
-  const [activity, setActivity] = useState([]);
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [savingPassword, setSavingPassword] = useState(false);
-  const [loadingSecurity, setLoadingSecurity] = useState(false);
-  const [notifications, setNotifications] = useState(() => {
-    try {
-      return { ...Object.fromEntries(NOTIFICATIONS.map((item) => [item, true])), ...JSON.parse(localStorage.getItem('doctor_notifications') || '{}') };
-    } catch {
-      return Object.fromEntries(NOTIFICATIONS.map((item) => [item, true]));
-    }
-  });
-  const [microphoneEnabled, setMicrophoneEnabled] = useState(() => localStorage.getItem('doctor_microphone') !== 'false');
-  const [sensitivity, setSensitivity] = useState(() => Number(localStorage.getItem('doctor_audio_sensitivity') || 70));
-  const dark = theme === 'dark';
-  const ui = dark ? darkUi : lightUi;
+function readApiError(error, fallback) {
+  const data = error?.response?.data;
+  if (!data) return fallback;
+  if (typeof data === 'string') return data;
+  if (data.error) return data.error;
+  if (data.detail) return data.detail;
+  return Object.values(data).flat().join(' ') || fallback;
+}
 
-  const text = useMemo(() => {
-    if (language === 'ar') {
-      return {
-        title: 'إعدادات الطبيب',
-        subtitle: 'تحكم في الحساب والتفضيلات الطبية والأمان والإدخال الصوتي.',
-        profile: 'ملف الطبيب',
-        security: 'الأمان',
-        preferences: 'التفضيلات',
-        notifications: 'الإشعارات',
-        voice: 'الإدخال الصوتي',
-        activity: 'نشاط الطبيب',
-        support: 'الدعم',
-        save: 'حفظ',
-      };
-    }
-    if (language === 'en') {
-      return {
-        title: 'Doctor Settings',
-        subtitle: 'Control your account, medical preferences, security and voice input.',
-        profile: 'Doctor profile',
-        security: 'Security',
-        preferences: 'Preferences',
-        notifications: 'Notifications',
-        voice: 'Voice input',
-        activity: 'Doctor activity',
-        support: 'Support',
-        save: 'Save',
-      };
-    }
-    return {
-      title: 'Parametres Medecin',
-      subtitle: 'Controlez votre compte, vos preferences medicales, votre securite et la saisie vocale.',
-      profile: 'Profil Medecin',
-      security: 'Securite',
-      preferences: 'Preferences',
-      notifications: 'Notifications',
-      voice: 'Saisie vocale',
-      activity: 'Activite du medecin',
-      support: 'Support',
-      save: 'Enregistrer',
-    };
-  }, [language]);
+function formatDate(value, format) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  if (format === 'AAAA-MM-JJ') return `${yyyy}-${mm}-${dd}`;
+  if (format === 'MM/JJ/AAAA') return `${mm}/${dd}/${yyyy}`;
+  return `${dd}/${mm}/${yyyy}`;
+}
 
-  useEffect(() => {
-    loadProfile();
-    loadSecurityData();
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('doctor_notifications', JSON.stringify(notifications));
-  }, [notifications]);
-
-  useEffect(() => {
-    localStorage.setItem('doctor_microphone', String(microphoneEnabled));
-  }, [microphoneEnabled]);
-
-  useEffect(() => {
-    localStorage.setItem('doctor_audio_sensitivity', String(sensitivity));
-  }, [sensitivity]);
-
-  if (role && !['doctor', 'doctor_chef'].includes(role)) {
-    return <AccessDenied message="Cette page est reservee au profil medecin." />;
-  }
-
-  async function loadProfile() {
-    try {
-      const { data } = await authService.getProfile();
-      setProfile(data);
-      setProfileForm({
-        first_name: data.first_name || '',
-        last_name: data.last_name || '',
-        phone: data.phone || '',
-        speciality: data.speciality || '',
-        institution: data.institution || '',
-        wilaya: data.wilaya || '',
-        registration_number: data.registration_number || '',
-        department: data.department || '',
-      });
-      setUser({
-        ...(user || {}),
-        ...data,
-        full_name: data.display_name || data.full_name,
-        cnom: data.registration_number,
-      });
-    } catch {
-      toast.error('Impossible de charger le profil.');
-    }
-  }
-
-  async function loadSecurityData() {
-    setLoadingSecurity(true);
-    try {
-      const [devicesRes, activityRes] = await Promise.all([
-        authService.getDevices(),
-        authService.getActivity(),
-      ]);
-      setDevices(devicesRes.data.results || []);
-      setActivity(activityRes.data.results || []);
-    } catch {
-      toast.error('Impossible de charger securite et activite.');
-    } finally {
-      setLoadingSecurity(false);
-    }
-  }
-
-  async function saveProfile(event) {
-    event.preventDefault();
-    setSavingProfile(true);
-    try {
-      const { data } = await authService.updateProfile(profileForm);
-      setProfile(data);
-      setUser({
-        ...(user || {}),
-        ...data,
-        full_name: data.display_name || data.full_name,
-        cnom: data.registration_number,
-      });
-      toast.success('Profil modifie avec succes.');
-    } catch (error) {
-      toast.error(readApiError(error, 'Erreur modification profil.'));
-    } finally {
-      setSavingProfile(false);
-    }
-  }
-
-  async function uploadPhoto(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const form = new FormData();
-    form.append('avatar', file);
-    try {
-      const { data } = await authService.updateProfile(form, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setProfile(data);
-      setUser({ ...(user || {}), ...data, full_name: data.display_name || data.full_name });
-      toast.success('Photo ajoutee avec succes.');
-    } catch (error) {
-      toast.error(readApiError(error, 'Erreur ajout photo.'));
-    } finally {
-      event.target.value = '';
-    }
-  }
-
-  async function changePassword(event) {
-    event.preventDefault();
-    setSavingPassword(true);
-    try {
-      await authService.changePassword(passwordForm);
-      setPasswordForm({ old_password: '', new_password: '', confirm_password: '' });
-      await loadSecurityData();
-      toast.success('Mot de passe modifie.');
-    } catch (error) {
-      toast.error(readApiError(error, 'Erreur changement mot de passe.'));
-    } finally {
-      setSavingPassword(false);
-    }
-  }
-
-  async function disconnectAllDevices() {
-    const ok = window.confirm('Deconnecter tous les appareils ? Vous devrez vous reconnecter.');
-    if (!ok) return;
-    try {
-      await authService.logoutAll();
-      toast.success('Tous les appareils sont deconnectes.');
-      await logout();
-    } catch (error) {
-      toast.error(readApiError(error, 'Erreur deconnexion appareils.'));
-    }
-  }
-
-  async function testMicrophone() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((track) => track.stop());
-      setMicrophoneEnabled(true);
-      toast.success('Microphone detecte.');
-    } catch {
-      toast.error('Microphone bloque ou indisponible.');
-    }
-  }
+/* ─────────────────────────────────────────────────────────────────────────────
+   ONGLET — PROFIL
+───────────────────────────────────────────────────────────────────────────── */
+function ProfileTab({ profile, user, profileForm, setProfileForm, saveProfile, savingProfile, uploadPhoto, fileInputRef }) {
+  const set = (k, v) => setProfileForm((p) => ({ ...p, [k]: v }));
 
   return (
-    <AppLayout title={text.title}>
-      <div style={{ ...pageStyle, background: ui.page, color: ui.text, direction: language === 'ar' ? 'rtl' : 'ltr' }}>
-        <header style={heroStyle(ui)}>
-          <div style={avatarStyle}>
-            {profile?.avatar ? <img src={profile.avatar} alt="Profil medecin" style={avatarImageStyle} /> : <UserRound size={34} />}
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={eyebrowStyle}>RegistreCancer.dz</div>
-            <h2 style={heroTitleStyle(ui)}>{text.title}</h2>
-            <p style={mutedStyle(ui)}>{text.subtitle}</p>
-          </div>
-          <button type="button" onClick={saveProfile} disabled={savingProfile} style={primaryButtonStyle}>
-            <Check size={16} />
-            {savingProfile ? 'Enregistrement...' : text.save}
-          </button>
-        </header>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={cardSt}>
+        <SectionTitle sub="Ces informations apparaissent sur vos comptes-rendus et dans l'annuaire des praticiens.">Profil médecin</SectionTitle>
 
-        <div style={gridStyle}>
-          <Panel ui={ui} icon={Stethoscope} title={text.profile} wide>
-            <form onSubmit={saveProfile}>
-              <div style={profileGridStyle}>
-                <Input ui={ui} label="Prenom" value={profileForm.first_name} onChange={(v) => setProfileForm((p) => ({ ...p, first_name: v }))} />
-                <Input ui={ui} label="Nom" value={profileForm.last_name} onChange={(v) => setProfileForm((p) => ({ ...p, last_name: v }))} />
-                <InfoField ui={ui} label="Email" value={profile?.email || user?.email || 'doctor@registre.dz'} />
-                <Input ui={ui} label="Telephone" value={profileForm.phone} onChange={(v) => setProfileForm((p) => ({ ...p, phone: v }))} />
-                <Input ui={ui} label="Specialite" value={profileForm.speciality} onChange={(v) => setProfileForm((p) => ({ ...p, speciality: v }))} />
-                <Input ui={ui} label="Hopital" value={profileForm.institution} onChange={(v) => setProfileForm((p) => ({ ...p, institution: v }))} />
-                <Input ui={ui} label="Wilaya" value={profileForm.wilaya} onChange={(v) => setProfileForm((p) => ({ ...p, wilaya: v }))} />
-                <Input ui={ui} label="Numero CNOM" value={profileForm.registration_number} onChange={(v) => setProfileForm((p) => ({ ...p, registration_number: v }))} />
-              </div>
-              <div style={actionsStyle}>
-                <button type="submit" disabled={savingProfile} style={primaryButtonStyle}>{savingProfile ? 'Enregistrement...' : 'Modifier profil'}</button>
-                <button type="button" onClick={() => fileInputRef.current?.click()} style={secondaryButtonStyle}><Camera size={15} /> Ajouter photo</button>
-                <input ref={fileInputRef} type="file" accept="image/*" onChange={uploadPhoto} style={{ display: 'none' }} />
-              </div>
-            </form>
-          </Panel>
+        <FieldRow label="Prénom">
+          <input style={inputSt} value={profileForm.first_name || ''} onChange={(e) => set('first_name', e.target.value)} />
+        </FieldRow>
+        <FieldRow label="Nom">
+          <input style={inputSt} value={profileForm.last_name || ''} onChange={(e) => set('last_name', e.target.value)} />
+        </FieldRow>
+        <FieldRow label="Email" hint="Non modifiable, utilisé pour la connexion.">
+          <input style={{ ...inputSt, background: '#f1f5f9', color: '#64748b' }} value={profile?.email || user?.email || 'doctor@registre.dz'} disabled />
+        </FieldRow>
+        <FieldRow label="Téléphone">
+          <input style={inputSt} value={profileForm.phone || ''} onChange={(e) => set('phone', e.target.value)} />
+        </FieldRow>
+        <FieldRow label="Spécialité">
+          <input style={inputSt} value={profileForm.speciality || ''} onChange={(e) => set('speciality', e.target.value)} />
+        </FieldRow>
+        <FieldRow label="Hôpital / institution">
+          <input style={inputSt} value={profileForm.institution || ''} onChange={(e) => set('institution', e.target.value)} />
+        </FieldRow>
+        <FieldRow label="Wilaya">
+          <input style={inputSt} value={profileForm.wilaya || ''} onChange={(e) => set('wilaya', e.target.value)} />
+        </FieldRow>
+        <FieldRow label="Numéro CNOM" hint="Numéro d'inscription à l'ordre des médecins.">
+          <input style={inputSt} value={profileForm.registration_number || ''} onChange={(e) => set('registration_number', e.target.value)} />
+        </FieldRow>
 
-          <Panel ui={ui} icon={ShieldCheck} title={text.security}>
-            <form onSubmit={changePassword} style={{ marginBottom: 12 }}>
-              <Input ui={ui} type="password" label="Ancien mot de passe" value={passwordForm.old_password} onChange={(v) => setPasswordForm((p) => ({ ...p, old_password: v }))} />
-              <Input ui={ui} type="password" label="Nouveau mot de passe" value={passwordForm.new_password} onChange={(v) => setPasswordForm((p) => ({ ...p, new_password: v }))} />
-              <Input ui={ui} type="password" label="Confirmer mot de passe" value={passwordForm.confirm_password} onChange={(v) => setPasswordForm((p) => ({ ...p, confirm_password: v }))} />
-              <button type="submit" disabled={savingPassword} style={primaryButtonStyle}>
-                <KeyRound size={15} />
-                {savingPassword ? 'Modification...' : 'Modifier mot de passe'}
-              </button>
-            </form>
-            <div style={securityActionsStyle}>
-              <button type="button" onClick={loadSecurityData} style={secondaryButtonStyle}><RefreshCw size={15} /> Actualiser appareils</button>
-              <button type="button" onClick={disconnectAllDevices} style={dangerButtonStyle}><LockKeyhole size={15} /> Deconnecter appareils</button>
-            </div>
-            <MiniTable
-              ui={ui}
-              rows={devices.map((device) => [
-                `${device.name}${device.current ? ' (actuel)' : ''}`,
-                `${device.ip_address || '-'} - ${formatDate(device.last_seen, dateFormat)}`,
-              ])}
-              empty={loadingSecurity ? 'Chargement...' : 'Aucun appareil detecte'}
-            />
-          </Panel>
-
-          <Panel ui={ui} icon={Sun} title={text.preferences}>
-            <Field ui={ui} label="Theme">
-              <Segmented ui={ui} value={theme} options={[['light', <><Sun size={14} /> Light Mode</>], ['dark', <><Moon size={14} /> Dark Mode</>]]} onChange={(v) => updatePreference('theme', v)} />
-            </Field>
-            <Field ui={ui} label="Langue">
-              <Segmented ui={ui} value={language} options={[['fr', 'Francais'], ['ar', 'العربية'], ['en', 'English']]} onChange={(v) => updatePreference('language', v)} />
-            </Field>
-            <Field ui={ui} label="Format date">
-              <select value={dateFormat} onChange={(e) => updatePreference('dateFormat', e.target.value)} style={inputStyle(ui)}>
-                <option>JJ/MM/AAAA</option>
-                <option>AAAA-MM-JJ</option>
-                <option>MM/JJ/AAAA</option>
-              </select>
-            </Field>
-            <Field ui={ui} label="Taille interface">
-              <Segmented ui={ui} value={interfaceSize} options={[['small', 'Petite'], ['medium', 'Moyenne'], ['large', 'Grande']]} onChange={(v) => updatePreference('interfaceSize', v)} />
-            </Field>
-          </Panel>
-
-          <Panel ui={ui} icon={Bell} title={text.notifications}>
-            {NOTIFICATIONS.map((item) => (
-              <ToggleRow key={item} ui={ui} label={item} checked={notifications[item]} onChange={(checked) => setNotifications((current) => ({ ...current, [item]: checked }))} />
-            ))}
-          </Panel>
-
-          <Panel ui={ui} icon={Mic} title={text.voice}>
-            <ToggleRow ui={ui} label="Activer microphone" checked={microphoneEnabled} onChange={setMicrophoneEnabled} />
-            <button type="button" onClick={testMicrophone} style={secondaryButtonStyle}><Mic size={15} /> Tester microphone</button>
-            <Field ui={ui} label="Langue reconnaissance">
-              <select value={language} onChange={(e) => updatePreference('language', e.target.value)} style={inputStyle(ui)}>
-                <option value="fr">Francais medical</option>
-                <option value="ar">العربية</option>
-                <option value="en">English</option>
-              </select>
-            </Field>
-            <Field ui={ui} label="Sensibilite audio">
-              <input type="range" min="0" max="100" value={sensitivity} onChange={(e) => setSensitivity(Number(e.target.value))} style={{ width: '100%' }} />
-              <div style={mutedStyle(ui)}>{sensitivity}%</div>
-            </Field>
-          </Panel>
-
-          <Panel ui={ui} icon={Clock} title={text.activity}>
-            <MiniTable
-              ui={ui}
-              rows={activity.map((log) => [
-                `${ACTION_LABELS[log.action] || log.action}${log.resource ? ` - ${log.resource}` : ''}`,
-                formatDate(log.timestamp, dateFormat),
-              ])}
-              empty={loadingSecurity ? 'Chargement...' : 'Aucune activite'}
-            />
-          </Panel>
-
-          <Panel ui={ui} icon={Headphones} title={text.support} wide>
-            <div style={supportGridStyle}>
-              <a href="mailto:support@registrecancer.dz" style={supportCardStyle(ui)}><Mail size={17} /> support@registrecancer.dz</a>
-              <a href="tel:+213000000000" style={supportCardStyle(ui)}><Phone size={17} /> +213 XXX XX XX XX</a>
-            </div>
-            <div style={tipStyle}>Simplicite, rapidite, securite et saisie vocale : la page est pensee pour le confort du medecin.</div>
-          </Panel>
-
-          {/* ── Configuration médicale : visible uniquement pour le médecin chef ── */}
-          {role === 'doctor_chef' && <MedicalConfigurationSection ui={ui} />}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+          <PrimaryButton onClick={saveProfile} disabled={savingProfile}>{savingProfile ? 'Enregistrement...' : 'Enregistrer les modifications'}</PrimaryButton>
         </div>
       </div>
-    </AppLayout>
+
+      <div style={cardSt}>
+        <SectionTitle sub="Visible sur votre profil et vos comptes-rendus.">Photo de profil</SectionTitle>
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={uploadPhoto} style={{ display: 'none' }} />
+        <PrimaryButton onClick={() => fileInputRef.current?.click()} color="#2563eb" variant="outline">Ajouter une photo</PrimaryButton>
+      </div>
+    </div>
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   SECTION — Configuration médicale (règles de validation / champs personnalisés)
-   Intégrée directement ici, réservée au médecin chef. Même design (Panel/ui).
-═══════════════════════════════════════════════════════════════════════════ */
-function MedicalConfigurationSection({ ui }) {
+/* ─────────────────────────────────────────────────────────────────────────────
+   ONGLET — SÉCURITÉ
+───────────────────────────────────────────────────────────────────────────── */
+function SecurityTab({ passwordForm, setPasswordForm, changePassword, savingPassword, devices, loadingSecurity, loadSecurityData, disconnectAllDevices, dateFormat }) {
+  const set = (k, v) => setPasswordForm((p) => ({ ...p, [k]: v }));
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={cardSt}>
+        <SectionTitle sub="Choisissez un mot de passe fort que vous n'utilisez sur aucun autre site.">Changer le mot de passe</SectionTitle>
+
+        <FieldRow label="Ancien mot de passe">
+          <input style={inputSt} type="password" value={passwordForm.old_password} onChange={(e) => set('old_password', e.target.value)} />
+        </FieldRow>
+        <FieldRow label="Nouveau mot de passe">
+          <input style={inputSt} type="password" value={passwordForm.new_password} onChange={(e) => set('new_password', e.target.value)} />
+        </FieldRow>
+        <FieldRow label="Confirmer le mot de passe">
+          <input style={inputSt} type="password" value={passwordForm.confirm_password} onChange={(e) => set('confirm_password', e.target.value)} />
+        </FieldRow>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+          <PrimaryButton onClick={changePassword} disabled={savingPassword}>{savingPassword ? 'Modification...' : 'Modifier le mot de passe'}</PrimaryButton>
+        </div>
+      </div>
+
+      <div style={cardSt}>
+        <SectionTitle sub="Appareils actuellement connectés à votre compte.">Appareils connectés</SectionTitle>
+
+        <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+          <PrimaryButton onClick={loadSecurityData} color="#2563eb" variant="outline">Actualiser</PrimaryButton>
+          <PrimaryButton onClick={disconnectAllDevices} color="#dc2626" variant="outline">Déconnecter tous les appareils</PrimaryButton>
+        </div>
+
+        <DataTable
+          headers={['Appareil', 'IP', 'Dernière connexion']}
+          empty={loadingSecurity ? 'Chargement...' : 'Aucun appareil détecté'}
+          rows={devices.map((device) => [
+            `${device.name}${device.current ? ' (actuel)' : ''}`,
+            device.ip_address || '-',
+            formatDate(device.last_seen, dateFormat),
+          ])}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ONGLET — PRÉFÉRENCES
+───────────────────────────────────────────────────────────────────────────── */
+function PreferencesTab({ theme, language, dateFormat, interfaceSize, updatePreference }) {
+  return (
+    <div style={cardSt}>
+      <SectionTitle sub="Apparence et comportement de votre espace de travail.">Préférences d'affichage</SectionTitle>
+
+      <FieldRow label="Mode sombre" hint="Bascule l'interface en thème sombre.">
+        <Toggle checked={theme === 'dark'} onChange={(v) => updatePreference('theme', v ? 'dark' : 'light')} />
+      </FieldRow>
+
+      <FieldRow label="Langue" hint="Langue utilisée dans l'interface.">
+        <select style={inputSt} value={language} onChange={(e) => updatePreference('language', e.target.value)}>
+          <option value="fr">Français</option>
+          <option value="ar">العربية</option>
+          <option value="en">English</option>
+        </select>
+      </FieldRow>
+
+      <FieldRow label="Format de date">
+        <select style={inputSt} value={dateFormat} onChange={(e) => updatePreference('dateFormat', e.target.value)}>
+          <option>JJ/MM/AAAA</option>
+          <option>AAAA-MM-JJ</option>
+          <option>MM/JJ/AAAA</option>
+        </select>
+      </FieldRow>
+
+      <FieldRow label="Taille de l'interface">
+        <select style={inputSt} value={interfaceSize} onChange={(e) => updatePreference('interfaceSize', e.target.value)}>
+          <option value="small">Petite</option>
+          <option value="medium">Moyenne</option>
+          <option value="large">Grande</option>
+        </select>
+      </FieldRow>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ONGLET — NOTIFICATIONS
+───────────────────────────────────────────────────────────────────────────── */
+function NotificationsTab({ notifications, setNotifications }) {
+  return (
+    <div style={cardSt}>
+      <SectionTitle sub="Choisissez les événements pour lesquels vous souhaitez être notifié.">Notifications</SectionTitle>
+      {NOTIFICATIONS.map((item) => (
+        <FieldRow key={item} label={item}>
+          <Toggle checked={!!notifications[item]} onChange={(checked) => setNotifications((current) => ({ ...current, [item]: checked }))} />
+        </FieldRow>
+      ))}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ONGLET — SAISIE VOCALE
+───────────────────────────────────────────────────────────────────────────── */
+function VoiceTab({ microphoneEnabled, setMicrophoneEnabled, testMicrophone, language, updatePreference, sensitivity, setSensitivity }) {
+  return (
+    <div style={cardSt}>
+      <SectionTitle sub="Utilisée pour dicter vos comptes-rendus et diagnostics.">Saisie vocale</SectionTitle>
+
+      <FieldRow label="Activer le microphone">
+        <Toggle checked={microphoneEnabled} onChange={setMicrophoneEnabled} />
+      </FieldRow>
+
+      <FieldRow label="Tester le microphone" hint="Vérifie que votre navigateur autorise l'accès au micro.">
+        <PrimaryButton onClick={testMicrophone} color="#2563eb" variant="outline">Tester</PrimaryButton>
+      </FieldRow>
+
+      <FieldRow label="Langue de reconnaissance">
+        <select style={inputSt} value={language} onChange={(e) => updatePreference('language', e.target.value)}>
+          <option value="fr">Français médical</option>
+          <option value="ar">العربية</option>
+          <option value="en">English</option>
+        </select>
+      </FieldRow>
+
+      <FieldRow label="Sensibilité audio" hint={`${sensitivity}%`}>
+        <input type="range" min="0" max="100" value={sensitivity} onChange={(e) => setSensitivity(Number(e.target.value))} style={{ width: 220 }} />
+      </FieldRow>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ONGLET — ACTIVITÉ
+───────────────────────────────────────────────────────────────────────────── */
+function ActivityTab({ activity, loadingSecurity, dateFormat }) {
+  return (
+    <div style={cardSt}>
+      <SectionTitle sub="Historique de vos actions récentes sur la plateforme.">Activité du médecin</SectionTitle>
+      <DataTable
+        headers={['Action', 'Date']}
+        empty={loadingSecurity ? 'Chargement...' : 'Aucune activité'}
+        rows={activity.map((log) => [
+          `${ACTION_LABELS[log.action] || log.action}${log.resource ? ` - ${log.resource}` : ''}`,
+          formatDate(log.timestamp, dateFormat),
+        ])}
+      />
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ONGLET — SUPPORT
+───────────────────────────────────────────────────────────────────────────── */
+function SupportTab() {
+  return (
+    <div style={cardSt}>
+      <SectionTitle sub="Une question, un problème technique ? Contactez-nous.">Support</SectionTitle>
+      <FieldRow label="Email">
+        <a href="mailto:support@registrecancer.dz" style={{ fontSize: 12.5, color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>support@registrecancer.dz</a>
+      </FieldRow>
+      <FieldRow label="Téléphone">
+        <a href="tel:+213000000000" style={{ fontSize: 12.5, color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>+213 XXX XX XX XX</a>
+      </FieldRow>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ONGLET — CONFIGURATION MÉDICALE (réservé au médecin chef)
+───────────────────────────────────────────────────────────────────────────── */
+function MedicalConfigTab() {
   const [tab, setTab] = useState('rules');
   const [rules, setRules] = useState([]);
   const [fields, setFields] = useState([]);
@@ -465,224 +486,303 @@ function MedicalConfigurationSection({ ui }) {
   };
 
   const items = tab === 'rules' ? rules : fields;
-  const activeCount = items.filter(item => tab === 'rules' ? item.active : item.actif).length;
+  const activeCount = items.filter((item) => (tab === 'rules' ? item.active : item.actif)).length;
 
   return (
-    <section style={{ ...panelStyle(ui), gridColumn: '1 / -1' }}>
-      <div style={panelHeaderStyle}>
-        <div style={panelIconStyle(ui)}><ShieldCheck size={18} /></div>
-        <h3 style={panelTitleStyle(ui)}>Configuration médicale</h3>
+    <div style={cardSt}>
+      <SectionTitle sub="Règles de validation et champs personnalisés appliqués aux dossiers.">Configuration médicale</SectionTitle>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <PrimaryButton onClick={() => switchTab('rules')} color="#2563eb" variant={tab === 'rules' ? 'solid' : 'outline'}>Règles de validation</PrimaryButton>
+        <PrimaryButton onClick={() => switchTab('fields')} color="#2563eb" variant={tab === 'fields' ? 'solid' : 'outline'}>Champs personnalisés</PrimaryButton>
       </div>
 
-      <Segmented
-        ui={ui}
-        value={tab}
-        options={[['rules', 'Règles de validation'], ['fields', 'Champs personnalisés']]}
-        onChange={switchTab}
-      />
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '14px 0' }}>
-        <button type="button" onClick={() => setShowForm((v) => !v)} style={secondaryButtonStyle}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <PrimaryButton onClick={() => setShowForm((v) => !v)} color="#2563eb" variant="outline">
           {showForm ? 'Fermer le formulaire' : `+ ${tab === 'rules' ? 'Nouvelle règle' : 'Nouveau champ'}`}
-        </button>
-        <span style={labelStyle(ui)}>{items.length} {tab === 'rules' ? 'règle(s)' : 'champ(s)'} · {activeCount} actif(s)</span>
+        </PrimaryButton>
+        <span style={{ fontSize: 11.5, color: '#94a3b8' }}>{items.length} {tab === 'rules' ? 'règle(s)' : 'champ(s)'} · {activeCount} actif(s)</span>
       </div>
 
       {showForm && (
-        <form onSubmit={submit} style={{ marginBottom: 16 }}>
-          <div style={profileGridStyle}>
-            {tab === 'rules' ? <>
-              <Input ui={ui} label="Libellé *" value={form.label} onChange={(v) => setForm((f) => ({ ...f, label: v }))} />
-              <Input ui={ui} label="Code *" value={form.code} onChange={(v) => setForm((f) => ({ ...f, code: v }))} />
-              <Field ui={ui} label="Module">
-                <select style={inputStyle(ui)} value={form.module} onChange={(e) => setForm((f) => ({ ...f, module: e.target.value }))}>
+        <form onSubmit={submit} style={{ marginBottom: 16, borderTop: '1px solid rgba(37,99,235,0.06)', paddingTop: 6 }}>
+          {tab === 'rules' ? (
+            <>
+              <FieldRow label="Libellé *"><input style={inputSt} value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} /></FieldRow>
+              <FieldRow label="Code *"><input style={inputSt} value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} /></FieldRow>
+              <FieldRow label="Module">
+                <select style={inputSt} value={form.module} onChange={(e) => setForm((f) => ({ ...f, module: e.target.value }))}>
                   {Object.entries(MODULES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
-              </Field>
-              <Field ui={ui} label="Sévérité">
-                <select style={inputStyle(ui)} value={form.severity} onChange={(e) => setForm((f) => ({ ...f, severity: e.target.value }))}>
+              </FieldRow>
+              <FieldRow label="Sévérité">
+                <select style={inputSt} value={form.severity} onChange={(e) => setForm((f) => ({ ...f, severity: e.target.value }))}>
                   <option value="error">Erreur</option>
                   <option value="warning">Avertissement</option>
                   <option value="info">Information</option>
                 </select>
-              </Field>
-            </> : <>
-              <Input ui={ui} label="Nom du champ *" value={form.nom} onChange={(v) => setForm((f) => ({ ...f, nom: v }))} />
-              <Field ui={ui} label="Module">
-                <select style={inputStyle(ui)} value={form.module} onChange={(e) => setForm((f) => ({ ...f, module: e.target.value }))}>
+              </FieldRow>
+            </>
+          ) : (
+            <>
+              <FieldRow label="Nom du champ *"><input style={inputSt} value={form.nom} onChange={(e) => setForm((f) => ({ ...f, nom: e.target.value }))} /></FieldRow>
+              <FieldRow label="Module">
+                <select style={inputSt} value={form.module} onChange={(e) => setForm((f) => ({ ...f, module: e.target.value }))}>
                   {Object.entries(MODULES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
-              </Field>
-              <Field ui={ui} label="Type">
-                <select style={inputStyle(ui)} value={form.type_champ} onChange={(e) => setForm((f) => ({ ...f, type_champ: e.target.value }))}>
+              </FieldRow>
+              <FieldRow label="Type">
+                <select style={inputSt} value={form.type_champ} onChange={(e) => setForm((f) => ({ ...f, type_champ: e.target.value }))}>
                   {Object.entries(TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
-              </Field>
-              <Input ui={ui} label="Ordre" type="number" value={form.ordre} onChange={(v) => setForm((f) => ({ ...f, ordre: v }))} />
-            </>}
+              </FieldRow>
+              <FieldRow label="Ordre"><input style={{ ...inputSt, minWidth: 100 }} type="number" value={form.ordre} onChange={(e) => setForm((f) => ({ ...f, ordre: e.target.value }))} /></FieldRow>
+            </>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+            <PrimaryButton type="submit" disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</PrimaryButton>
           </div>
-          <button type="submit" disabled={saving} style={{ ...primaryButtonStyle, marginTop: 10 }}>
-            {saving ? 'Enregistrement...' : 'Enregistrer'}
-          </button>
         </form>
       )}
 
-      <MiniTable
-        ui={ui}
+      <DataTable
+        headers={['Nom', 'Détails', '']}
+        empty={loading ? 'Chargement...' : (tab === 'rules' ? 'Aucune règle de validation.' : 'Aucun champ personnalisé.')}
         rows={loading ? [] : items.map((item) => [
           item.label || item.nom,
           `${MODULES[item.module] || item.module} · ${tab === 'rules' ? (item.severity === 'error' ? 'Erreur' : item.severity === 'warning' ? 'Avertissement' : 'Information') : TYPES[item.type_champ]}`,
         ])}
-        empty={loading ? 'Chargement...' : (tab === 'rules' ? 'Aucune règle de validation.' : 'Aucun champ personnalisé.')}
         actions={loading ? [] : items.map((item) => {
           const active = tab === 'rules' ? item.active : item.actif;
           return (
             <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <button type="button" onClick={() => toggle(item)} style={{ ...toggleStyle, ...(active ? toggleOnStyle : {}) }}>
-                <span style={{ ...toggleKnobStyle, transform: active ? 'translateX(18px)' : 'translateX(0)' }} />
-              </button>
+              <Toggle checked={active} onChange={() => toggle(item)} />
               <button type="button" onClick={() => remove(item)} title="Supprimer" style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid rgba(220,38,38,0.2)', background: 'rgba(220,38,38,0.06)', color: '#dc2626', cursor: 'pointer', fontSize: 15, lineHeight: 1 }}>×</button>
             </div>
           );
         })}
       />
-    </section>
-  );
-}
-
-function readApiError(error, fallback) {
-  const data = error?.response?.data;
-  if (!data) return fallback;
-  if (typeof data === 'string') return data;
-  if (data.error) return data.error;
-  if (data.detail) return data.detail;
-  return Object.values(data).flat().join(' ') || fallback;
-}
-
-function formatDate(value, format) {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const yyyy = date.getFullYear();
-  if (format === 'AAAA-MM-JJ') return `${yyyy}-${mm}-${dd}`;
-  if (format === 'MM/JJ/AAAA') return `${mm}/${dd}/${yyyy}`;
-  return `${dd}/${mm}/${yyyy}`;
-}
-
-function Panel({ ui, icon: Icon, title, wide, children }) {
-  return (
-    <section style={{ ...panelStyle(ui), ...(wide ? wideStyle : {}) }}>
-      <div style={panelHeaderStyle}>
-        <div style={panelIconStyle(ui)}><Icon size={18} /></div>
-        <h3 style={panelTitleStyle(ui)}>{title}</h3>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function InfoField({ ui, label, value }) {
-  return (
-    <div style={infoFieldStyle(ui)}>
-      <div style={labelStyle(ui)}>{label}</div>
-      <div style={valueStyle(ui)}>{value || '-'}</div>
     </div>
   );
 }
 
-function Input({ ui, label, value, onChange, type = 'text' }) {
-  return (
-    <label style={fieldStyle}>
-      <span style={labelStyle(ui)}>{label}</span>
-      <input type={type} value={value || ''} onChange={(event) => onChange(event.target.value)} style={inputStyle(ui)} />
-    </label>
-  );
-}
+/* ══════════════════════════════════════════════
+   MAIN — DoctorSettingsPage
+   ══════════════════════════════════════════════ */
+export default function DoctorSettingsPage() {
+  const { user, setUser, logout } = useAuthStore();
+  const { role } = usePermissions();
+  const { theme, language, dateFormat, interfaceSize, updatePreference } = usePreferences();
+  const fileInputRef = useRef(null);
 
-function Field({ ui, label, children }) {
-  return (
-    <label style={fieldStyle}>
-      <span style={labelStyle(ui)}>{label}</span>
-      {children}
-    </label>
-  );
-}
+  const [activeTab, setActiveTab] = useState('profile');
+  const [profile, setProfile] = useState(null);
+  const [profileForm, setProfileForm] = useState({});
+  const [passwordForm, setPasswordForm] = useState({ old_password: '', new_password: '', confirm_password: '' });
+  const [devices, setDevices] = useState([]);
+  const [activity, setActivity] = useState([]);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [loadingSecurity, setLoadingSecurity] = useState(false);
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      return { ...Object.fromEntries(NOTIFICATIONS.map((item) => [item, true])), ...JSON.parse(localStorage.getItem('doctor_notifications') || '{}') };
+    } catch {
+      return Object.fromEntries(NOTIFICATIONS.map((item) => [item, true]));
+    }
+  });
+  const [microphoneEnabled, setMicrophoneEnabled] = useState(() => localStorage.getItem('doctor_microphone') !== 'false');
+  const [sensitivity, setSensitivity] = useState(() => Number(localStorage.getItem('doctor_audio_sensitivity') || 70));
 
-function Segmented({ ui, value, options, onChange }) {
-  return (
-    <div style={segmentedStyle}>
-      {options.map(([optionValue, label]) => (
-        <button key={optionValue} type="button" onClick={() => onChange(optionValue)} style={{ ...segmentButtonStyle(ui), ...(value === optionValue ? segmentActiveStyle : {}) }}>
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
+  useEffect(() => {
+    loadProfile();
+    loadSecurityData();
+  }, []);
 
-function ToggleRow({ ui, label, checked, onChange }) {
-  return (
-    <div style={toggleRowStyle(ui)}>
-      <span>{label}</span>
-      <button type="button" onClick={() => onChange(!checked)} style={{ ...toggleStyle, ...(checked ? toggleOnStyle : {}) }}>
-        <span style={{ ...toggleKnobStyle, transform: checked ? 'translateX(18px)' : 'translateX(0)' }} />
-      </button>
-    </div>
-  );
-}
+  useEffect(() => {
+    localStorage.setItem('doctor_notifications', JSON.stringify(notifications));
+  }, [notifications]);
 
-function MiniTable({ ui, rows, empty, actions }) {
+  useEffect(() => {
+    localStorage.setItem('doctor_microphone', String(microphoneEnabled));
+  }, [microphoneEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('doctor_audio_sensitivity', String(sensitivity));
+  }, [sensitivity]);
+
+  if (role && !['doctor', 'doctor_chef'].includes(role)) {
+    return <AccessDenied message="Cette page est reservee au profil medecin." />;
+  }
+
+  async function loadProfile() {
+    try {
+      const { data } = await authService.getProfile();
+      setProfile(data);
+      setProfileForm({
+        first_name: data.first_name || '',
+        last_name: data.last_name || '',
+        phone: data.phone || '',
+        speciality: data.speciality || '',
+        institution: data.institution || '',
+        wilaya: data.wilaya || '',
+        registration_number: data.registration_number || '',
+        department: data.department || '',
+      });
+      setUser({
+        ...(user || {}),
+        ...data,
+        full_name: data.display_name || data.full_name,
+        cnom: data.registration_number,
+      });
+    } catch {
+      toast.error('Impossible de charger le profil.');
+    }
+  }
+
+  async function loadSecurityData() {
+    setLoadingSecurity(true);
+    try {
+      const [devicesRes, activityRes] = await Promise.all([
+        authService.getDevices(),
+        authService.getActivity(),
+      ]);
+      setDevices(devicesRes.data.results || []);
+      setActivity(activityRes.data.results || []);
+    } catch {
+      toast.error('Impossible de charger securite et activite.');
+    } finally {
+      setLoadingSecurity(false);
+    }
+  }
+
+  async function saveProfile() {
+    setSavingProfile(true);
+    try {
+      const { data } = await authService.updateProfile(profileForm);
+      setProfile(data);
+      setUser({
+        ...(user || {}),
+        ...data,
+        full_name: data.display_name || data.full_name,
+        cnom: data.registration_number,
+      });
+      toast.success('Profil modifie avec succes.');
+    } catch (error) {
+      toast.error(readApiError(error, 'Erreur modification profil.'));
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  async function uploadPhoto(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const form = new FormData();
+    form.append('avatar', file);
+    try {
+      const { data } = await authService.updateProfile(form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setProfile(data);
+      setUser({ ...(user || {}), ...data, full_name: data.display_name || data.full_name });
+      toast.success('Photo ajoutee avec succes.');
+    } catch (error) {
+      toast.error(readApiError(error, 'Erreur ajout photo.'));
+    } finally {
+      event.target.value = '';
+    }
+  }
+
+  async function changePassword() {
+    setSavingPassword(true);
+    try {
+      await authService.changePassword(passwordForm);
+      setPasswordForm({ old_password: '', new_password: '', confirm_password: '' });
+      await loadSecurityData();
+      toast.success('Mot de passe modifie.');
+    } catch (error) {
+      toast.error(readApiError(error, 'Erreur changement mot de passe.'));
+    } finally {
+      setSavingPassword(false);
+    }
+  }
+
+  async function disconnectAllDevices() {
+    const ok = window.confirm('Deconnecter tous les appareils ? Vous devrez vous reconnecter.');
+    if (!ok) return;
+    try {
+      await authService.logoutAll();
+      toast.success('Tous les appareils sont deconnectes.');
+      await logout();
+    } catch (error) {
+      toast.error(readApiError(error, 'Erreur deconnexion appareils.'));
+    }
+  }
+
+  async function testMicrophone() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+      setMicrophoneEnabled(true);
+      toast.success('Microphone detecte.');
+    } catch {
+      toast.error('Microphone bloque ou indisponible.');
+    }
+  }
+
+  const TABS = [
+    { key: 'profile', label: 'Profil' },
+    { key: 'security', label: 'Sécurité' },
+    { key: 'preferences', label: 'Préférences' },
+    { key: 'notifications', label: 'Notifications' },
+    { key: 'voice', label: 'Saisie vocale' },
+    { key: 'activity', label: 'Activité' },
+    { key: 'support', label: 'Support' },
+    ...(role === 'doctor_chef' ? [{ key: 'medical', label: 'Configuration médicale' }] : []),
+  ];
+
   return (
-    <div style={miniTableStyle(ui)}>
-      {rows.length === 0 ? (
-        <div style={miniRowStyle(ui)}>{empty}</div>
-      ) : rows.map(([action, date], i) => (
-        <div key={`${action}-${i}`} style={miniRowStyle(ui)}>
-          <span>{action}</span>
-          {actions ? actions[i] : <strong>{date}</strong>}
+    <AppLayout title="Paramètres Médecin">
+      <div style={{ marginBottom: 6 }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#0f172a', marginBottom: 3 }}>
+          Paramètres du médecin
+        </h2>
+        <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 18 }}>
+          Compte, préférences médicales, sécurité et saisie vocale.
         </div>
-      ))}
-    </div>
+      </div>
+
+      <TabsNav tabs={TABS} active={activeTab} onChange={setActiveTab} />
+
+      {activeTab === 'profile' && (
+        <ProfileTab
+          profile={profile} user={user} profileForm={profileForm} setProfileForm={setProfileForm}
+          saveProfile={saveProfile} savingProfile={savingProfile} uploadPhoto={uploadPhoto} fileInputRef={fileInputRef}
+        />
+      )}
+      {activeTab === 'security' && (
+        <SecurityTab
+          passwordForm={passwordForm} setPasswordForm={setPasswordForm} changePassword={changePassword}
+          savingPassword={savingPassword} devices={devices} loadingSecurity={loadingSecurity}
+          loadSecurityData={loadSecurityData} disconnectAllDevices={disconnectAllDevices} dateFormat={dateFormat}
+        />
+      )}
+      {activeTab === 'preferences' && (
+        <PreferencesTab theme={theme} language={language} dateFormat={dateFormat} interfaceSize={interfaceSize} updatePreference={updatePreference} />
+      )}
+      {activeTab === 'notifications' && (
+        <NotificationsTab notifications={notifications} setNotifications={setNotifications} />
+      )}
+      {activeTab === 'voice' && (
+        <VoiceTab
+          microphoneEnabled={microphoneEnabled} setMicrophoneEnabled={setMicrophoneEnabled} testMicrophone={testMicrophone}
+          language={language} updatePreference={updatePreference} sensitivity={sensitivity} setSensitivity={setSensitivity}
+        />
+      )}
+      {activeTab === 'activity' && (
+        <ActivityTab activity={activity} loadingSecurity={loadingSecurity} dateFormat={dateFormat} />
+      )}
+      {activeTab === 'support' && <SupportTab />}
+      {activeTab === 'medical' && role === 'doctor_chef' && <MedicalConfigTab />}
+    </AppLayout>
   );
 }
-
-const lightUi = { page: 'transparent', card: '#ffffff', raised: '#f8fbff', text: '#0f172a', muted: '#64748b', border: 'rgba(37,99,235,0.1)' };
-const darkUi = { page: '#0f172a', card: '#111827', raised: '#1e293b', text: '#f8fafc', muted: '#94a3b8', border: 'rgba(147,197,253,0.18)' };
-const pageStyle = { borderRadius: 16, padding: 4, transition: 'background 0.2s ease' };
-const heroStyle = (ui) => ({ display: 'flex', gap: 16, alignItems: 'center', background: ui.card, border: `1px solid ${ui.border}`, borderRadius: 16, padding: 20, marginBottom: 18 });
-const avatarStyle = { width: 64, height: 64, borderRadius: 16, background: 'linear-gradient(135deg,#2563eb,#60a5fa)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 };
-const avatarImageStyle = { width: '100%', height: '100%', objectFit: 'cover' };
-const eyebrowStyle = { color: '#2563eb', fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 };
-const heroTitleStyle = (ui) => ({ color: ui.text, fontFamily: 'var(--font-display)', fontSize: 22, margin: '3px 0' });
-const mutedStyle = (ui) => ({ color: ui.muted, fontSize: 12, lineHeight: 1.6 });
-const gridStyle = { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 };
-const panelStyle = (ui) => ({ background: ui.card, border: `1px solid ${ui.border}`, borderRadius: 14, padding: 16, boxShadow: '0 8px 24px rgba(15,23,42,0.05)' });
-const wideStyle = { gridColumn: '1 / -1' };
-const panelHeaderStyle = { display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 };
-const panelIconStyle = (ui) => ({ width: 34, height: 34, borderRadius: 10, background: ui.raised, color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' });
-const panelTitleStyle = (ui) => ({ color: ui.text, fontSize: 15, fontWeight: 900, fontFamily: 'var(--font-display)' });
-const profileGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 };
-const infoFieldStyle = (ui) => ({ background: ui.raised, border: `1px solid ${ui.border}`, borderRadius: 10, padding: 10 });
-const labelStyle = (ui) => ({ display: 'block', color: ui.muted, fontSize: 10.5, fontWeight: 800, marginBottom: 5 });
-const valueStyle = (ui) => ({ color: ui.text, fontSize: 12.5, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' });
-const actionsStyle = { display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 };
-const fieldStyle = { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 };
-const inputStyle = (ui) => ({ width: '100%', height: 38, border: `1px solid ${ui.border}`, background: ui.raised, color: ui.text, borderRadius: 10, padding: '0 10px', fontSize: 12, boxSizing: 'border-box' });
-const segmentedStyle = { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 7 };
-const segmentButtonStyle = (ui) => ({ minHeight: 36, border: `1px solid ${ui.border}`, borderRadius: 9, background: ui.raised, color: ui.text, cursor: 'pointer', fontSize: 11.5, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 });
-const segmentActiveStyle = { background: '#2563eb', color: '#ffffff', borderColor: '#2563eb' };
-const toggleRowStyle = (ui) => ({ minHeight: 42, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, color: ui.text, fontSize: 12.5, fontWeight: 800, borderBottom: `1px solid ${ui.border}` });
-const toggleStyle = { width: 42, height: 24, borderRadius: 999, border: '1px solid rgba(100,116,139,0.22)', background: '#e2e8f0', padding: 2, cursor: 'pointer', flexShrink: 0 };
-const toggleOnStyle = { background: '#2563eb', borderColor: '#2563eb' };
-const toggleKnobStyle = { display: 'block', width: 18, height: 18, borderRadius: '50%', background: '#ffffff', transition: 'transform 0.18s ease' };
-const securityActionsStyle = { display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 };
-const secondaryButtonStyle = { minHeight: 36, border: '1px solid rgba(37,99,235,0.16)', background: '#ffffff', color: '#2563eb', borderRadius: 10, padding: '0 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7 };
-const dangerButtonStyle = { ...secondaryButtonStyle, color: '#dc2626', border: '1px solid rgba(220,38,38,0.18)', background: '#fff5f5' };
-const primaryButtonStyle = { minHeight: 40, border: 'none', borderRadius: 10, background: '#2563eb', color: '#ffffff', padding: '0 14px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 12, fontWeight: 900, cursor: 'pointer' };
-const miniTableStyle = (ui) => ({ marginTop: 8, border: `1px solid ${ui.border}`, borderRadius: 10, overflow: 'hidden' });
-const miniRowStyle = (ui) => ({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 11px', borderBottom: `1px solid ${ui.border}`, color: ui.text, fontSize: 12 });
-const supportGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 };
-const supportCardStyle = (ui) => ({ minHeight: 46, border: `1px solid ${ui.border}`, background: ui.raised, color: '#2563eb', borderRadius: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 9, padding: '0 12px', fontSize: 12.5, fontWeight: 800 });
-const tipStyle = { marginTop: 12, background: '#eff6ff', color: '#1d4ed8', border: '1px solid rgba(37,99,235,0.14)', borderRadius: 12, padding: 12, fontSize: 12.5, fontWeight: 800 };
