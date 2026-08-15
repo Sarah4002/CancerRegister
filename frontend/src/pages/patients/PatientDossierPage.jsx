@@ -996,7 +996,7 @@ export default function PatientDossierPage() {
             <div style={{ animation: 'fadeIn 0.2s ease' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <SectionLabel style={{ margin: 0 }}>Passages en RCP</SectionLabel>
-                <Link to={`/rcp/dossiers/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
+                <Link to={`/rcp/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
                   <button style={addBtnStyle}>
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
