@@ -718,10 +718,6 @@ export default function DoctorSettingsPage() {
     { key: 'profile', label: 'Profil' },
     { key: 'security', label: 'Sécurité' },
     { key: 'preferences', label: 'Préférences' },
-    { key: 'notifications', label: 'Notifications' },
-    { key: 'voice', label: 'Saisie vocale' },
-    { key: 'activity', label: 'Activité' },
-    { key: 'support', label: 'Support' },
     ...(role === 'doctor_chef' ? [{ key: 'medical', label: 'Configuration médicale' }] : []),
   ];
 
