@@ -324,7 +324,7 @@ export default function RCPSallePage() {
             { key:'dossiers',  label:`Dossiers (${data.nombre_dossiers})`,          color:'#2563eb' },
             { key:'presences', label:`Presences (${data.nombre_membres_presents})`, color:'#2563eb' },
             { key:'cr',        label:'Compte Rendu',                                color:'#16a34a' },
-            { key:'suivi',     label:`Suivi (${totalDecisions})`,                   color:'#d97706' },
+
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
               style={{ flex:1, padding:'13px 8px', background:'none', border:'none', borderBottom:`2px solid ${activeTab===t.key?t.color:'transparent'}`, color:activeTab===t.key?t.color:'#64748b', fontSize:12, fontWeight:activeTab===t.key?700:400, cursor:'pointer', fontFamily:'var(--font-body)', transition:'all 0.15s', whiteSpace:'nowrap' }}>
@@ -490,10 +490,7 @@ export default function RCPSallePage() {
         <ChatPanel reunionId={id} dossier={showChatPanel} onClose={() => setShowChatPanel(null)} />
       )}
 
-      {/* ── PANEL: IA ── */}
-      {showAIAssist && (
-        <AIAssistPanel dossier={showAIAssist} onClose={() => setShowAIAssist(null)} />
-      )}
+      
     </AppLayout>
   );
 }
