@@ -1,26 +1,402 @@
-import { useCallback, useEffect, useState } from 'react';
-import { KeyRound, RefreshCw, Search, Settings2, Sliders } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Bell,
+  Camera,
+  Check,
+  Clock,
+  Headphones,
+  KeyRound,
+  LockKeyhole,
+  Mail,
+  Mic,
+  Moon,
+  Phone,
+  RefreshCw,
+  ShieldCheck,
+  Stethoscope,
+  Sun,
+  UserRound,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AppLayout } from '../../components/layout/Sidebar';
+import AccessDenied from '../../components/auth/AccessDenied';
+import useAuthStore from '../../hooks/useAuth';
+import usePermissions from '../../hooks/usePermissions';
 import usePreferences from '../../hooks/usePreferences';
+import { authService } from '../../services/api';
 import { validationRulesService } from '../../services/validationRulesService';
-import { adminService } from '../../services/adminService';
 import api from '../../services/api';
 
+const NOTIFICATIONS = [
+  'Nouveaux patients',
+  'Nouveaux diagnostics',
+  'Rappels suivi',
+  'Emails systeme',
+  'Alertes importantes',
+];
+
+const ACTION_LABELS = {
+  login: 'Connexion',
+  logout: 'Deconnexion',
+  view: 'Consultation',
+  create: 'Creation',
+  update: 'Modification',
+  delete: 'Suppression',
+  export: 'Export',
+  import: 'Import',
+  report: 'Rapport',
+};
+
+/* ── Configuration médicale (règles de validation / champs personnalisés) ── */
 const MODULES = {
   patient: 'Dossier patient', diagnostic: 'Diagnostic',
   traitement: 'Traitement', suivi: 'Suivi / consultation',
 };
 const TYPES = { texte: 'Texte', nombre: 'Nombre', date: 'Date', booleen: 'Oui / Non', textarea: 'Texte long', select: 'Liste' };
-const SEVERITY_LABELS = { error: 'Erreur', warning: 'Avertissement', info: 'Information' };
-
 const emptyRule = { code: '', label: '', module: 'diagnostic', field_name: '', severity: 'warning', description: '', active: true, conditions: [] };
 const emptyField = { nom: '', description: '', type_champ: 'texte', module: 'patient', obligatoire: false, actif: true, ordre: 0, options: [] };
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   HOOK PARTAGÉ — règles / champs personnalisés
-───────────────────────────────────────────────────────────────────────────── */
-function useMedicalConfig() {
+export default function DoctorSettingsPage() {
+  const { user, setUser, logout } = useAuthStore();
+  const { role } = usePermissions();
+  const { theme, language, dateFormat, interfaceSize, updatePreference } = usePreferences();
+  const fileInputRef = useRef(null);
+  const [profile, setProfile] = useState(null);
+  const [profileForm, setProfileForm] = useState({});
+  const [passwordForm, setPasswordForm] = useState({ old_password: '', new_password: '', confirm_password: '' });
+  const [devices, setDevices] = useState([]);
+  const [activity, setActivity] = useState([]);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [loadingSecurity, setLoadingSecurity] = useState(false);
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      return { ...Object.fromEntries(NOTIFICATIONS.map((item) => [item, true])), ...JSON.parse(localStorage.getItem('doctor_notifications') || '{}') };
+    } catch {
+      return Object.fromEntries(NOTIFICATIONS.map((item) => [item, true]));
+    }
+  });
+  const [microphoneEnabled, setMicrophoneEnabled] = useState(() => localStorage.getItem('doctor_microphone') !== 'false');
+  const [sensitivity, setSensitivity] = useState(() => Number(localStorage.getItem('doctor_audio_sensitivity') || 70));
+  const dark = theme === 'dark';
+  const ui = dark ? darkUi : lightUi;
+
+  const text = useMemo(() => {
+    if (language === 'ar') {
+      return {
+        title: 'إعدادات الطبيب',
+        subtitle: 'تحكم في الحساب والتفضيلات الطبية والأمان والإدخال الصوتي.',
+        profile: 'ملف الطبيب',
+        security: 'الأمان',
+        preferences: 'التفضيلات',
+        notifications: 'الإشعارات',
+        voice: 'الإدخال الصوتي',
+        activity: 'نشاط الطبيب',
+        support: 'الدعم',
+        save: 'حفظ',
+      };
+    }
+    if (language === 'en') {
+      return {
+        title: 'Doctor Settings',
+        subtitle: 'Control your account, medical preferences, security and voice input.',
+        profile: 'Doctor profile',
+        security: 'Security',
+        preferences: 'Preferences',
+        notifications: 'Notifications',
+        voice: 'Voice input',
+        activity: 'Doctor activity',
+        support: 'Support',
+        save: 'Save',
+      };
+    }
+    return {
+      title: 'Parametres Medecin',
+      subtitle: 'Controlez votre compte, vos preferences medicales, votre securite et la saisie vocale.',
+      profile: 'Profil Medecin',
+      security: 'Securite',
+      preferences: 'Preferences',
+      notifications: 'Notifications',
+      voice: 'Saisie vocale',
+      activity: 'Activite du medecin',
+      support: 'Support',
+      save: 'Enregistrer',
+    };
+  }, [language]);
+
+  useEffect(() => {
+    loadProfile();
+    loadSecurityData();
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('doctor_notifications', JSON.stringify(notifications));
+  }, [notifications]);
+
+  useEffect(() => {
+    localStorage.setItem('doctor_microphone', String(microphoneEnabled));
+  }, [microphoneEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('doctor_audio_sensitivity', String(sensitivity));
+  }, [sensitivity]);
+
+  if (role && !['doctor', 'doctor_chef'].includes(role)) {
+    return <AccessDenied message="Cette page est reservee au profil medecin." />;
+  }
+
+  async function loadProfile() {
+    try {
+      const { data } = await authService.getProfile();
+      setProfile(data);
+      setProfileForm({
+        first_name: data.first_name || '',
+        last_name: data.last_name || '',
+        phone: data.phone || '',
+        speciality: data.speciality || '',
+        institution: data.institution || '',
+        wilaya: data.wilaya || '',
+        registration_number: data.registration_number || '',
+        department: data.department || '',
+      });
+      setUser({
+        ...(user || {}),
+        ...data,
+        full_name: data.display_name || data.full_name,
+        cnom: data.registration_number,
+      });
+    } catch {
+      toast.error('Impossible de charger le profil.');
+    }
+  }
+
+  async function loadSecurityData() {
+    setLoadingSecurity(true);
+    try {
+      const [devicesRes, activityRes] = await Promise.all([
+        authService.getDevices(),
+        authService.getActivity(),
+      ]);
+      setDevices(devicesRes.data.results || []);
+      setActivity(activityRes.data.results || []);
+    } catch {
+      toast.error('Impossible de charger securite et activite.');
+    } finally {
+      setLoadingSecurity(false);
+    }
+  }
+
+  async function saveProfile(event) {
+    event.preventDefault();
+    setSavingProfile(true);
+    try {
+      const { data } = await authService.updateProfile(profileForm);
+      setProfile(data);
+      setUser({
+        ...(user || {}),
+        ...data,
+        full_name: data.display_name || data.full_name,
+        cnom: data.registration_number,
+      });
+      toast.success('Profil modifie avec succes.');
+    } catch (error) {
+      toast.error(readApiError(error, 'Erreur modification profil.'));
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  async function uploadPhoto(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const form = new FormData();
+    form.append('avatar', file);
+    try {
+      const { data } = await authService.updateProfile(form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setProfile(data);
+      setUser({ ...(user || {}), ...data, full_name: data.display_name || data.full_name });
+      toast.success('Photo ajoutee avec succes.');
+    } catch (error) {
+      toast.error(readApiError(error, 'Erreur ajout photo.'));
+    } finally {
+      event.target.value = '';
+    }
+  }
+
+  async function changePassword(event) {
+    event.preventDefault();
+    setSavingPassword(true);
+    try {
+      await authService.changePassword(passwordForm);
+      setPasswordForm({ old_password: '', new_password: '', confirm_password: '' });
+      await loadSecurityData();
+      toast.success('Mot de passe modifie.');
+    } catch (error) {
+      toast.error(readApiError(error, 'Erreur changement mot de passe.'));
+    } finally {
+      setSavingPassword(false);
+    }
+  }
+
+  async function disconnectAllDevices() {
+    const ok = window.confirm('Deconnecter tous les appareils ? Vous devrez vous reconnecter.');
+    if (!ok) return;
+    try {
+      await authService.logoutAll();
+      toast.success('Tous les appareils sont deconnectes.');
+      await logout();
+    } catch (error) {
+      toast.error(readApiError(error, 'Erreur deconnexion appareils.'));
+    }
+  }
+
+  async function testMicrophone() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+      setMicrophoneEnabled(true);
+      toast.success('Microphone detecte.');
+    } catch {
+      toast.error('Microphone bloque ou indisponible.');
+    }
+  }
+
+  return (
+    <AppLayout title={text.title}>
+      <div style={{ ...pageStyle, background: ui.page, color: ui.text, direction: language === 'ar' ? 'rtl' : 'ltr' }}>
+        <header style={heroStyle(ui)}>
+          <div style={avatarStyle}>
+            {profile?.avatar ? <img src={profile.avatar} alt="Profil medecin" style={avatarImageStyle} /> : <UserRound size={34} />}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={eyebrowStyle}>RegistreCancer.dz</div>
+            <h2 style={heroTitleStyle(ui)}>{text.title}</h2>
+            <p style={mutedStyle(ui)}>{text.subtitle}</p>
+          </div>
+          <button type="button" onClick={saveProfile} disabled={savingProfile} style={primaryButtonStyle}>
+            <Check size={16} />
+            {savingProfile ? 'Enregistrement...' : text.save}
+          </button>
+        </header>
+
+        <div style={gridStyle}>
+          <Panel ui={ui} icon={Stethoscope} title={text.profile} wide>
+            <form onSubmit={saveProfile}>
+              <div style={profileGridStyle}>
+                <Input ui={ui} label="Prenom" value={profileForm.first_name} onChange={(v) => setProfileForm((p) => ({ ...p, first_name: v }))} />
+                <Input ui={ui} label="Nom" value={profileForm.last_name} onChange={(v) => setProfileForm((p) => ({ ...p, last_name: v }))} />
+                <InfoField ui={ui} label="Email" value={profile?.email || user?.email || 'doctor@registre.dz'} />
+                <Input ui={ui} label="Telephone" value={profileForm.phone} onChange={(v) => setProfileForm((p) => ({ ...p, phone: v }))} />
+                <Input ui={ui} label="Specialite" value={profileForm.speciality} onChange={(v) => setProfileForm((p) => ({ ...p, speciality: v }))} />
+                <Input ui={ui} label="Hopital" value={profileForm.institution} onChange={(v) => setProfileForm((p) => ({ ...p, institution: v }))} />
+                <Input ui={ui} label="Wilaya" value={profileForm.wilaya} onChange={(v) => setProfileForm((p) => ({ ...p, wilaya: v }))} />
+                <Input ui={ui} label="Numero CNOM" value={profileForm.registration_number} onChange={(v) => setProfileForm((p) => ({ ...p, registration_number: v }))} />
+              </div>
+              <div style={actionsStyle}>
+                <button type="submit" disabled={savingProfile} style={primaryButtonStyle}>{savingProfile ? 'Enregistrement...' : 'Modifier profil'}</button>
+                <button type="button" onClick={() => fileInputRef.current?.click()} style={secondaryButtonStyle}><Camera size={15} /> Ajouter photo</button>
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={uploadPhoto} style={{ display: 'none' }} />
+              </div>
+            </form>
+          </Panel>
+
+          <Panel ui={ui} icon={ShieldCheck} title={text.security}>
+            <form onSubmit={changePassword} style={{ marginBottom: 12 }}>
+              <Input ui={ui} type="password" label="Ancien mot de passe" value={passwordForm.old_password} onChange={(v) => setPasswordForm((p) => ({ ...p, old_password: v }))} />
+              <Input ui={ui} type="password" label="Nouveau mot de passe" value={passwordForm.new_password} onChange={(v) => setPasswordForm((p) => ({ ...p, new_password: v }))} />
+              <Input ui={ui} type="password" label="Confirmer mot de passe" value={passwordForm.confirm_password} onChange={(v) => setPasswordForm((p) => ({ ...p, confirm_password: v }))} />
+              <button type="submit" disabled={savingPassword} style={primaryButtonStyle}>
+                <KeyRound size={15} />
+                {savingPassword ? 'Modification...' : 'Modifier mot de passe'}
+              </button>
+            </form>
+            <div style={securityActionsStyle}>
+              <button type="button" onClick={loadSecurityData} style={secondaryButtonStyle}><RefreshCw size={15} /> Actualiser appareils</button>
+              <button type="button" onClick={disconnectAllDevices} style={dangerButtonStyle}><LockKeyhole size={15} /> Deconnecter appareils</button>
+            </div>
+            <MiniTable
+              ui={ui}
+              rows={devices.map((device) => [
+                `${device.name}${device.current ? ' (actuel)' : ''}`,
+                `${device.ip_address || '-'} - ${formatDate(device.last_seen, dateFormat)}`,
+              ])}
+              empty={loadingSecurity ? 'Chargement...' : 'Aucun appareil detecte'}
+            />
+          </Panel>
+
+          <Panel ui={ui} icon={Sun} title={text.preferences}>
+            <Field ui={ui} label="Theme">
+              <Segmented ui={ui} value={theme} options={[['light', <><Sun size={14} /> Light Mode</>], ['dark', <><Moon size={14} /> Dark Mode</>]]} onChange={(v) => updatePreference('theme', v)} />
+            </Field>
+            <Field ui={ui} label="Langue">
+              <Segmented ui={ui} value={language} options={[['fr', 'Francais'], ['ar', 'العربية'], ['en', 'English']]} onChange={(v) => updatePreference('language', v)} />
+            </Field>
+            <Field ui={ui} label="Format date">
+              <select value={dateFormat} onChange={(e) => updatePreference('dateFormat', e.target.value)} style={inputStyle(ui)}>
+                <option>JJ/MM/AAAA</option>
+                <option>AAAA-MM-JJ</option>
+                <option>MM/JJ/AAAA</option>
+              </select>
+            </Field>
+            <Field ui={ui} label="Taille interface">
+              <Segmented ui={ui} value={interfaceSize} options={[['small', 'Petite'], ['medium', 'Moyenne'], ['large', 'Grande']]} onChange={(v) => updatePreference('interfaceSize', v)} />
+            </Field>
+          </Panel>
+
+          <Panel ui={ui} icon={Bell} title={text.notifications}>
+            {NOTIFICATIONS.map((item) => (
+              <ToggleRow key={item} ui={ui} label={item} checked={notifications[item]} onChange={(checked) => setNotifications((current) => ({ ...current, [item]: checked }))} />
+            ))}
+          </Panel>
+
+          <Panel ui={ui} icon={Mic} title={text.voice}>
+            <ToggleRow ui={ui} label="Activer microphone" checked={microphoneEnabled} onChange={setMicrophoneEnabled} />
+            <button type="button" onClick={testMicrophone} style={secondaryButtonStyle}><Mic size={15} /> Tester microphone</button>
+            <Field ui={ui} label="Langue reconnaissance">
+              <select value={language} onChange={(e) => updatePreference('language', e.target.value)} style={inputStyle(ui)}>
+                <option value="fr">Francais medical</option>
+                <option value="ar">العربية</option>
+                <option value="en">English</option>
+              </select>
+            </Field>
+            <Field ui={ui} label="Sensibilite audio">
+              <input type="range" min="0" max="100" value={sensitivity} onChange={(e) => setSensitivity(Number(e.target.value))} style={{ width: '100%' }} />
+              <div style={mutedStyle(ui)}>{sensitivity}%</div>
+            </Field>
+          </Panel>
+
+          <Panel ui={ui} icon={Clock} title={text.activity}>
+            <MiniTable
+              ui={ui}
+              rows={activity.map((log) => [
+                `${ACTION_LABELS[log.action] || log.action}${log.resource ? ` - ${log.resource}` : ''}`,
+                formatDate(log.timestamp, dateFormat),
+              ])}
+              empty={loadingSecurity ? 'Chargement...' : 'Aucune activite'}
+            />
+          </Panel>
+
+          <Panel ui={ui} icon={Headphones} title={text.support} wide>
+            <div style={supportGridStyle}>
+              <a href="mailto:support@registrecancer.dz" style={supportCardStyle(ui)}><Mail size={17} /> support@registrecancer.dz</a>
+              <a href="tel:+213000000000" style={supportCardStyle(ui)}><Phone size={17} /> +213 XXX XX XX XX</a>
+            </div>
+            <div style={tipStyle}>Simplicite, rapidite, securite et saisie vocale : la page est pensee pour le confort du medecin.</div>
+          </Panel>
+
+          {/* ── Configuration médicale : visible uniquement pour le médecin chef ── */}
+          {role === 'doctor_chef' && <MedicalConfigurationSection ui={ui} />}
+        </div>
+      </div>
+    </AppLayout>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION — Configuration médicale (règles de validation / champs personnalisés)
+   Intégrée directement ici, réservée au médecin chef. Même design (Panel/ui).
+═══════════════════════════════════════════════════════════════════════════ */
+function MedicalConfigurationSection({ ui }) {
   const [tab, setTab] = useState('rules');
   const [rules, setRules] = useState([]);
   const [fields, setFields] = useState([]);
@@ -91,338 +467,150 @@ function useMedicalConfig() {
   const items = tab === 'rules' ? rules : fields;
   const activeCount = items.filter(item => tab === 'rules' ? item.active : item.actif).length;
 
-  return { tab, switchTab, items, activeCount, loading, showForm, setShowForm, form, setForm, submit, toggle, remove, saving };
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   HOOK — paramètres généraux (nom app, email, langue, session...)
-───────────────────────────────────────────────────────────────────────────── */
-function useGeneralSettings() {
-  const [settings, setSettings] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await adminService.settings.get();
-      setSettings(data);
-    } catch {
-      setSettings({
-        nom_application: 'RegistreCancer.dz',
-        email_contact: '',
-        langue: 'fr-DZ',
-        fuseau_horaire: 'Africa/Algiers',
-        session_timeout: 60,
-        mode_maintenance: false,
-      });
-    } finally { setLoading(false); }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const set = (k, v) => setSettings((s) => ({ ...s, [k]: v }));
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      await adminService.settings.update(settings);
-      toast.success('Paramètres enregistrés.');
-    } catch (err) {
-      toast.error(err.response?.data?.error || "Échec de l'enregistrement.");
-    } finally { setSaving(false); }
-  };
-
-  return { settings, set, save, loading, saving };
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   HOOK — mots de passe (politique + attribution)
-───────────────────────────────────────────────────────────────────────────── */
-function generatePassword(length = 12) {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
-  let pwd = '';
-  for (let i = 0; i < length; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
-  return pwd;
-}
-
-function usePasswordManagement() {
-  const [users, setUsers] = useState([]);
-  const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [newPwd, setNewPwd] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [policy, setPolicy] = useState({ longueur_min: 8, expiration_jours: 90, exiger_maj_chiffre: true });
-  const [savingPolicy, setSavingPolicy] = useState(false);
-
-  const fetchUsers = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await adminService.users.list({ search });
-      setUsers(data.results || data || []);
-    } catch {
-      toast.error('Impossible de charger les utilisateurs.');
-    } finally { setLoading(false); }
-  }, [search]);
-
-  useEffect(() => {
-    const t = setTimeout(fetchUsers, 300);
-    return () => clearTimeout(t);
-  }, [fetchUsers]);
-
-  useEffect(() => {
-    adminService.settings.get?.()
-      .then(({ data }) => { if (data?.password_policy) setPolicy(data.password_policy); })
-      .catch(() => {});
-  }, []);
-
-  const openFor = (u) => { setSelectedUser(u); setNewPwd(generatePassword()); };
-  const closeModal = () => { setSelectedUser(null); setNewPwd(''); };
-
-  const confirmNewPassword = async () => {
-    if (!selectedUser) return;
-    if (newPwd.length < (policy.longueur_min || 8)) {
-      toast.error(`Le mot de passe doit contenir au moins ${policy.longueur_min || 8} caractères.`);
-      return;
-    }
-    setSaving(true);
-    try {
-      await adminService.users.resetPassword(selectedUser.id, newPwd);
-      toast.success(`Nouveau mot de passe attribué à ${selectedUser.full_name || selectedUser.username}.`);
-      closeModal();
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Échec de la réinitialisation.');
-    } finally { setSaving(false); }
-  };
-
-  const savePolicy = async () => {
-    setSavingPolicy(true);
-    try {
-      await adminService.settings.update({ password_policy: policy });
-      toast.success('Politique de mot de passe enregistrée.');
-    } catch (err) {
-      toast.error(err.response?.data?.error || "Échec de l'enregistrement.");
-    } finally { setSavingPolicy(false); }
-  };
-
-  return { users, search, setSearch, loading, selectedUser, openFor, closeModal, newPwd, setNewPwd, saving, confirmNewPassword, policy, setPolicy, savePolicy, savingPolicy, fetchUsers };
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   PAGE COMPLÈTE (design AdminSettingsPage) — inchangée
-═══════════════════════════════════════════════════════════════════════════ */
-const cardSt = { background:'#fff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:14, padding:'22px 24px', boxShadow:'0 2px 8px rgba(15,23,42,0.06)' };
-
-function SectionTitle({ children, sub }) {
   return (
-    <div style={{ marginBottom:18 }}>
-      <div style={{ fontSize:15, fontWeight:800, color:'#0f172a', fontFamily:'var(--font-display)' }}>{children}</div>
-      {sub && <div style={{ fontSize:12, color:'#94a3b8', marginTop:3 }}>{sub}</div>}
-    </div>
-  );
-}
-
-function FieldRow({ label, hint, children }) {
-  return (
-    <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:24, padding:'14px 0', borderBottom:'1px solid rgba(37,99,235,0.06)' }}>
-      <div style={{ maxWidth:340 }}>
-        <div style={{ fontSize:13, fontWeight:600, color:'#0f172a', marginBottom:3 }}>{label}</div>
-        {hint && <div style={{ fontSize:11.5, color:'#94a3b8', lineHeight:1.5 }}>{hint}</div>}
+    <section style={{ ...panelStyle(ui), gridColumn: '1 / -1' }}>
+      <div style={panelHeaderStyle}>
+        <div style={panelIconStyle(ui)}><ShieldCheck size={18} /></div>
+        <h3 style={panelTitleStyle(ui)}>Configuration médicale</h3>
       </div>
-      <div style={{ flexShrink:0 }}>{children}</div>
-    </div>
-  );
-}
 
-const inputSt = { padding:'8px 12px', background:'#f8fafc', border:'1px solid rgba(37,99,235,0.15)', borderRadius:9, color:'#0f172a', fontSize:12.5, outline:'none', minWidth:220 };
+      <Segmented
+        ui={ui}
+        value={tab}
+        options={[['rules', 'Règles de validation'], ['fields', 'Champs personnalisés']]}
+        onChange={switchTab}
+      />
 
-function PrimaryButton({ children, onClick, disabled, color = '#2563eb', variant = 'solid', type = 'button' }) {
-  const solid = variant === 'solid';
-  return (
-    <button type={type} onClick={onClick} disabled={disabled} style={{
-      padding:'9px 18px', borderRadius:10, fontSize:12.5, fontWeight:600, cursor: disabled ? 'not-allowed' : 'pointer',
-      border: solid ? 'none' : `1px solid ${color}30`,
-      background: solid ? (disabled ? '#93c5fd' : `linear-gradient(135deg,${color}dd,${color})`) : `${color}0c`,
-      color: solid ? '#fff' : color, opacity: disabled ? 0.7 : 1,
-      boxShadow: solid ? `0 3px 10px ${color}30` : 'none', display:'inline-flex', alignItems:'center', gap:6,
-    }}>
-      {children}
-    </button>
-  );
-}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '14px 0' }}>
+        <button type="button" onClick={() => setShowForm((v) => !v)} style={secondaryButtonStyle}>
+          {showForm ? 'Fermer le formulaire' : `+ ${tab === 'rules' ? 'Nouvelle règle' : 'Nouveau champ'}`}
+        </button>
+        <span style={labelStyle(ui)}>{items.length} {tab === 'rules' ? 'règle(s)' : 'champ(s)'} · {activeCount} actif(s)</span>
+      </div>
 
-function AdminToggle({ checked, onChange }) {
-  return (
-    <button onClick={() => onChange(!checked)} style={{ width:42, height:24, borderRadius:20, border:'none', cursor:'pointer', position:'relative', background: checked ? '#2563eb' : '#cbd5e1', transition:'background .15s', flexShrink:0 }}>
-      <div style={{ width:18, height:18, borderRadius:'50%', background:'#fff', position:'absolute', top:3, left: checked ? 21 : 3, transition:'left .15s', boxShadow:'0 1px 3px rgba(0,0,0,0.25)' }} />
-    </button>
-  );
-}
-
-const TABS = [
-  { key:'rules',  label:'Règles de validation' },
-  { key:'fields', label:'Champs personnalisés' },
-];
-
-function TabsNav({ active, onChange }) {
-  return (
-    <div style={{ display:'flex', gap:6, marginBottom:20, background:'#fff', padding:6, borderRadius:12, border:'1px solid rgba(37,99,235,0.08)', boxShadow:'0 2px 8px rgba(15,23,42,0.06)', width:'fit-content' }}>
-      {TABS.map(t => {
-        const isActive = active === t.key;
-        return (
-          <button key={t.key} onClick={() => onChange(t.key)} style={{
-            padding:'9px 16px', borderRadius:9, border:'none', cursor:'pointer', fontSize:12.5, fontWeight:600,
-            background: isActive ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : 'transparent',
-            color: isActive ? '#fff' : '#64748b', boxShadow: isActive ? '0 3px 10px rgba(37,99,235,0.3)' : 'none', transition:'all .15s',
-          }}>
-            {t.label}
+      {showForm && (
+        <form onSubmit={submit} style={{ marginBottom: 16 }}>
+          <div style={profileGridStyle}>
+            {tab === 'rules' ? <>
+              <Input ui={ui} label="Libellé *" value={form.label} onChange={(v) => setForm((f) => ({ ...f, label: v }))} />
+              <Input ui={ui} label="Code *" value={form.code} onChange={(v) => setForm((f) => ({ ...f, code: v }))} />
+              <Field ui={ui} label="Module">
+                <select style={inputStyle(ui)} value={form.module} onChange={(e) => setForm((f) => ({ ...f, module: e.target.value }))}>
+                  {Object.entries(MODULES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </Field>
+              <Field ui={ui} label="Sévérité">
+                <select style={inputStyle(ui)} value={form.severity} onChange={(e) => setForm((f) => ({ ...f, severity: e.target.value }))}>
+                  <option value="error">Erreur</option>
+                  <option value="warning">Avertissement</option>
+                  <option value="info">Information</option>
+                </select>
+              </Field>
+            </> : <>
+              <Input ui={ui} label="Nom du champ *" value={form.nom} onChange={(v) => setForm((f) => ({ ...f, nom: v }))} />
+              <Field ui={ui} label="Module">
+                <select style={inputStyle(ui)} value={form.module} onChange={(e) => setForm((f) => ({ ...f, module: e.target.value }))}>
+                  {Object.entries(MODULES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </Field>
+              <Field ui={ui} label="Type">
+                <select style={inputStyle(ui)} value={form.type_champ} onChange={(e) => setForm((f) => ({ ...f, type_champ: e.target.value }))}>
+                  {Object.entries(TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </Field>
+              <Input ui={ui} label="Ordre" type="number" value={form.ordre} onChange={(v) => setForm((f) => ({ ...f, ordre: v }))} />
+            </>}
+          </div>
+          <button type="submit" disabled={saving} style={{ ...primaryButtonStyle, marginTop: 10 }}>
+            {saving ? 'Enregistrement...' : 'Enregistrer'}
           </button>
-        );
-      })}
+        </form>
+      )}
+
+      <MiniTable
+        ui={ui}
+        rows={loading ? [] : items.map((item) => [
+          item.label || item.nom,
+          `${MODULES[item.module] || item.module} · ${tab === 'rules' ? (item.severity === 'error' ? 'Erreur' : item.severity === 'warning' ? 'Avertissement' : 'Information') : TYPES[item.type_champ]}`,
+        ])}
+        empty={loading ? 'Chargement...' : (tab === 'rules' ? 'Aucune règle de validation.' : 'Aucun champ personnalisé.')}
+        actions={loading ? [] : items.map((item) => {
+          const active = tab === 'rules' ? item.active : item.actif;
+          return (
+            <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button type="button" onClick={() => toggle(item)} style={{ ...toggleStyle, ...(active ? toggleOnStyle : {}) }}>
+                <span style={{ ...toggleKnobStyle, transform: active ? 'translateX(18px)' : 'translateX(0)' }} />
+              </button>
+              <button type="button" onClick={() => remove(item)} title="Supprimer" style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid rgba(220,38,38,0.2)', background: 'rgba(220,38,38,0.06)', color: '#dc2626', cursor: 'pointer', fontSize: 15, lineHeight: 1 }}>×</button>
+            </div>
+          );
+        })}
+      />
+    </section>
+  );
+}
+
+function readApiError(error, fallback) {
+  const data = error?.response?.data;
+  if (!data) return fallback;
+  if (typeof data === 'string') return data;
+  if (data.error) return data.error;
+  if (data.detail) return data.detail;
+  return Object.values(data).flat().join(' ') || fallback;
+}
+
+function formatDate(value, format) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  if (format === 'AAAA-MM-JJ') return `${yyyy}-${mm}-${dd}`;
+  if (format === 'MM/JJ/AAAA') return `${mm}/${dd}/${yyyy}`;
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function Panel({ ui, icon: Icon, title, wide, children }) {
+  return (
+    <section style={{ ...panelStyle(ui), ...(wide ? wideStyle : {}) }}>
+      <div style={panelHeaderStyle}>
+        <div style={panelIconStyle(ui)}><Icon size={18} /></div>
+        <h3 style={panelTitleStyle(ui)}>{title}</h3>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function InfoField({ ui, label, value }) {
+  return (
+    <div style={infoFieldStyle(ui)}>
+      <div style={labelStyle(ui)}>{label}</div>
+      <div style={valueStyle(ui)}>{value || '-'}</div>
     </div>
   );
 }
 
-function ConfigForm({ tab, form, setForm, onSubmit, onCancel, saving }) {
-  const set = (key, value) => setForm(current => ({ ...current, [key]: value }));
+function Input({ ui, label, value, onChange, type = 'text' }) {
   return (
-    <form onSubmit={onSubmit} style={{ ...cardSt, marginBottom:16 }}>
-      <SectionTitle sub={tab === 'rules' ? 'Définissez le contrôle appliqué aux données cliniques.' : "Ajoutez l'information utile aux formulaires des dossiers."}>
-        {tab === 'rules' ? 'Nouvelle règle de validation' : 'Nouveau champ personnalisé'}
-      </SectionTitle>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(2, minmax(0, 1fr))', gap:'0 24px' }}>
-        {tab === 'rules' ? <>
-          <FieldRow label="Libellé *"><input required style={inputSt} value={form.label} onChange={e => set('label', e.target.value)} /></FieldRow>
-          <FieldRow label="Code *"><input required style={inputSt} value={form.code} onChange={e => set('code', e.target.value)} /></FieldRow>
-          <FieldRow label="Module">
-            <select style={inputSt} value={form.module} onChange={e => set('module', e.target.value)}>
-              {Object.entries(MODULES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-          </FieldRow>
-          <FieldRow label="Sévérité">
-            <select style={inputSt} value={form.severity} onChange={e => set('severity', e.target.value)}>
-              {Object.entries(SEVERITY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-          </FieldRow>
-          <FieldRow label="Champ concerné"><input style={inputSt} value={form.field_name} onChange={e => set('field_name', e.target.value)} /></FieldRow>
-          <FieldRow label="Description"><input style={inputSt} value={form.description} onChange={e => set('description', e.target.value)} /></FieldRow>
-        </> : <>
-          <FieldRow label="Nom du champ *"><input required style={inputSt} value={form.nom} onChange={e => set('nom', e.target.value)} /></FieldRow>
-          <FieldRow label="Module">
-            <select style={inputSt} value={form.module} onChange={e => set('module', e.target.value)}>
-              {Object.entries(MODULES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-          </FieldRow>
-          <FieldRow label="Type">
-            <select style={inputSt} value={form.type_champ} onChange={e => set('type_champ', e.target.value)}>
-              {Object.entries(TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-          </FieldRow>
-          <FieldRow label="Ordre"><input type="number" style={{ ...inputSt, minWidth:100 }} value={form.ordre} onChange={e => set('ordre', e.target.value)} /></FieldRow>
-          <FieldRow label="Description"><input style={inputSt} value={form.description} onChange={e => set('description', e.target.value)} /></FieldRow>
-          <FieldRow label="Obligatoire" hint="Rend ce champ requis dans le formulaire.">
-            <AdminToggle checked={form.obligatoire} onChange={v => set('obligatoire', v)} />
-          </FieldRow>
-        </>}
-      </div>
-      <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:20 }}>
-        <PrimaryButton type="button" onClick={onCancel} color="#64748b" variant="outline">Annuler</PrimaryButton>
-        <PrimaryButton type="submit" disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</PrimaryButton>
-      </div>
-    </form>
+    <label style={fieldStyle}>
+      <span style={labelStyle(ui)}>{label}</span>
+      <input type={type} value={value || ''} onChange={(event) => onChange(event.target.value)} style={inputStyle(ui)} />
+    </label>
   );
 }
 
-export default function MedicalConfigurationPage() {
-  const c = useMedicalConfig();
-
+function Field({ ui, label, children }) {
   return (
-    <AppLayout title="Paramètres & configuration médicale">
-      <div style={{ marginBottom:6 }}>
-        <h2 style={{ fontFamily:'var(--font-display)', fontSize:20, fontWeight:800, color:'#0f172a', marginBottom:3 }}>Configuration médicale</h2>
-        <div style={{ fontSize:12, color:'#94a3b8', marginBottom:18 }}>Règles de validation clinique et champs personnalisés appliqués aux formulaires.</div>
-      </div>
-
-      <TabsNav active={c.tab} onChange={c.switchTab} />
-
-      <div style={{ ...cardSt, marginBottom:16 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', gap:16, alignItems:'flex-start', flexWrap:'wrap' }}>
-          <SectionTitle sub={c.tab === 'rules' ? 'Définissez les contrôles appliqués aux données cliniques.' : 'Ajoutez les informations utiles aux formulaires des dossiers.'}>
-            {c.tab === 'rules' ? 'Règles de validation' : 'Champs personnalisés'}
-          </SectionTitle>
-          <PrimaryButton onClick={() => c.setShowForm(true)}>+ {c.tab === 'rules' ? 'Nouvelle règle' : 'Nouveau champ'}</PrimaryButton>
-        </div>
-        <div style={{ display:'flex', gap:10 }}>
-          <div style={{ padding:'8px 12px', borderLeft:'3px solid #2563eb', background:'#f8fafc', borderRadius:7 }}>
-            <strong style={{ color:'#2563eb', fontSize:16 }}>{c.items.length}</strong>
-            <span style={{ marginLeft:6, color:'#64748b', fontSize:11 }}>{c.tab === 'rules' ? 'Règles' : 'Champs'}</span>
-          </div>
-          <div style={{ padding:'8px 12px', borderLeft:'3px solid #16a34a', background:'#f8fafc', borderRadius:7 }}>
-            <strong style={{ color:'#16a34a', fontSize:16 }}>{c.activeCount}</strong>
-            <span style={{ marginLeft:6, color:'#64748b', fontSize:11 }}>Actifs</span>
-          </div>
-        </div>
-      </div>
-
-      {c.showForm && <ConfigForm tab={c.tab} form={c.form} setForm={c.setForm} onSubmit={c.submit} onCancel={() => c.setShowForm(false)} saving={c.saving} />}
-
-      <div style={cardSt}>
-        <SectionTitle sub={c.tab === 'rules' ? 'Toutes les règles configurées, triées par création.' : 'Tous les champs personnalisés disponibles dans les formulaires.'}>
-          {c.tab === 'rules' ? 'Liste des règles' : 'Liste des champs'}
-        </SectionTitle>
-        {c.loading ? (
-          <div style={{ padding:40, textAlign:'center', color:'#94a3b8', fontSize:13 }}>Chargement...</div>
-        ) : c.items.length === 0 ? (
-          <div style={{ padding:40, textAlign:'center', color:'#94a3b8', fontSize:13 }}>{c.tab === 'rules' ? 'Aucune règle de validation.' : 'Aucun champ personnalisé.'}</div>
-        ) : (
-          <div>
-            {c.items.map(item => {
-              const active = c.tab === 'rules' ? item.active : item.actif;
-              return (
-                <FieldRow key={item.id} label={item.label || item.nom} hint={`${MODULES[item.module] || item.module} · ${c.tab === 'rules' ? SEVERITY_LABELS[item.severity] : TYPES[item.type_champ]}`}>
-                  <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-                    <AdminToggle checked={active} onChange={() => c.toggle(item)} />
-                    <button onClick={() => c.remove(item)} title="Supprimer" style={{ width:30, height:30, borderRadius:9, border:'1px solid rgba(220,38,38,0.2)', background:'rgba(220,38,38,0.06)', color:'#dc2626', cursor:'pointer', fontSize:16, lineHeight:1 }}>×</button>
-                  </div>
-                </FieldRow>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </AppLayout>
+    <label style={fieldStyle}>
+      <span style={labelStyle(ui)}>{label}</span>
+      {children}
+    </label>
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   PANEL EMBARQUÉ (design DoctorSettingsPage) — <MedicalConfigurationPanel />
-   4 onglets : Règles · Champs · Général · Mots de passe
-═══════════════════════════════════════════════════════════════════════════ */
-const lightUi = { page: 'transparent', card: '#ffffff', raised: '#f8fbff', text: '#0f172a', muted: '#64748b', border: 'rgba(37,99,235,0.1)' };
-const darkUi = { page: '#0f172a', card: '#111827', raised: '#1e293b', text: '#f8fafc', muted: '#94a3b8', border: 'rgba(147,197,253,0.18)' };
-
-const panelStyle = (ui) => ({ background: ui.card, border: `1px solid ${ui.border}`, borderRadius: 14, padding: 16, boxShadow: '0 8px 24px rgba(15,23,42,0.05)', gridColumn: '1 / -1' });
-const panelHeaderStyle = { display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 };
-const panelIconStyle = (ui) => ({ width: 34, height: 34, borderRadius: 10, background: ui.raised, color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' });
-const panelTitleStyle = (ui) => ({ color: ui.text, fontSize: 15, fontWeight: 900, fontFamily: 'var(--font-display)' });
-const fieldStyle = { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 };
-const labelStyle = (ui) => ({ display: 'block', color: ui.muted, fontSize: 10.5, fontWeight: 800, marginBottom: 5 });
-const inputStyle = (ui) => ({ width: '100%', height: 38, border: `1px solid ${ui.border}`, background: ui.raised, color: ui.text, borderRadius: 10, padding: '0 10px', fontSize: 12, boxSizing: 'border-box' });
-const toggleRowStyle = (ui) => ({ minHeight: 42, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, color: ui.text, fontSize: 12.5, fontWeight: 800, borderBottom: `1px solid ${ui.border}` });
-const toggleStyle = { width: 42, height: 24, borderRadius: 999, border: '1px solid rgba(100,116,139,0.22)', background: '#e2e8f0', padding: 2, cursor: 'pointer', flexShrink: 0 };
-const toggleOnStyle = { background: '#2563eb', borderColor: '#2563eb' };
-const toggleKnobStyle = { display: 'block', width: 18, height: 18, borderRadius: '50%', background: '#ffffff', transition: 'transform 0.18s ease' };
-const segmentedStyle = { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 7, marginBottom: 14 };
-const segmentButtonStyle = (ui) => ({ minHeight: 36, border: `1px solid ${ui.border}`, borderRadius: 9, background: ui.raised, color: ui.text, cursor: 'pointer', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0 6px' });
-const segmentActiveStyle = { background: '#2563eb', color: '#ffffff', borderColor: '#2563eb' };
-const primaryButtonStyle = { minHeight: 40, border: 'none', borderRadius: 10, background: '#2563eb', color: '#ffffff', padding: '0 14px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 12, fontWeight: 900, cursor: 'pointer' };
-const secondaryButtonStyle = (ui) => ({ minHeight: 36, border: `1px solid ${ui.border}`, background: ui.raised, color: '#2563eb', borderRadius: 10, padding: '0 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7 });
-const dangerIconButtonStyle = (ui) => ({ width: 32, height: 32, borderRadius: 9, border: '1px solid rgba(220,38,38,0.2)', background: '#fff5f5', color: '#dc2626', cursor: 'pointer', fontSize: 16, lineHeight: 1, flexShrink: 0 });
-const miniTableStyle = (ui) => ({ marginTop: 4, border: `1px solid ${ui.border}`, borderRadius: 10, overflow: 'hidden', maxHeight: 260, overflowY: 'auto' });
-const miniRowStyle = (ui) => ({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 11px', borderBottom: `1px solid ${ui.border}`, color: ui.text, fontSize: 12 });
-
-function DoctorSegmented({ ui, value, options, onChange }) {
+function Segmented({ ui, value, options, onChange }) {
   return (
     <div style={segmentedStyle}>
       {options.map(([optionValue, label]) => (
@@ -434,267 +622,67 @@ function DoctorSegmented({ ui, value, options, onChange }) {
   );
 }
 
-function DoctorToggleRow({ ui, label, sub, checked, onChange, onDelete }) {
+function ToggleRow({ ui, label, checked, onChange }) {
   return (
     <div style={toggleRowStyle(ui)}>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
-        {sub && <div style={{ color: ui.muted, fontSize: 10.5, fontWeight: 600, marginTop: 2 }}>{sub}</div>}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <button type="button" onClick={() => onChange(!checked)} style={{ ...toggleStyle, ...(checked ? toggleOnStyle : {}) }}>
-          <span style={{ ...toggleKnobStyle, transform: checked ? 'translateX(18px)' : 'translateX(0)' }} />
-        </button>
-        {onDelete && <button type="button" onClick={onDelete} title="Supprimer" style={dangerIconButtonStyle(ui)}>×</button>}
-      </div>
-    </div>
-  );
-}
-
-/* ── Sous-section : Général ── */
-function GeneralSection({ ui }) {
-  const g = useGeneralSettings();
-  if (g.loading || !g.settings) return <div style={miniRowStyle(ui)}>Chargement...</div>;
-
-  return (
-    <div>
-      <label style={fieldStyle}>
-        <span style={labelStyle(ui)}>Nom de l'application</span>
-        <input style={inputStyle(ui)} value={g.settings.nom_application} onChange={(e) => g.set('nom_application', e.target.value)} />
-      </label>
-      <label style={fieldStyle}>
-        <span style={labelStyle(ui)}>Email de contact</span>
-        <input type="email" style={inputStyle(ui)} value={g.settings.email_contact} onChange={(e) => g.set('email_contact', e.target.value)} placeholder="support@registrecancer.dz" />
-      </label>
-      <label style={fieldStyle}>
-        <span style={labelStyle(ui)}>Langue par défaut</span>
-        <select style={inputStyle(ui)} value={g.settings.langue} onChange={(e) => g.set('langue', e.target.value)}>
-          <option value="fr-DZ">Français (Algérie)</option>
-          <option value="fr-FR">Français (France)</option>
-        </select>
-      </label>
-      <label style={fieldStyle}>
-        <span style={labelStyle(ui)}>Fuseau horaire</span>
-        <select style={inputStyle(ui)} value={g.settings.fuseau_horaire} onChange={(e) => g.set('fuseau_horaire', e.target.value)}>
-          <option value="Africa/Algiers">Africa/Algiers (UTC+1)</option>
-          <option value="UTC">UTC</option>
-        </select>
-      </label>
-      <label style={fieldStyle}>
-        <span style={labelStyle(ui)}>Expiration de session (minutes)</span>
-        <input type="number" min={5} max={480} style={inputStyle(ui)} value={g.settings.session_timeout} onChange={(e) => g.set('session_timeout', Number(e.target.value))} />
-      </label>
-      <div style={toggleRowStyle(ui)}>
-        <span>Mode maintenance</span>
-        <button type="button" onClick={() => g.set('mode_maintenance', !g.settings.mode_maintenance)} style={{ ...toggleStyle, ...(g.settings.mode_maintenance ? toggleOnStyle : {}) }}>
-          <span style={{ ...toggleKnobStyle, transform: g.settings.mode_maintenance ? 'translateX(18px)' : 'translateX(0)' }} />
-        </button>
-      </div>
-      <button type="button" onClick={g.save} disabled={g.saving} style={{ ...primaryButtonStyle, marginTop: 14 }}>
-        {g.saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+      <span>{label}</span>
+      <button type="button" onClick={() => onChange(!checked)} style={{ ...toggleStyle, ...(checked ? toggleOnStyle : {}) }}>
+        <span style={{ ...toggleKnobStyle, transform: checked ? 'translateX(18px)' : 'translateX(0)' }} />
       </button>
     </div>
   );
 }
 
-/* ── Sous-section : Mots de passe ── */
-function PasswordsSection({ ui }) {
-  const p = usePasswordManagement();
-
+function MiniTable({ ui, rows, empty, actions }) {
   return (
-    <div>
-      {/* Politique */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ ...labelStyle(ui), marginBottom: 8 }}>Politique de mot de passe</div>
-        <label style={fieldStyle}>
-          <span style={labelStyle(ui)}>Longueur minimale</span>
-          <input type="number" min={6} max={32} style={{ ...inputStyle(ui), maxWidth: 120 }} value={p.policy.longueur_min} onChange={(e) => p.setPolicy((s) => ({ ...s, longueur_min: Number(e.target.value) }))} />
-        </label>
-        <label style={fieldStyle}>
-          <span style={labelStyle(ui)}>Expiration (jours, 0 = jamais)</span>
-          <input type="number" min={0} max={365} style={{ ...inputStyle(ui), maxWidth: 120 }} value={p.policy.expiration_jours} onChange={(e) => p.setPolicy((s) => ({ ...s, expiration_jours: Number(e.target.value) }))} />
-        </label>
-        <div style={toggleRowStyle(ui)}>
-          <span>Exiger majuscule + chiffre</span>
-          <button type="button" onClick={() => p.setPolicy((s) => ({ ...s, exiger_maj_chiffre: !s.exiger_maj_chiffre }))} style={{ ...toggleStyle, ...(p.policy.exiger_maj_chiffre ? toggleOnStyle : {}) }}>
-            <span style={{ ...toggleKnobStyle, transform: p.policy.exiger_maj_chiffre ? 'translateX(18px)' : 'translateX(0)' }} />
-          </button>
+    <div style={miniTableStyle(ui)}>
+      {rows.length === 0 ? (
+        <div style={miniRowStyle(ui)}>{empty}</div>
+      ) : rows.map(([action, date], i) => (
+        <div key={`${action}-${i}`} style={miniRowStyle(ui)}>
+          <span>{action}</span>
+          {actions ? actions[i] : <strong>{date}</strong>}
         </div>
-        <button type="button" onClick={p.savePolicy} disabled={p.savingPolicy} style={{ ...primaryButtonStyle, marginTop: 10 }}>
-          {p.savingPolicy ? 'Enregistrement...' : 'Enregistrer la politique'}
-        </button>
-      </div>
-
-      {/* Attribution */}
-      <div>
-        <div style={{ ...labelStyle(ui), marginBottom: 8 }}>Attribuer un nouveau mot de passe</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: ui.raised, border: `1px solid ${ui.border}`, borderRadius: 10, padding: '8px 12px', marginBottom: 10 }}>
-          <Search size={14} color={ui.muted} />
-          <input
-            value={p.search} onChange={(e) => p.setSearch(e.target.value)}
-            placeholder="Nom, email, username..."
-            style={{ background: 'none', border: 'none', outline: 'none', flex: 1, fontSize: 12, color: ui.text }}
-          />
-          <button type="button" onClick={p.fetchUsers} title="Actualiser" style={{ background: 'none', border: 'none', cursor: 'pointer', color: ui.muted, display: 'flex' }}>
-            <RefreshCw size={14} />
-          </button>
-        </div>
-
-        <div style={miniTableStyle(ui)}>
-          {p.loading ? (
-            <div style={miniRowStyle(ui)}>Chargement...</div>
-          ) : p.users.length === 0 ? (
-            <div style={miniRowStyle(ui)}>Aucun utilisateur trouvé</div>
-          ) : (
-            p.users.map((u) => (
-              <div key={u.id} style={miniRowStyle(ui)}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.full_name || u.username}</div>
-                  <div style={{ color: ui.muted, fontSize: 10.5 }}>{u.email}</div>
-                </div>
-                <button type="button" onClick={() => p.openFor(u)} style={secondaryButtonStyle(ui)}>
-                  <KeyRound size={13} /> Nouveau
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {p.selectedUser && (
-        <div onClick={(e) => { if (e.target === e.currentTarget) p.closeModal(); }} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(4px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: ui.card, borderRadius: 18, width: '100%', maxWidth: 400, boxShadow: '0 24px 64px rgba(37,99,235,0.18)', overflow: 'hidden', border: `1px solid ${ui.border}` }}>
-            <div style={{ height: 4, background: 'linear-gradient(90deg,#3b82f6,#2563eb)' }} />
-            <div style={{ padding: '22px 22px 20px' }}>
-              <div style={{ fontSize: 15, fontWeight: 900, color: ui.text, marginBottom: 5 }}>Nouveau mot de passe</div>
-              <div style={{ fontSize: 12, color: ui.muted, marginBottom: 14 }}>
-                Pour {p.selectedUser.full_name || p.selectedUser.username} ({p.selectedUser.email})
-              </div>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                <input value={p.newPwd} onChange={(e) => p.setNewPwd(e.target.value)} style={{ ...inputStyle(ui), fontFamily: 'var(--font-mono)' }} />
-                <button type="button" onClick={() => p.setNewPwd(generatePassword())} title="Générer aléatoirement" style={{ padding: '0 12px', borderRadius: 10, border: `1px solid ${ui.border}`, background: ui.raised, color: '#2563eb', cursor: 'pointer' }}>
-                  <RefreshCw size={14} />
-                </button>
-              </div>
-              <div style={{ fontSize: 10.5, color: ui.muted, marginBottom: 16 }}>
-                Min. {p.policy.longueur_min || 8} caractères. Communiquez ce mot de passe de façon sécurisée.
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" onClick={p.closeModal} disabled={p.saving} style={{ flex: 1, ...secondaryButtonStyle(ui), justifyContent: 'center' }}>Annuler</button>
-                <button type="button" onClick={p.confirmNewPassword} disabled={p.saving} style={{ flex: 1, ...primaryButtonStyle, justifyContent: 'center' }}>
-                  {p.saving ? 'Enregistrement...' : 'Confirmer'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      ))}
     </div>
   );
 }
 
-export function MedicalConfigurationPanel() {
-  const { theme } = usePreferences();
-  const ui = theme === 'dark' ? darkUi : lightUi;
-  const c = useMedicalConfig();
-  const [section, setSection] = useState('rules');
-
-  const handleSection = (next) => {
-    setSection(next);
-    if (next === 'rules' || next === 'fields') c.switchTab(next);
-  };
-
-  return (
-    <section style={panelStyle(ui)}>
-      <div style={panelHeaderStyle}>
-        <div style={panelIconStyle(ui)}><Settings2 size={18} /></div>
-        <h3 style={panelTitleStyle(ui)}>Configuration médicale</h3>
-      </div>
-
-      <DoctorSegmented
-        ui={ui}
-        value={section}
-        options={[
-          ['rules', 'Règles'],
-          ['fields', 'Champs'],
-          ['general', 'Général'],
-          ['passwords', 'Mots de passe'],
-        ]}
-        onChange={handleSection}
-      />
-
-      {(section === 'rules' || section === 'fields') && (
-        <>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-            <button type="button" onClick={() => c.setShowForm((v) => !v)} style={secondaryButtonStyle(ui)}>
-              {c.showForm ? 'Fermer le formulaire' : `+ ${c.tab === 'rules' ? 'Nouvelle règle' : 'Nouveau champ'}`}
-            </button>
-            <div style={{ ...labelStyle(ui), display: 'flex', alignItems: 'center', marginBottom: 0 }}>
-              {c.items.length} {c.tab === 'rules' ? 'règle(s)' : 'champ(s)'} · {c.activeCount} actif(s)
-            </div>
-          </div>
-
-          {c.showForm && (
-            <form onSubmit={c.submit} style={{ marginBottom: 14 }}>
-              {c.tab === 'rules' ? <>
-                <label style={fieldStyle}><span style={labelStyle(ui)}>Libellé *</span><input required style={inputStyle(ui)} value={c.form.label} onChange={(e) => c.setForm((f) => ({ ...f, label: e.target.value }))} /></label>
-                <label style={fieldStyle}><span style={labelStyle(ui)}>Code *</span><input required style={inputStyle(ui)} value={c.form.code} onChange={(e) => c.setForm((f) => ({ ...f, code: e.target.value }))} /></label>
-                <label style={fieldStyle}><span style={labelStyle(ui)}>Module</span>
-                  <select style={inputStyle(ui)} value={c.form.module} onChange={(e) => c.setForm((f) => ({ ...f, module: e.target.value }))}>
-                    {Object.entries(MODULES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </label>
-                <label style={fieldStyle}><span style={labelStyle(ui)}>Sévérité</span>
-                  <select style={inputStyle(ui)} value={c.form.severity} onChange={(e) => c.setForm((f) => ({ ...f, severity: e.target.value }))}>
-                    {Object.entries(SEVERITY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </label>
-              </> : <>
-                <label style={fieldStyle}><span style={labelStyle(ui)}>Nom du champ *</span><input required style={inputStyle(ui)} value={c.form.nom} onChange={(e) => c.setForm((f) => ({ ...f, nom: e.target.value }))} /></label>
-                <label style={fieldStyle}><span style={labelStyle(ui)}>Module</span>
-                  <select style={inputStyle(ui)} value={c.form.module} onChange={(e) => c.setForm((f) => ({ ...f, module: e.target.value }))}>
-                    {Object.entries(MODULES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </label>
-                <label style={fieldStyle}><span style={labelStyle(ui)}>Type</span>
-                  <select style={inputStyle(ui)} value={c.form.type_champ} onChange={(e) => c.setForm((f) => ({ ...f, type_champ: e.target.value }))}>
-                    {Object.entries(TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </label>
-              </>}
-              <button type="submit" disabled={c.saving} style={{ ...primaryButtonStyle, marginTop: 4 }}>
-                {c.saving ? 'Enregistrement...' : 'Enregistrer'}
-              </button>
-            </form>
-          )}
-
-          <div style={miniTableStyle(ui)}>
-            {c.loading ? (
-              <div style={miniRowStyle(ui)}>Chargement...</div>
-            ) : c.items.length === 0 ? (
-              <div style={miniRowStyle(ui)}>{c.tab === 'rules' ? 'Aucune règle de validation.' : 'Aucun champ personnalisé.'}</div>
-            ) : (
-              c.items.map((item) => {
-                const active = c.tab === 'rules' ? item.active : item.actif;
-                return (
-                  <DoctorToggleRow
-                    key={item.id}
-                    ui={ui}
-                    label={item.label || item.nom}
-                    sub={`${MODULES[item.module] || item.module} · ${c.tab === 'rules' ? SEVERITY_LABELS[item.severity] : TYPES[item.type_champ]}`}
-                    checked={active}
-                    onChange={() => c.toggle(item)}
-                    onDelete={() => c.remove(item)}
-                  />
-                );
-              })
-            )}
-          </div>
-        </>
-      )}
-
-      {section === 'general' && <GeneralSection ui={ui} />}
-      {section === 'passwords' && <PasswordsSection ui={ui} />}
-    </section>
-  );
-}
+const lightUi = { page: 'transparent', card: '#ffffff', raised: '#f8fbff', text: '#0f172a', muted: '#64748b', border: 'rgba(37,99,235,0.1)' };
+const darkUi = { page: '#0f172a', card: '#111827', raised: '#1e293b', text: '#f8fafc', muted: '#94a3b8', border: 'rgba(147,197,253,0.18)' };
+const pageStyle = { borderRadius: 16, padding: 4, transition: 'background 0.2s ease' };
+const heroStyle = (ui) => ({ display: 'flex', gap: 16, alignItems: 'center', background: ui.card, border: `1px solid ${ui.border}`, borderRadius: 16, padding: 20, marginBottom: 18 });
+const avatarStyle = { width: 64, height: 64, borderRadius: 16, background: 'linear-gradient(135deg,#2563eb,#60a5fa)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 };
+const avatarImageStyle = { width: '100%', height: '100%', objectFit: 'cover' };
+const eyebrowStyle = { color: '#2563eb', fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 };
+const heroTitleStyle = (ui) => ({ color: ui.text, fontFamily: 'var(--font-display)', fontSize: 22, margin: '3px 0' });
+const mutedStyle = (ui) => ({ color: ui.muted, fontSize: 12, lineHeight: 1.6 });
+const gridStyle = { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 };
+const panelStyle = (ui) => ({ background: ui.card, border: `1px solid ${ui.border}`, borderRadius: 14, padding: 16, boxShadow: '0 8px 24px rgba(15,23,42,0.05)' });
+const wideStyle = { gridColumn: '1 / -1' };
+const panelHeaderStyle = { display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 };
+const panelIconStyle = (ui) => ({ width: 34, height: 34, borderRadius: 10, background: ui.raised, color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' });
+const panelTitleStyle = (ui) => ({ color: ui.text, fontSize: 15, fontWeight: 900, fontFamily: 'var(--font-display)' });
+const profileGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 };
+const infoFieldStyle = (ui) => ({ background: ui.raised, border: `1px solid ${ui.border}`, borderRadius: 10, padding: 10 });
+const labelStyle = (ui) => ({ display: 'block', color: ui.muted, fontSize: 10.5, fontWeight: 800, marginBottom: 5 });
+const valueStyle = (ui) => ({ color: ui.text, fontSize: 12.5, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' });
+const actionsStyle = { display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 };
+const fieldStyle = { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 };
+const inputStyle = (ui) => ({ width: '100%', height: 38, border: `1px solid ${ui.border}`, background: ui.raised, color: ui.text, borderRadius: 10, padding: '0 10px', fontSize: 12, boxSizing: 'border-box' });
+const segmentedStyle = { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 7 };
+const segmentButtonStyle = (ui) => ({ minHeight: 36, border: `1px solid ${ui.border}`, borderRadius: 9, background: ui.raised, color: ui.text, cursor: 'pointer', fontSize: 11.5, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 });
+const segmentActiveStyle = { background: '#2563eb', color: '#ffffff', borderColor: '#2563eb' };
+const toggleRowStyle = (ui) => ({ minHeight: 42, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, color: ui.text, fontSize: 12.5, fontWeight: 800, borderBottom: `1px solid ${ui.border}` });
+const toggleStyle = { width: 42, height: 24, borderRadius: 999, border: '1px solid rgba(100,116,139,0.22)', background: '#e2e8f0', padding: 2, cursor: 'pointer', flexShrink: 0 };
+const toggleOnStyle = { background: '#2563eb', borderColor: '#2563eb' };
+const toggleKnobStyle = { display: 'block', width: 18, height: 18, borderRadius: '50%', background: '#ffffff', transition: 'transform 0.18s ease' };
+const securityActionsStyle = { display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 };
+const secondaryButtonStyle = { minHeight: 36, border: '1px solid rgba(37,99,235,0.16)', background: '#ffffff', color: '#2563eb', borderRadius: 10, padding: '0 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7 };
+const dangerButtonStyle = { ...secondaryButtonStyle, color: '#dc2626', border: '1px solid rgba(220,38,38,0.18)', background: '#fff5f5' };
+const primaryButtonStyle = { minHeight: 40, border: 'none', borderRadius: 10, background: '#2563eb', color: '#ffffff', padding: '0 14px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 12, fontWeight: 900, cursor: 'pointer' };
+const miniTableStyle = (ui) => ({ marginTop: 8, border: `1px solid ${ui.border}`, borderRadius: 10, overflow: 'hidden' });
+const miniRowStyle = (ui) => ({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 11px', borderBottom: `1px solid ${ui.border}`, color: ui.text, fontSize: 12 });
+const supportGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 };
+const supportCardStyle = (ui) => ({ minHeight: 46, border: `1px solid ${ui.border}`, background: ui.raised, color: '#2563eb', borderRadius: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 9, padding: '0 12px', fontSize: 12.5, fontWeight: 800 });
+const tipStyle = { marginTop: 12, background: '#eff6ff', color: '#1d4ed8', border: '1px solid rgba(37,99,235,0.14)', borderRadius: 12, padding: 12, fontSize: 12.5, fontWeight: 800 };
