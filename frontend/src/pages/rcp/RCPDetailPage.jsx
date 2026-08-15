@@ -396,10 +396,7 @@ export default function RCPDetailPage() {
         </div>
       )}
 
-      {/* SUIVI DECISIONS TAB */}
-      {activeTab === 'suivi' && (
-        <SuiviDecisions dossiers={data.dossiers} onMarkRealise={marquerDecisionRealisee} reload={reload} />
-      )}
+      
 
       {/* MODAL: Ajouter decision */}
       {showDecisionModal && (
@@ -496,10 +493,7 @@ export default function RCPDetailPage() {
         <ChatPanel dossier={showChatPanel} onClose={() => setShowChatPanel(null)} />
       )}
 
-      {/* PANEL: Aide IA */}
-      {showAIAssist && (
-        <AIAssistPanel dossier={showAIAssist} onClose={() => setShowAIAssist(null)} />
-      )}
+      
     </AppLayout>
   );
 }

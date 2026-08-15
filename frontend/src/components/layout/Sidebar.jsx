@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../hooks/useAuth';
 import usePermissions from '../../hooks/usePermissions';
 import usePreferences from '../../hooks/usePreferences';
+import NotificationBell from './NotificationBell';
 
 const SIDEBAR_WIDTH = 260;
 const MOBILE_BREAKPOINT = 1100;
@@ -29,7 +30,7 @@ const NAV_CONFIG = [
   },
  
   {
-    section: 'Analyses',
+    section: 'Statistiques & Rapports',
     items: [
       { path: '/stats', label: 'Statistiques', icon: ChartIcon, roles: ['doctor_chef', 'epidemiologist', 'readonly'] },
       { path: '/carte', label: 'Carte SIG', icon: MapIcon, permission: 'viewMap' },
@@ -37,10 +38,10 @@ const NAV_CONFIG = [
     ],
   },
   {
-    section: 'Systeme',
+    section: 'Profil & Assistance',
     items: [
       { path: '/aide', label: "Centre d'aide", labelKey: 'help', icon: HelpIcon, roles: ['doctor', 'doctor_chef', 'anapath', 'epidemiologist', 'pharmacist', 'secretaire', 'readonly'] },
-      { path: '/parametres-medecin', label: 'Parametres', labelKey: 'doctorSettings', icon: DoctorSettingsIcon, roles: ['doctor'] },
+      { path: '/parametres-medecin', label: 'Profil', icon: DoctorSettingsIcon, roles: ['doctor', 'doctor_chef'] },
     ],
   },
 ];
@@ -359,6 +360,7 @@ export function AppLayout({ children, title, patientContext, breadcrumb }) {
               )}
             </div>
           </div>
+          <NotificationBell />
         </div>
         <div className="app-shell__content" style={{ padding: isMobile ? '18px 14px 24px' : '28px', flex: 1 }}>
           <div style={contentPanelStyle}>{children}</div>
@@ -598,6 +600,7 @@ const topbarStyle = {
   minHeight: 72,
   display: 'flex',
   alignItems: 'center',
+  justifyContent: 'space-between',
   padding: '16px 28px',
   borderBottom: '1px solid rgba(59, 130, 246, 0.1)',
   background: 'rgba(255, 255, 255, 0.88)',
