@@ -397,22 +397,7 @@ function ActivityTab({ activity, loadingSecurity, dateFormat }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   ONGLET — SUPPORT
-───────────────────────────────────────────────────────────────────────────── */
-function SupportTab() {
-  return (
-    <div style={cardSt}>
-      <SectionTitle sub="Une question, un problème technique ? Contactez-nous.">Support</SectionTitle>
-      <FieldRow label="Email">
-        <a href="mailto:support@registrecancer.dz" style={{ fontSize: 12.5, color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>support@registrecancer.dz</a>
-      </FieldRow>
-      <FieldRow label="Téléphone">
-        <a href="tel:+213000000000" style={{ fontSize: 12.5, color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>+213 XXX XX XX XX</a>
-      </FieldRow>
-    </div>
-  );
-}
+
 
 /* ─────────────────────────────────────────────────────────────────────────────
    ONGLET — CONFIGURATION MÉDICALE (réservé au médecin chef)
@@ -769,19 +754,9 @@ export default function DoctorSettingsPage() {
       {activeTab === 'preferences' && (
         <PreferencesTab theme={theme} language={language} dateFormat={dateFormat} interfaceSize={interfaceSize} updatePreference={updatePreference} />
       )}
-      {activeTab === 'notifications' && (
-        <NotificationsTab notifications={notifications} setNotifications={setNotifications} />
-      )}
-      {activeTab === 'voice' && (
-        <VoiceTab
-          microphoneEnabled={microphoneEnabled} setMicrophoneEnabled={setMicrophoneEnabled} testMicrophone={testMicrophone}
-          language={language} updatePreference={updatePreference} sensitivity={sensitivity} setSensitivity={setSensitivity}
-        />
-      )}
-      {activeTab === 'activity' && (
-        <ActivityTab activity={activity} loadingSecurity={loadingSecurity} dateFormat={dateFormat} />
-      )}
-      {activeTab === 'support' && <SupportTab />}
+      
+     
+     
       {activeTab === 'medical' && role === 'doctor_chef' && <MedicalConfigTab />}
     </AppLayout>
   );
