@@ -6,7 +6,8 @@ import { diagnosticService } from '../../services/diagnosticService';
 import { traitementService } from '../../services/traitementService';
 import { suiviService } from '../../services/suiviService';
 import { documentService } from '../../services/documentService';
-import { medecinService } from '../../services/accountsService'; // ⚠️ adapte si le service s'appelle autrement
+import { medecinService } from '../../services/accountsService';
+import { rcpService } from '../../services/rcpService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import ExamenModal from '../../components/patients/ExamenModal';
 import { WILAYAS, COMMUNES_PAR_WILAYA } from './communesAlgerie';
@@ -110,6 +111,24 @@ const VALIDATION_STATUT_CFG = {
   rejete:     { bg: 'rgba(220,38,38,0.08)', color: '#dc2626', border: 'rgba(220,38,38,0.2)', label: 'À corriger' },
 };
 
+/* ── Config pour la section RCP ── */
+const RCP_STATUT_COLORS = {
+  attente:   { bg: 'rgba(245,166,35,0.1)',  color: '#d97706' },
+  presente:  { bg: 'rgba(0,168,255,0.1)',   color: '#2563eb' },
+  discute:   { bg: 'rgba(155,138,251,0.1)', color: '#7c3aed' },
+  decide:    { bg: 'rgba(0,229,160,0.1)',   color: '#16a34a' },
+  reporte:   { bg: 'rgba(107,114,128,0.1)', color: '#9ca3af' },
+  annule:    { bg: 'rgba(255,77,106,0.1)',  color: '#dc2626' },
+};
+const RCP_STATUT_LABELS = {
+  attente: 'En attente', presente: 'Présenté', discute: 'Discuté',
+  decide: 'Décision prise', reporte: 'Reporté', annule: 'Annulé',
+};
+const RCP_TYPE_PRESENTATION_LABELS = {
+  nouveau: 'Nouveau dossier', recidive: 'Récidive / Rechute', reval: 'Réévaluation',
+  post_trt: 'Post-traitement', second: 'Second avis', autre: 'Autre',
+};
+
 // ── Reprises du design de DiagnosticsPage pour garder une cohérence visuelle ──
 const STADE_COLORS = {
   '0':    { bg: 'rgba(0,229,160,0.1)',   color: '#16a34a', border: 'rgba(0,229,160,0.3)' },
@@ -205,6 +224,7 @@ const PATIENT_SECTIONS = [
   { key: 'examens',     label: 'Examens & Bilans'   },
   { key: 'traitements', label: 'Traitements'        },
   { key: 'suivi',       label: 'Suivi Clinique'     },
+  { key: 'rcp',         label: 'RCP'                },
   { key: 'rendezvous',  label: 'Rendez-vous'        },
 ];
 
@@ -374,6 +394,7 @@ export default function PatientDossierPage() {
   const [suivi, setSuivi] = useState([]);
   const [rendezVous, setRendezVous] = useState([]);
   const [documents, setDocuments] = useState([]);
+  const [rcp, setRCPs] = useState([]);
 
   const [loading, setLoading] = useState(true);
 
@@ -438,6 +459,7 @@ export default function PatientDossierPage() {
         diagnosticService.parPatient(id).catch(() => ({ data: [] })),
         traitementService.parPatient(id).catch(() => ({ data: {} })),
         suiviService.consultations.parPatient(id).catch(() => ({ data: [] })),
+        rcpService.dossiers.parPatient(id).catch(() => ({ data: [] })),
       );
       const responses = await Promise.all(requests);
       const resPatient    = responses[0];
@@ -448,6 +470,7 @@ export default function PatientDossierPage() {
       const resDiag     = isSecretary ? { data: [] } : (responses[5] || { data: [] });
       const resTrt       = isSecretary ? { data: {} } : (responses[6] || { data: {} });
       const resSuiv      = isSecretary ? { data: [] } : (responses[7] || { data: [] });
+      const resRcp       = isSecretary ? { data: [] } : (responses[8] || { data: [] });
       setPatient(resPatient.data);
       setDossier(resDossier.data);
       setExamens(resExamens.data?.results || resExamens.data || []);
@@ -456,6 +479,7 @@ export default function PatientDossierPage() {
       setSuivi(resSuiv.data || []);
       setRendezVous(resRendezVous.data || []);
       setDocuments(resDocuments.data?.results || resDocuments.data || []);
+      setRCPs(resRcp.data?.results || resRcp.data || []);
 
       if (location.state?.returnSection === 'diagnostic' && location.state?.newDiagnosticId) {
         setHighlightedDiagnosticId(location.state.newDiagnosticId);
@@ -554,16 +578,16 @@ export default function PatientDossierPage() {
 
   /* ── Envoi pour validation ── */
   const openSendModal = async () => {
-  setShowSendModal(true);
-  if (medecins.length === 0) {
-    try {
-      const { data } = await medecinService.list();
-      setMedecins(data?.results || data || []);
-    } catch {
-      toast.error('Impossible de charger la liste des médecins');
+    setShowSendModal(true);
+    if (medecins.length === 0) {
+      try {
+        const { data } = await medecinService.list();
+        setMedecins(data?.results || data || []);
+      } catch {
+        toast.error('Impossible de charger la liste des médecins');
+      }
     }
-  }
-};
+  };
 
   const handleSendForValidation = async ({ medecinId, note }) => {
     setSending(true);
@@ -956,6 +980,84 @@ export default function PatientDossierPage() {
                                 <Link to={`/secretaire/rendezvous?patient=${id}`} style={{ textDecoration: 'none' }}>
                                   <button style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: 'pointer' }}>Voir</button>
                                 </Link>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* == RCP == */}
+          {activeMainTab === 'rcp' && (
+            <div style={{ animation: 'fadeIn 0.2s ease' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <SectionLabel style={{ margin: 0 }}>Passages en RCP</SectionLabel>
+                <Link to={`/rcp/dossiers/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
+                  <button style={addBtnStyle}>
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Ajouter à une RCP
+                  </button>
+                </Link>
+              </div>
+
+              {rcp.length === 0 ? (
+                <div style={{ padding: 48, textAlign: 'center' }}>
+                  <div style={{ fontSize: 40, marginBottom: 12 }}>🗂️</div>
+                  <div style={{ fontSize: 14, color: '#64748b' }}>Aucun passage en RCP enregistré pour ce patient.</div>
+                </div>
+              ) : (
+                <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: '#f1f5f9' }}>
+                        {['Réunion', 'Date', 'Type de présentation', 'Statut', ''].map(h => (
+                          <th key={h} style={thStyle}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...rcp]
+                        .sort((a, b) => {
+                          const da = a.reunion_date || a.date_reunion || a.reunion_info?.date_reunion || '';
+                          const db = b.reunion_date || b.date_reunion || b.reunion_info?.date_reunion || '';
+                          return String(db).localeCompare(String(da));
+                        })
+                        .map((d, i) => {
+                          const st = RCP_STATUT_COLORS[d.statut] || RCP_STATUT_COLORS.attente;
+                          const stLabel = RCP_STATUT_LABELS[d.statut] || d.statut || '—';
+                          // Accès défensif : le nom exact des champs dénormalisés dépend du serializer backend.
+                          const reunionId    = d.reunion ?? d.reunion_id ?? d.reunion_info?.id;
+                          const reunionTitre = d.reunion_titre ?? d.reunion_nom ?? d.reunion_info?.titre ?? '—';
+                          const reunionDate  = d.reunion_date ?? d.date_reunion ?? d.reunion_info?.date_reunion;
+                          return (
+                            <tr key={d.id}
+                              onClick={() => reunionId && navigate(`/rcp/${reunionId}`)}
+                              style={{ cursor: reunionId ? 'pointer' : 'default', borderBottom: '1px solid rgba(37,99,235,0.12)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
+                              onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
+                              onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'}
+                            >
+                              <td style={{ ...tdStyle, fontSize: 12.5, fontWeight: 600, color: '#0f172a' }}>{reunionTitre}</td>
+                              <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                                {reunionDate ? new Date(reunionDate).toLocaleDateString('fr-DZ') : '—'}
+                              </td>
+                              <td style={{ ...tdStyle, fontSize: 12.5, color: '#334155' }}>
+                                {RCP_TYPE_PRESENTATION_LABELS[d.type_presentation] || d.type_presentation || '—'}
+                              </td>
+                              <td style={tdStyle}>
+                                <span style={{ padding: '4px 10px', borderRadius: 20, background: st.bg, color: st.color, fontSize: 11, fontWeight: 600 }}>
+                                  {stLabel}
+                                </span>
+                              </td>
+                              <td style={tdStyle} onClick={e => e.stopPropagation()}>
+                                {reunionId && (
+                                  <button onClick={() => navigate(`/rcp/${reunionId}`)} style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: 'pointer' }}>Voir</button>
+                                )}
                               </td>
                             </tr>
                           );
