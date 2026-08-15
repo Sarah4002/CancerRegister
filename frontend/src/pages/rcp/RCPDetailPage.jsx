@@ -272,7 +272,7 @@ export default function RCPDetailPage() {
           { key:'dossiers',  label:`Dossiers (${data.nombre_dossiers})`,          color:'#7c3aed' },
           { key:'presences', label:`Presences (${data.nombre_membres_presents})`, color:'#2563eb' },
           { key:'cr',        label:'Compte rendu',                                color:'#16a34a' },
-          { key:'suivi',     label:`Suivi decisions (${totalDecisions})`,         color:'#d97706' },
+        
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ flex:1, padding:'12px 8px', background:'none', border:'none', borderBottom:`2px solid ${activeTab===t.key?t.color:'transparent'}`, color:activeTab===t.key?t.color:'#64748b', fontSize:12, fontWeight:activeTab===t.key?600:400, cursor:'pointer', fontFamily:'var(--font-body)', transition:'all 0.15s', whiteSpace:'nowrap' }}>
@@ -807,121 +807,6 @@ function ChatPanel({ dossier, onClose }) {
   );
 }
 
-// AIAssistPanel
-function AIAssistPanel({ dossier, onClose }) {
-  const [messages, setMessages] = useState([
-    { role:'assistant', content:`Bonjour. Je suis votre assistant oncologique IA.\n\nJe vais vous aider a analyser le dossier de ${dossier.patient_nom} (${dossier.patient_numero}).\n\nQue souhaitez-vous explorer ? Vous pouvez me poser des questions sur les protocoles, les guidelines, les interactions medicamenteuses, ou me demander un resume de la situation clinique.` }
-  ]);
-  const [input, setInput]     = useState('');
-  const [loading, setLoading] = useState(false);
-  const endRef = useRef(null);
-
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior:'smooth' }); }, [messages]);
-
-  const SYSTEM_PROMPT = `Tu es un assistant medical specialise en oncologie, integre dans un systeme de RCP (Reunion de Concertation Pluridisciplinaire) hospitalier algerien.
-Tu aides les medecins a analyser des dossiers oncologiques, a consulter les guidelines (NCCN, ESMO, INCa), et a preparer les decisions therapeutiques.
-
-Contexte du dossier en discussion :
-- Patient : ${dossier.patient_nom} (${dossier.patient_numero})
-- Type de presentation : ${dossier.type_label || dossier.type_presentation}
-- Statut : ${dossier.statut_label || dossier.statut}
-- Question posee a la RCP : ${dossier.question_posee || 'Non precisee'}
-
-Reponds en francais, de facon structuree et professionnelle. Cite les guidelines pertinentes quand possible. Rappelle toujours que les decisions finales appartiennent aux medecins de la RCP.`;
-
-  const sendMessage = async () => {
-    const txt = input.trim();
-    if (!txt || loading) return;
-
-    const userMsg = { role:'user', content: txt };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
-    setInput('');
-    setLoading(true);
-
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
-        }),
-      });
-      const data = await res.json();
-      const reply = data.content?.map(b => b.text || '').join('') || 'Pas de reponse.';
-      setMessages(prev => [...prev, { role:'assistant', content: reply }]);
-    } catch {
-      setMessages(prev => [...prev, { role:'assistant', content: 'Erreur de connexion a l assistant IA. Veuillez reessayer.' }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleKey = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
-
-  const QUICK = [
-    'Quelles sont les guidelines ESMO pour ce type de cancer ?',
-    'Quels protocoles de chimiotherapie sont recommandes ?',
-    'Y a-t-il des essais cliniques pertinents ?',
-    'Quels examens complementaires sont indiques ?',
-    'Resume les options therapeutiques disponibles',
-  ];
-
-  return (
-    <SidePanel onClose={onClose} title={`Assistant IA - ${dossier.patient_nom}`} subtitle="Aide a la decision oncologique" color="#9333ea">
-      <div style={{ padding:'8px 14px', borderBottom:'1px solid rgba(37,99,235,0.12)', background:'rgba(192,132,252,0.05)' }}>
-        <div style={{ fontSize:10, color:'#9333ea', fontWeight:600, marginBottom:5 }}>Questions rapides</div>
-        <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
-          {QUICK.map(q => (
-            <button key={q} onClick={() => setInput(q)}
-              style={{ padding:'3px 8px', background:'rgba(192,132,252,0.1)', border:'1px solid rgba(192,132,252,0.2)', borderRadius:12, color:'#9333ea', fontSize:10, cursor:'pointer', lineHeight:1.4 }}>
-              {q}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ flex:1, overflowY:'auto', padding:'14px', display:'flex', flexDirection:'column', gap:12 }}>
-        {messages.map((msg, i) => (
-          <div key={i} style={{ display:'flex', flexDirection:'column', gap:4, alignItems: msg.role==='user' ? 'flex-end' : 'flex-start' }}>
-            <div style={{ fontSize:10, color:'#64748b', padding:'0 4px' }}>
-              {msg.role === 'user' ? 'Vous' : 'Assistant IA'}
-            </div>
-            <div style={{ maxWidth:'88%', padding:'10px 14px', background: msg.role==='user' ? 'rgba(0,168,255,0.12)' : 'rgba(192,132,252,0.08)', border:`1px solid ${msg.role==='user' ? 'rgba(0,168,255,0.25)' : 'rgba(192,132,252,0.2)'}`, borderRadius: msg.role==='user' ? '12px 12px 0 12px' : '12px 12px 12px 0', fontSize:12.5, color:'#334155', lineHeight:1.75, whiteSpace:'pre-wrap' }}>
-              {msg.content}
-            </div>
-          </div>
-        ))}
-        {loading && (
-          <div style={{ display:'flex', alignItems:'center', gap:8, color:'#64748b', fontSize:12 }}>
-            <div style={{ display:'flex', gap:3 }}>
-              {[0,1,2].map(i => <div key={i} style={{ width:6, height:6, borderRadius:'50%', background:'#9333ea', animation:'pulse 1.2s ease-in-out infinite', animationDelay:`${i*0.2}s`, opacity:0.6 }} />)}
-            </div>
-            Analyse en cours...
-          </div>
-        )}
-        <div ref={endRef} />
-      </div>
-
-      <div style={{ padding:'10px 14px', borderTop:'1px solid rgba(37,99,235,0.12)', display:'flex', gap:8 }}>
-        <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} rows={2}
-          placeholder="Posez votre question medicale... (Entree pour envoyer)"
-          disabled={loading}
-          style={{ flex:1, padding:'8px 12px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:8, color:'#0f172a', fontSize:12.5, outline:'none', resize:'none', fontFamily:'var(--font-body)', lineHeight:1.5, opacity:loading?0.6:1 }} />
-        <button onClick={sendMessage} disabled={loading}
-          style={{ padding:'8px 14px', background:'linear-gradient(135deg,#9333ea,#9333ea)', border:'none', borderRadius:8, color:'#fff', fontSize:13, cursor:loading?'not-allowed':'pointer', alignSelf:'flex-end', flexShrink:0, opacity:loading?0.7:1 }}>
-          Envoyer
-        </button>
-      </div>
-      <div style={{ padding:'6px 14px', background:'rgba(192,132,252,0.03)', borderTop:'1px solid rgba(37,99,235,0.12)' }}>
-        <p style={{ fontSize:9.5, color:'#64748b', margin:0, lineHeight:1.5 }}>L assistant IA est un outil d aide a la decision. Les decisions therapeutiques finales relevent exclusivement de la responsabilite des medecins.</p>
-      </div>
-    </SidePanel>
-  );
-}
 
 // SidePanel
 function SidePanel({ children, onClose, title, subtitle, color }) {
