@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Count, Q
@@ -11,7 +11,7 @@ from collections import Counter
 from django.shortcuts import get_object_or_404
 from apps.sig.serializers import MapCardSerializer
 from .models import MapCard, PopulationCommune
-from apps.accounts.permissions import can_view_map
+from apps.accounts.permissions import CanViewMap, can_manage_sig_configuration
 from apps.sig.wilayas_data import WILAYAS
 import unicodedata
 import json
@@ -402,7 +402,7 @@ Justification : présence de {context['total_diagnostics']} diagnostics, {contex
 
 @csrf_exempt
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([CanViewMap])
 def analyze_sig_scope(request):
     payload = request.data or {}
     wilaya = str(payload.get('wilaya', '')).strip()
@@ -486,7 +486,7 @@ def analyze_sig_scope(request):
 
 @csrf_exempt
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([CanViewMap])
 def get_map_data(request):
     """Get geographic data for the SIG map with all cancer cases by wilaya."""
     # Utilisation de la liste centralisée WILAYAS pour éviter les doublons
@@ -538,7 +538,7 @@ def get_map_data(request):
 
 @csrf_exempt
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([CanViewMap])
 def get_statistics(request):
     """Get cancer statistics for Algeria."""
     year = request.GET.get('year')
@@ -632,7 +632,7 @@ def health_check(request):
 
 @csrf_exempt
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([CanViewMap])
 def get_all_wilayas_data(request):
     """
     Récupère tous les cas de cancer par wilaya.
@@ -669,7 +669,7 @@ def get_all_wilayas_data(request):
 
 @csrf_exempt
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([CanViewMap])
 def get_tlemcen_data(request):
     """
     Récupère les données de cancer par wilaya/commune.
@@ -747,7 +747,7 @@ def get_tlemcen_data(request):
 
 @csrf_exempt
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([CanViewMap])
 def get_cancer_statistics(request):
     """
     Récupère les statistiques des cancers dominants avec causes.
@@ -898,7 +898,7 @@ def _get_cancer_causes(cancer_stats):
 
 @csrf_exempt
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([CanViewMap])
 def get_sig_stats(request):
     """
     GET /api/v1/sig/stats/
@@ -1012,7 +1012,7 @@ def get_sig_stats(request):
 
 @csrf_exempt
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([CanViewMap])
 def get_wilaya_details(request, nom):
     """
     GET /api/v1/sig/wilaya/{nom}/
@@ -1056,7 +1056,7 @@ def get_wilaya_details(request, nom):
 
 @csrf_exempt
 @api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([CanViewMap])
 def mapcards(request):
     """GET: liste des cartes partagées (actives). POST: créer une nouvelle carte."""
     try:
@@ -1065,6 +1065,9 @@ def mapcards(request):
             qs = MapCard.objects.filter(est_actif=True).order_by('-id')
             serializer = MapCardSerializer(qs, many=True)
             return Response(serializer.data)
+
+        if not can_manage_sig_configuration(request.user):
+            return Response({'detail': 'Configuration SIG réservée au médecin chef.'}, status=status.HTTP_403_FORBIDDEN)
 
         # POST -> create
         data = request.data
@@ -1080,7 +1083,7 @@ def mapcards(request):
 
 @csrf_exempt
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
-@permission_classes([IsAuthenticated])
+@permission_classes([CanViewMap])
 def mapcard_detail(request, pk):
     obj = get_object_or_404(MapCard, pk=pk)
     if request.method == 'GET':
@@ -1088,8 +1091,7 @@ def mapcard_detail(request, pk):
 
     # update
     if request.method in ['PUT', 'PATCH']:
-        # only creator or user with can_view_map can modify
-        if obj.cree_par != request.user and not can_view_map(request.user):
+        if not can_manage_sig_configuration(request.user):
             return Response({'detail': 'Non autorise.'}, status=403)
         serializer = MapCardSerializer(obj, data=request.data, partial=(request.method == 'PATCH'))
         if serializer.is_valid():
@@ -1099,7 +1101,7 @@ def mapcard_detail(request, pk):
 
     # delete -> soft-delete
     if request.method == 'DELETE':
-        if obj.cree_par != request.user and not can_view_map(request.user):
+        if not can_manage_sig_configuration(request.user):
             return Response({'detail': 'Non autorise.'}, status=403)
         obj.est_actif = False
         obj.save()

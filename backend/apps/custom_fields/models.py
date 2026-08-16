@@ -161,3 +161,30 @@ class ValeurChamp(models.Model):
         except (ValueError, TypeError):
             pass
         return self.valeur
+
+
+class PropositionConfigurationMedicale(models.Model):
+    """Proposition d'un médecin, soumise à la décision du médecin chef."""
+
+    class Type(models.TextChoices):
+        CHAMP = 'champ', 'Champ personnalisé'
+        REGLE = 'regle', 'Règle de validation'
+
+    class Statut(models.TextChoices):
+        EN_ATTENTE = 'en_attente', 'En attente'
+        APPROUVEE = 'approuvee', 'Approuvée'
+        REFUSEE = 'refusee', 'Refusée'
+
+    type_proposition = models.CharField(max_length=10, choices=Type.choices)
+    donnees = models.JSONField(default=dict)
+    justification = models.TextField()
+    statut = models.CharField(max_length=15, choices=Statut.choices, default=Statut.EN_ATTENTE)
+    proposee_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='propositions_medicales')
+    traitee_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='propositions_medicales_traitees')
+    commentaire_decision = models.TextField(blank=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_decision = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'medical_configuration_proposals'
+        ordering = ['-date_creation']

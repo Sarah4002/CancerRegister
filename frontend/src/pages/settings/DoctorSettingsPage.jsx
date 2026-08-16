@@ -8,6 +8,7 @@ import usePreferences from '../../hooks/usePreferences';
 import { authService } from '../../services/api';
 import { validationRulesService } from '../../services/validationRulesService';
 import api from '../../services/api';
+import MedicalProposalsTab from './MedicalProposalsTab';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    PRIMITIVES PARTAGÉES — identiques à AdminSettingsPage, pour garder le même
@@ -718,6 +719,7 @@ export default function DoctorSettingsPage() {
     { key: 'profile', label: 'Profil' },
     { key: 'security', label: 'Sécurité' },
     { key: 'preferences', label: 'Préférences' },
+    { key: 'proposals', label: role === 'doctor_chef' ? 'Propositions & médecins' : 'Propositions' },
     ...(role === 'doctor_chef' ? [{ key: 'medical', label: 'Configuration médicale' }] : []),
   ];
 
@@ -750,6 +752,7 @@ export default function DoctorSettingsPage() {
       {activeTab === 'preferences' && (
         <PreferencesTab theme={theme} language={language} dateFormat={dateFormat} interfaceSize={interfaceSize} updatePreference={updatePreference} />
       )}
+      {activeTab === 'proposals' && <MedicalProposalsTab isChief={role === 'doctor_chef'} />}
       
      
      

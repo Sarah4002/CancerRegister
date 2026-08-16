@@ -3,7 +3,7 @@ apps/custom_fields/serializers.py
 """
 
 from rest_framework import serializers
-from .models import ChampPersonnalise, ValeurChamp
+from .models import ChampPersonnalise, ValeurChamp, PropositionConfigurationMedicale
 
 
 class ChampPersonnaliseSerializer(serializers.ModelSerializer):
@@ -93,3 +93,26 @@ class ValeurChampBulkSerializer(serializers.Serializer):
     module    = serializers.ChoiceField(choices=['patient','diagnostic','traitement','suivi'])
     object_id = serializers.IntegerField()
     valeurs   = serializers.DictField(child=serializers.CharField(allow_blank=True, allow_null=True))
+
+
+class PropositionConfigurationMedicaleSerializer(serializers.ModelSerializer):
+    proposee_par_nom = serializers.SerializerMethodField()
+    traitee_par_nom = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PropositionConfigurationMedicale
+        fields = ['id', 'type_proposition', 'donnees', 'justification', 'statut',
+                  'proposee_par', 'proposee_par_nom', 'traitee_par', 'traitee_par_nom',
+                  'commentaire_decision', 'date_creation', 'date_decision']
+        read_only_fields = ['statut', 'proposee_par', 'traitee_par', 'commentaire_decision', 'date_creation', 'date_decision']
+
+    def get_proposee_par_nom(self, obj):
+        return obj.proposee_par.get_full_name() or obj.proposee_par.email
+
+    def get_traitee_par_nom(self, obj):
+        return (obj.traitee_par.get_full_name() or obj.traitee_par.email) if obj.traitee_par else None
+
+    def validate_donnees(self, value):
+        if not isinstance(value, dict) or not value:
+            raise serializers.ValidationError('Les données proposées sont requises.')
+        return value

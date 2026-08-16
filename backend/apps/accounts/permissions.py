@@ -99,7 +99,12 @@ def can_export_identified_data(user):
 
 def can_view_map(user):
     """Carte SIG."""
-    return has_role(user, ROLE_EPIDEMIOLOGIST)
+    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_EPIDEMIOLOGIST)
+
+
+def can_manage_sig_configuration(user):
+    """Créer, modifier ou supprimer les zones/cartes SIG partagées."""
+    return has_role(user, ROLE_DOCTOR_CHEF)
 
 def can_manage_users(user):
     """Gérer les comptes utilisateurs."""
@@ -185,6 +190,13 @@ class CanViewStatistics(BasePermission):
     message = "Vous n'avez pas accès aux statistiques."
     def has_permission(self, request, view):
         return can_view_statistics(request.user)
+
+
+class CanViewMap(BasePermission):
+    message = "Accès à la carte SIG non autorisé."
+
+    def has_permission(self, request, view):
+        return can_view_map(request.user)
 
 
 class CanManageAppointmentsOrClinicalFollowup(BasePermission):

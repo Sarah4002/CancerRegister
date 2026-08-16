@@ -100,7 +100,7 @@ export default function usePermissions() {
     can_view_statistics: ['admin', 'doctor_chef', 'doctor', 'pharmacist', 'anapath', 'epidemiologist'].includes(role),
     can_export: ['doctor_chef', 'epidemiologist'].includes(role),
     can_export_identified_data: role === 'doctor_chef',
-    can_view_map: role === 'epidemiologist',
+    can_view_map: ['doctor_chef', 'epidemiologist'].includes(role),
     can_manage_users: role === 'admin',
     can_view_rcp: ['doctor_chef', 'doctor'].includes(role),
     can_write_anapath_report: role === 'anapath',

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { AppLayout } from '../../components/layout/Sidebar';
 import { sigService } from '../../services/sigService';
+import usePermissions from '../../hooks/usePermissions';
 import SigAiAnalysisPanel, { COMMUNES_RISK_ANALYSIS } from './SigAiAnalysisPanel';
 
 const STYLES = `
@@ -353,6 +354,8 @@ function SigFilterBar({ filters, draft, setDraft, onApply, onReset, wilayaOption
 }
 
 function SigPageV2() {
+  const { role } = usePermissions();
+  const canManageSig = role === 'doctor_chef';
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const heatLayerRef = useRef(null);
@@ -1046,6 +1049,7 @@ function SigPageV2() {
               <button className="sig-map-action" onClick={toggleThermalView}>
                 {thermalEnabled ? 'Masquer thermique' : 'Afficher thermique'}
               </button>
+              {canManageSig && <>
               {!zoneCenter ? (
                 <button className="sig-map-action" onClick={startCircleDrawing} style={{ background: drawingMode === 'circle' ? '#dbeafe' : '#ffffff' }}>
                   {drawingMode === 'circle' ? 'Cliquez sur la carte...' : 'Nouvelle zone cercle'}
@@ -1073,6 +1077,7 @@ function SigPageV2() {
                   {savingZone ? 'Enregistrement...' : 'Confirmer & Sauvegarder'}
                 </button>
               )}
+              </>}
             </div>
           </div>
 
@@ -1124,9 +1129,9 @@ function SigPageV2() {
                               <div className="zone-name">{zone.nom}</div>
                               <div className="zone-meta">Rayon: {formatZoneRadiusKm(zone)} km</div>
                             </div>
-                            <div className="zone-actions">
+                            {canManageSig && <div className="zone-actions">
                               <button onClick={(e) => deleteSavedZone(zone.id, e)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>✕</button>
-                            </div>
+                            </div>}
                           </div>
                         ))
                       )}
