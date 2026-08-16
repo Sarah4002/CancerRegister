@@ -621,8 +621,8 @@ export default function DoctorSettingsPage() {
         full_name: data.display_name || data.full_name,
         cnom: data.registration_number,
       });
-    } catch {
-      toast.error('Impossible de charger le profil.');
+    } catch (error) {
+      toast.error(readApiError(error, 'Impossible de charger le profil.'));
     }
   }
 

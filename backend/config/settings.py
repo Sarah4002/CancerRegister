@@ -9,6 +9,11 @@ from decouple import config
 import os
 import dj_database_url
 
+
+def parse_debug(value):
+    """Accepte les valeurs de déploiement usuelles, dont DEBUG=release."""
+    return str(value).strip().lower() in {'1', 'true', 'yes', 'on', 'debug'}
+
 DATABASE_URL = config('DATABASE_URL', default=None)
 
 if DATABASE_URL:
@@ -29,7 +34,7 @@ GROQ_API_KEY = config('GROQ_API_KEY', default=None)
 # Security
 # ─────────────────────────────────────────────
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production-2024')
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=True, cast=parse_debug)
 
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
