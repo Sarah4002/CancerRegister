@@ -44,6 +44,7 @@ import RendezVousPage from './pages/secretaire/Rendez-vous';
 import SettingsPage from './pages/settings/SettingsPage';
 import HelpCenterPage from './pages/help/HelpCenterPage';
 import DoctorSettingsPage from './pages/settings/DoctorSettingsPage';
+import PharmacyPage from './pages/pharmacie/PharmacyPage';
 
 import { AppLayout } from './components/layout/Sidebar';
 import AccessDenied, { RequirePermission } from './components/auth/AccessDenied';
@@ -69,6 +70,10 @@ function RoleAwareDashboard() {
 
   if (user?.role === 'admin') {
     return <AdminPage />;
+  }
+
+  if (user?.role === 'pharmacist') {
+    return <PharmacyPage />;
   }
 
   return <DashboardPage />;
@@ -340,6 +345,7 @@ function App() {
             <DoctorSettingsPage />
           </ProtectedRoute>
         } />
+        <Route path="/pharmacie" element={<ProtectedRoute><PharmacyPage /></ProtectedRoute>} />
 
         {/* ───────── Page de Secretaire ───────── */}
         <Route path="/secretaire" element={

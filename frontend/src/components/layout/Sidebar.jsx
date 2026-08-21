@@ -28,6 +28,11 @@ const NAV_CONFIG = [
     ],
     
   },
+  { section: 'Pharmacie', items: [
+    { path: '/pharmacie?vue=dashboard', label: 'Tableau de bord', icon: PillIcon, roles: ['pharmacist'] },
+    { path: '/pharmacie?vue=medicaments', label: 'Médicaments', icon: PillIcon, roles: ['pharmacist'] },
+    { path: '/pharmacie?vue=stock', label: 'Gestion du stock', icon: SlidersIcon, roles: ['pharmacist'] },
+  ] },
  
   {
     section: 'Statistiques & Rapports',
@@ -273,7 +278,9 @@ export default function Sidebar({ patientContext }) {
                 <div key={section} style={{ marginBottom: 10 }}>
                   <div style={sectionTitleStyle}>{section}</div>
                   {items.map(({ path, label, icon: Icon, labelKey }) => {
-                    const active = isActivePath(path, location.pathname);
+                    const active = path.includes('?')
+                      ? `${location.pathname}${location.search}` === path
+                      : isActivePath(path, location.pathname);
                     const compact = path === '/patients/doublons';
                     const displayLabel = labelKey ? t[labelKey] : label;
                     return (
