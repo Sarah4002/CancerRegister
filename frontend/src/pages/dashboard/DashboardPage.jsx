@@ -8,6 +8,7 @@ import {
 import { dashboardService } from '../../services/dashboardService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import AlgeriaHeatmap from '../../components/dashboard/AlgeriaHeatmap';
+import usePermissions from '../../hooks/usePermissions';
 
 /* ── Color Palette ── */
 const STADE_COLORS = {
@@ -352,6 +353,7 @@ function FilterBar({ filters, draft, setDraft, onApply, onReset, wilayas = [] })
    MAIN — DashboardPage
    ══════════════════════════════════════════════ */
 export default function DashboardPage() {
+  const { can } = usePermissions();
   const [data,       setData]       = useState(null);
   const [alertes,    setAlertes]    = useState(null);
   const [loading,    setLoading]    = useState(true);
@@ -740,13 +742,13 @@ export default function DashboardPage() {
         <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1.2, marginBottom:14 }}>Accès rapides</div>
         <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
           {[
-            { to:'/patients/nouveau',                   label:'+ Nouveau patient',    color:'#2563eb' },
-            { to:'/diagnostics/nouveau',                label:'+ Nouveau diagnostic', color:'#7c3aed' },
-            { to:'/traitements/nouveau?type=chimio',    label:'+ Nouvelle chimio',    color:'#d97706' },
-            { to:'/traitements/nouveau?type=chirurgie', label:'+ Nouvelle chirurgie', color:'#dc2626' },
-            { to:'/patients',                           label:'Liste patients',        color:'#16a34a' },
-            { to:'/traitements',                        label:'Traitements',           color:'#0891b2' },
-          ].map(item => (
+            { to:'/patients/nouveau',                   label:'+ Nouveau patient',    color:'#2563eb', visible: can.writePatient },
+            { to:'/diagnostics/nouveau',                label:'+ Nouveau diagnostic', color:'#7c3aed', visible: can.writeDiagnostic },
+            { to:'/traitements/nouveau?type=chimio',    label:'+ Nouvelle chimio',    color:'#d97706', visible: can.writeTreatment },
+            { to:'/traitements/nouveau?type=chirurgie', label:'+ Nouvelle chirurgie', color:'#dc2626', visible: can.writeTreatment },
+            { to:'/patients',                           label:'Liste patients',        color:'#16a34a', visible: can.readPatient },
+            { to:'/traitements',                        label:'Traitements',           color:'#0891b2', visible: can.readTreatment },
+          ].filter(item => item.visible).map(item => (
             <Link key={item.to} to={item.to} style={{ textDecoration:'none' }}>
               <div
                 style={{ padding:'8px 16px', background:`${item.color}08`, border:`1px solid ${item.color}20`, borderRadius:10, color:item.color, fontSize:13, fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}

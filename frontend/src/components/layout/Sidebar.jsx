@@ -41,7 +41,7 @@ const NAV_CONFIG = [
     section: 'Système',
     items: [
       { path: '/aide', label: "Centre d'aide", labelKey: 'help', icon: HelpIcon, roles: ['doctor', 'doctor_chef', 'anapath', 'epidemiologist', 'pharmacist', 'secretaire', 'readonly'] },
-      { path: '/parametres-medecin', label: 'Paramètres', icon: DoctorSettingsIcon, roles: ['doctor', 'doctor_chef'] },
+      { path: '/parametres-medecin', label: 'Paramètres', icon: DoctorSettingsIcon, roles: ['doctor', 'doctor_chef', 'anapath'] },
     ],
   },
 ];

@@ -1052,7 +1052,7 @@ export default function PatientsPage() {
         ))}
 
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
-          <button
+          {can.export && <button
             onClick={() => setShowExport(true)}
             style={{
               padding:'9px 16px',
@@ -1079,11 +1079,11 @@ export default function PatientsPage() {
                 {pagination.count.toLocaleString('fr-FR')}
               </span>
             )}
-          </button>
+          </button>}
 
           {can.manageCanReg && <CanRegImportExport onImportDone={() => fetchPatients()} />}
 
-          <Link to="/patients/nouveau" style={{ textDecoration:'none' }}>
+          {can.writePatient && <Link to="/patients/nouveau" style={{ textDecoration:'none' }}>
             <button style={{
               padding:'9px 18px',
               background:'linear-gradient(135deg,#3b82f6,#2563eb)',
@@ -1097,7 +1097,7 @@ export default function PatientsPage() {
               </svg>
               Nouveau patient
             </button>
-          </Link>
+          </Link>}
         </div>
       </div>
 

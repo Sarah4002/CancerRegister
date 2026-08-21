@@ -13,6 +13,7 @@ import ExamenModal from '../../components/patients/ExamenModal';
 import { WILAYAS, COMMUNES_PAR_WILAYA } from './communesAlgerie';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../hooks/useAuth';
+import usePermissions from '../../hooks/usePermissions';
 import { secretaryService } from '../../services/secretaryService';
 
 const MOBILE_APP_BASE_URL = (
@@ -384,6 +385,7 @@ export default function PatientDossierPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthStore();
+  const { can } = usePermissions();
   const isSecretary = user?.role === 'secretaire';
 
   const [patient, setPatient] = useState(null);
@@ -619,7 +621,20 @@ export default function PatientDossierPage() {
     }
   };
 
-  const visiblePatientSections = isSecretary ? PATIENT_SECTIONS.filter(s => s.key === 'identite' || s.key === 'rendezvous') : PATIENT_SECTIONS;
+  const visiblePatientSections = PATIENT_SECTIONS.filter((section) => {
+    if (isSecretary) return section.key === 'identite' || section.key === 'rendezvous';
+
+    return {
+      identite: can.readPatient,
+      clinique: can.writeDiagnostic,
+      diagnostic: can.readDiagnostic,
+      examens: can.readDiagnostic,
+      traitements: can.readTreatment,
+      suivi: can.accessClinicalFollowup,
+      rcp: can.viewRcp,
+      rendezvous: can.manageAppointments,
+    }[section.key];
+  });
   const currentSectionLabel = visiblePatientSections.find(s => s.key === activeSectionKey)?.label || '';
 
   if (loading || !patient) return (
@@ -727,9 +742,9 @@ export default function PatientDossierPage() {
                      </button>
                    </>
                  )}
-                 <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
+                 {can.writePatient && <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
                    Modifier le patient
-                 </button>
+                 </button>}
                </div>
              </div>
               <div style={{ display: 'flex', marginBottom: 16, background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
@@ -922,14 +937,14 @@ export default function PatientDossierPage() {
             <div style={{ animation: 'fadeIn 0.2s ease' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <SectionLabel style={{ margin: 0 }}>Rendez-vous du patient</SectionLabel>
-                <Link to={`/secretaire/rendezvous/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
+                {can.manageAppointments && <Link to={`/secretaire/rendezvous/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
                   <button style={addBtnStyle}>
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                     </svg>
                     Ajouter un rendez-vous
                   </button>
-                </Link>
+                </Link>}
               </div>
 
               {rendezVous.length === 0 ? (
@@ -996,14 +1011,14 @@ export default function PatientDossierPage() {
             <div style={{ animation: 'fadeIn 0.2s ease' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <SectionLabel style={{ margin: 0 }}>Passages en RCP</SectionLabel>
-                <Link to={`/rcp/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
+                {can.viewRcp && <Link to={`/rcp/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
                   <button style={addBtnStyle}>
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                     </svg>
                     Ajouter à une RCP
                   </button>
-                </Link>
+                </Link>}
               </div>
 
               {rcp.length === 0 ? (
@@ -1081,7 +1096,7 @@ export default function PatientDossierPage() {
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                      <SectionLabel style={{ margin: 0 }}>Constantes & Actes</SectionLabel>
                      {!dossierEditMode ? (
-                       <button onClick={() => { setDossierForm(dossier || {}); setDossierEditMode(true); }} style={btnSt}>Modifier le dossier</button>
+                       can.writeDiagnostic && <button onClick={() => { setDossierForm(dossier || {}); setDossierEditMode(true); }} style={btnSt}>Modifier le dossier</button>
                      ) : (
                        <div style={{ display: 'flex', gap: 10 }}>
                          <button onClick={() => setDossierEditMode(false)} style={btnStSecondary}>Annuler</button>
@@ -1119,14 +1134,14 @@ export default function PatientDossierPage() {
                  <div style={{ animation: 'fadeIn 0.2s ease' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                      <SectionLabel style={{ margin: 0 }}>Diagnostic(s) associé(s)</SectionLabel>
-                     <Link to={`/diagnostics/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
+                     {can.writeDiagnostic && <Link to={`/diagnostics/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
                        <button style={addBtnStyle}>
                          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                          </svg>
                          Ajouter un diagnostic
                        </button>
-                     </Link>
+                     </Link>}
                    </div>
 
                    {diagnostics.length === 0 ? (
@@ -1189,12 +1204,12 @@ export default function PatientDossierPage() {
                  <div style={{ animation: 'fadeIn 0.2s ease' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                      <SectionLabel style={{ margin: 0 }}>Examens & Bilans</SectionLabel>
-                     <button onClick={() => { setEditingExamen(null); setShowExamenModal(true); }} style={addBtnStyle}>
+                     {(can.writeDiagnostic || can.writeAnapathReport) && <button onClick={() => { setEditingExamen(null); setShowExamenModal(true); }} style={addBtnStyle}>
                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                        </svg>
                        Prescrire un examen
-                     </button>
+                     </button>}
                    </div>
 
                    {examens.length === 0 ? (
@@ -1249,14 +1264,14 @@ export default function PatientDossierPage() {
             <div style={{ animation: 'fadeIn 0.2s ease' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <SectionLabel style={{ margin: 0 }}>Historique des Traitements</SectionLabel>
-                <Link to={`/traitements/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
+                {can.writeTreatment && <Link to={`/traitements/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
                   <button style={addBtnStyle}>
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                     </svg>
                     Ajouter un traitement
                   </button>
-                </Link>
+                </Link>}
               </div>
 
               {(() => {
@@ -1315,14 +1330,14 @@ export default function PatientDossierPage() {
             <div style={{ animation: 'fadeIn 0.2s ease' }}>
                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                  <SectionLabel style={{ margin: 0 }}>Consultations & Suivi</SectionLabel>
-                 <Link to={`/suivi/consultations/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
+                 {can.accessClinicalFollowup && <Link to={`/suivi/consultations/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
                    <button style={addBtnStyle}>
                      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                      </svg>
                      Ajouter un suivi clinique
                    </button>
-                 </Link>
+                 </Link>}
                </div>
 
                {suivi.length === 0 ? (

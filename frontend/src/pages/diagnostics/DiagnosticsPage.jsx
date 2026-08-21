@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { diagnosticService } from '../../services/diagnosticService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import toast from 'react-hot-toast';
+import usePermissions from '../../hooks/usePermissions';
 
 const STADE_COLORS = {
   '0':    { bg: 'rgba(0,229,160,0.1)',   color: '#16a34a', border: 'rgba(0,229,160,0.3)' },
@@ -45,6 +46,7 @@ function TNMBadge({ tnm }) {
 
 export default function DiagnosticsPage() {
   const navigate = useNavigate();
+  const { can } = usePermissions();
   const [diagnostics, setDiagnostics] = useState([]);
   const [stats,       setStats]       = useState(null);
   const [loading,     setLoading]     = useState(true);
@@ -109,14 +111,14 @@ export default function DiagnosticsPage() {
           ))}
         </select>
         <div style={{ marginLeft: 'auto' }}>
-          <Link to="/diagnostics/nouveau" style={{ textDecoration: 'none' }}>
+          {can.writeDiagnostic && <Link to="/diagnostics/nouveau" style={{ textDecoration: 'none' }}>
             <button style={addBtnStyle}>
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
               </svg>
               Nouveau diagnostic
             </button>
-          </Link>
+          </Link>}
         </div>
       </div>
 

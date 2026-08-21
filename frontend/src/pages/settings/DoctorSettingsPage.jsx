@@ -597,7 +597,7 @@ export default function DoctorSettingsPage() {
     localStorage.setItem('doctor_audio_sensitivity', String(sensitivity));
   }, [sensitivity]);
 
-  if (role && !['doctor', 'doctor_chef'].includes(role)) {
+  if (role && !['doctor', 'doctor_chef', 'anapath'].includes(role)) {
     return <AccessDenied message="Cette page est reservee au profil medecin." />;
   }
 
