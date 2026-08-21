@@ -38,6 +38,7 @@ urlpatterns = [
     path('api/v1/exports/', include('apps.exports.urls')),
     path('api/v1/examens/', include('apps.examens.urls')),
     path('api/v1/notifications/', include('apps.notifications.urls')),
+    path('api/v1/pharmacy/',      include('apps.pharmacy.urls')),
 
 
     # ==============================

@@ -135,11 +135,23 @@ def can_manage_medical_configuration(user):
     return has_role(user, ROLE_ADMIN, ROLE_DOCTOR_CHEF)
 
 
+def can_manage_pharmacy(user):
+    """Consulter et gérer le stock de la pharmacie hospitalière."""
+    return has_role(user, ROLE_PHARMACIST)
+
+
 # ── Classes de permission DRF ──────────────────────────────────
 
 class IsAdmin(BasePermission):
     def has_permission(self, request, view):
         return is_admin(request.user)
+
+
+class CanManagePharmacy(BasePermission):
+    message = "Cet espace est réservé au service de pharmacie."
+
+    def has_permission(self, request, view):
+        return can_manage_pharmacy(request.user)
 
 
 class CanReadPatient(BasePermission):
