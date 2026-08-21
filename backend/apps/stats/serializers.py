@@ -115,6 +115,7 @@ class AIReportCreateSerializer(serializers.Serializer):
     chart_id        = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
     chart_label     = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
     chart_data      = serializers.ListField(child=serializers.JSONField(), required=False, default=list)
+    hypothesis      = serializers.CharField(max_length=1000, required=False, allow_blank=True, default='')
     include_charts  = serializers.BooleanField(default=True)
 
 

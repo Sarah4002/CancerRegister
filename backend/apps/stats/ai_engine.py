@@ -50,6 +50,7 @@ class AIReportEngine:
         self.chart_id    = self.filters.get('chart_id', '')
         self.chart_label = self.filters.get('chart_label', '') or self.CHART_NAME_MAP.get(self.chart_id, '')
         self.chart_data  = self.filters.get('chart_data', []) if isinstance(self.filters.get('chart_data', []), list) else []
+        self.hypothesis  = str(self.filters.get('hypothesis', '') or '').strip()
         self.stats       = {}   # données agrégées collectées
 
     def build_markdown(self) -> str:
@@ -157,7 +158,13 @@ class AIReportEngine:
         return f"""# Rapport épidémiologique — {t}
 *Généré automatiquement le {now}*{chart_intro}
 
----
+{f'''## Hypothèse épidémiologique à examiner
+
+**Hypothèse formulée :** {self.hypothesis}
+
+Cette hypothèse doit être confrontée aux données du graphique et validée par un épidémiologiste avant toute décision opérationnelle.
+
+''' if self.hypothesis else ''}---
 
 ## 1. Vue d'ensemble
 

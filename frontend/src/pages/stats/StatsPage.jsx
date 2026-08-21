@@ -1345,7 +1345,7 @@ function DownloadMenu({ report, chartLabel, chartData, chartRef }) {
 }
 
 // ── MiniAIReport : fond blanc ─────────────────────────────────────────────────
-function MiniAIReport({ chartId, chartLabel, filters, chartRef, chartData }) {
+function MiniAIReport({ chartId, chartLabel, hypothesis, filters, chartRef, chartData }) {
   const [state, setState] = useState('idle');
   const [report, setReport] = useState(null);
   const [open,   setOpen]   = useState(false);
@@ -1360,6 +1360,7 @@ function MiniAIReport({ chartId, chartLabel, filters, chartRef, chartData }) {
         chart_id: chartId,
         chart_label: chartLabel,
         chart_data: Array.isArray(chartData) ? chartData.slice(0, 40) : [],
+        hypothesis: hypothesis?.trim() || '',
         ...filters,
       });
 
@@ -1513,14 +1514,26 @@ function MiniAIReport({ chartId, chartLabel, filters, chartRef, chartData }) {
 // CHART CARD
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function ChartCard({ chart, filters, onRemove, title, sub, children, span = 1 }) {
+function ChartCard({ chart, filters, onRemove, onUpdate, title, sub, children, span = 1 }) {
   const isCustom = children !== undefined;
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
   const [cType,   setCType]   = useState(chart?.chartType);
   const [palette, setPalette] = useState(chart?.palette || 'ocean');
+  const [hypothesisOpen, setHypothesisOpen] = useState(false);
+  const [hypothesis, setHypothesis] = useState(chart?.hypothesis || '');
   const chartRef = useRef(null);
+
+  useEffect(() => {
+    setHypothesis(chart?.hypothesis || '');
+  }, [chart?.hypothesis]);
+
+  const saveHypothesis = () => {
+    const value = hypothesis.trim();
+    if (value !== (chart?.hypothesis || '')) onUpdate?.({ hypothesis: value });
+    setHypothesisOpen(false);
+  };
 
   if (isCustom) {
     return (
@@ -1632,6 +1645,24 @@ function ChartCard({ chart, filters, onRemove, title, sub, children, span = 1 })
       </div>
 
       {/* ── Zone graphique : fond blanc ── */}
+      <div style={{ padding: '8px 14px', borderBottom: `1px solid ${T.border}`, background: T.bgElevated }}>
+        {hypothesisOpen ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <label style={{ fontSize: 10, fontWeight: 700, color: T.textSec }}>Hypothèse épidémiologique à vérifier</label>
+            <textarea value={hypothesis} onChange={e => setHypothesis(e.target.value)} placeholder="Ex. La hausse observée pourrait être liée à un dépistage plus précoce." maxLength={1000} rows={3} style={{ resize: 'vertical', padding: '7px 9px', borderRadius: T.radiusSm, border: `1px solid ${T.border}`, fontSize: 11, fontFamily: 'inherit', color: T.textPri }} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+              <button onClick={() => { setHypothesis(chart?.hypothesis || ''); setHypothesisOpen(false); }} style={{ border: 'none', background: 'transparent', color: T.textMut, fontSize: 10, cursor: 'pointer' }}>Annuler</button>
+              <button onClick={saveHypothesis} style={{ border: 'none', borderRadius: T.radiusSm, background: T.accent, color: '#fff', fontSize: 10, fontWeight: 700, padding: '4px 9px', cursor: 'pointer' }}>Enregistrer</button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 10, color: hypothesis ? T.textSec : T.textMut, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hypothesis || 'Aucune hypothèse renseignée'}</span>
+            <button onClick={() => setHypothesisOpen(true)} style={{ border: `1px solid ${T.violet}35`, borderRadius: 20, background: hypothesis ? `${T.violet}10` : 'transparent', color: T.violet, fontSize: 10, fontWeight: 700, padding: '3px 8px', cursor: 'pointer', flexShrink: 0 }}>{hypothesis ? 'Modifier l’hypothèse' : 'Ajouter une hypothèse'}</button>
+          </div>
+        )}
+      </div>
+
       <div ref={chartRef} style={{ padding: '14px 12px 8px', background: '#ffffff' }}>
         {loading && (
           <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
@@ -1661,6 +1692,7 @@ function ChartCard({ chart, filters, onRemove, title, sub, children, span = 1 })
       <MiniAIReport
         chartId={chart.id}
         chartLabel={chart.label}
+        hypothesis={chart.hypothesis}
         filters={filters}
         chartRef={chartRef}
         chartData={data}
@@ -2399,6 +2431,11 @@ export default function StatistiquesPage({ setPage }) {
     setCharts(prev => prev.filter(c => c.id !== id));
   }, []);
 
+  const updateChart = useCallback((id, changes) => {
+    markUserSession();
+    setCharts(prev => prev.map(chart => chart.id === id ? { ...chart, ...changes } : chart));
+  }, []);
+
   // Load defaults only if nothing is saved yet
   useEffect(() => {
     if (loadChartsFromStorage()) return;
@@ -2656,6 +2693,7 @@ export default function StatistiquesPage({ setPage }) {
                     chart={ch}
                     filters={filters}
                     onRemove={() => removeChart(ch.id)}
+                    onUpdate={(changes) => updateChart(ch.id, changes)}
                   />
                 ))}
               </div>
