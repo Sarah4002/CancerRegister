@@ -622,6 +622,9 @@ export default function DoctorSettingsPage() {
         cnom: data.registration_number,
       });
     } catch (error) {
+      // Le client API redirige vers la connexion si le renouvellement de session
+      // échoue : ne pas afficher une erreur de profil trompeuse dans ce cas.
+      if (error?.response?.status === 401) return;
       toast.error(readApiError(error, 'Impossible de charger le profil.'));
     }
   }

@@ -15,29 +15,18 @@
  */
 
 import { useState } from 'react';
+import api from './api';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Configuration
 // ─────────────────────────────────────────────────────────────────────────────
-
-const BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Utilitaires internes
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Lit le JWT depuis le localStorage (clé standard). */
-const getToken = () =>
-  localStorage.getItem('access_token') ||
-  localStorage.getItem('token') ||
-  '';
-
 /** En-têtes avec Authorization Bearer. */
-const authHeaders = () => ({
-  'Content-Type': 'application/json',
-  ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
-});
-
 /**
  * Construit les query-params depuis un objet de filtres.
  * Les tableaux sont répétés : { ids: [1,2] } → "ids=1&ids=2".
@@ -60,12 +49,16 @@ function toQS(filters = {}) {
  * Fetch générique avec gestion des erreurs et refresh token.
  */
 async function apiFetch(path, opts = {}) {
-  const url = `${BASE_URL}${path}`;
-
-  const res = await fetch(url, {
-    headers: authHeaders(),
-    ...opts,
+  const response = await api.request({
+    url: path,
+    method: opts.method || 'GET',
+    data: opts.body ? JSON.parse(opts.body) : undefined,
   });
+  const res = {
+    ok: true,
+    status: response.status,
+    json: async () => response.data,
+  };
 
   // Token expiré → émet un événement global pour que l'app redirige vers /login
   if (res.status === 401) {

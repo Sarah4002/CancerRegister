@@ -45,7 +45,7 @@ const PALETTES = {
 const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: 7 }, (_, i) => String(CURRENT_YEAR - i));
 const DEFAULT_STATS_FILTERS = {
-  annee: String(CURRENT_YEAR),
+  annee: '',
   sexe: '',
   statut: '',
   wilaya: '',
