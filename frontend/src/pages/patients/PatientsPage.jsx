@@ -789,30 +789,6 @@ function DeleteIconButton({ onClick }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    EXPORT ICON BUTTON (menu déroulant : PDF / CSV / XLSX pour UN patient)
 ───────────────────────────────────────────────────────────────────────────── */
-function ArchiveIconButton({ onClick }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      title="Archiver ce dossier"
-      aria-label="Archiver ce dossier"
-      style={{
-        width:30, height:30, display:'flex', alignItems:'center', justifyContent:'center',
-        borderRadius:8,
-        border: hovered ? '1px solid rgba(100,116,139,0.35)' : '1px solid transparent',
-        background: hovered ? 'rgba(100,116,139,0.09)' : 'transparent',
-        cursor:'pointer', transition:'all .15s', flexShrink:0,
-      }}
-    >
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={hovered ? '#475569' : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/>
-      </svg>
-    </button>
-  );
-}
-
 function ExportSingleButton({ onExport }) {
   const [open, setOpen]       = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -905,6 +881,7 @@ export default function PatientsPage() {
   const [showExport,     setShowExport]     = useState(false);
   const [deleteTarget,   setDeleteTarget]   = useState(null);
   const [deleteLoading,  setDeleteLoading]  = useState(false);
+  const [showArchives,   setShowArchives]   = useState(false);
 
   const fetchPatients = useCallback(async () => {
     setLoading(true);
@@ -915,6 +892,7 @@ export default function PatientsPage() {
         sexe: filters.sexe || undefined,
         statut_dossier: filters.statut_dossier || undefined,
         wilaya: filters.wilaya || undefined,
+        archives: showArchives ? '1' : undefined,
       };
       const advancedParams = {
         page,
@@ -924,6 +902,7 @@ export default function PatientsPage() {
         statut_dossier: filters.statut_dossier || undefined,
         wilaya: filters.wilaya || undefined,
         commune: filters.commune || undefined,
+        archives: showArchives ? '1' : undefined,
       };
       const hasExplicitFilters = !!(
         dateNaissance || filters.sexe || filters.statut_dossier || filters.wilaya || filters.commune
@@ -945,7 +924,7 @@ export default function PatientsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, dateNaissance, filters, page]);
+  }, [search, dateNaissance, filters, page, showArchives]);
 
   useEffect(() => {
     patientService.stats().then(({ data }) => setStats(data)).catch(() => {});
@@ -976,18 +955,6 @@ export default function PatientsPage() {
     }
   };
 
-  const handleArchive = async (patient) => {
-    if (!window.confirm(`Archiver le dossier de ${patient.full_name} ?`)) return;
-    try {
-      await patientService.archive(patient.id);
-      toast.success(`Dossier ${patient.registration_number} archive`);
-      fetchPatients();
-      patientService.stats().then(({ data }) => setStats(data)).catch(() => {});
-    } catch (err) {
-      toast.error(err.response?.data?.detail || "Erreur lors de l'archivage");
-    }
-  };
-
   /* Export du dossier d'UN SEUL patient : PDF (impression), CSV ou Excel.
      On tente de récupérer le détail complet (diagnostic, traitement...) via
      l'API avant d'exporter, avec repli sur les données déjà affichées. */
@@ -1012,7 +979,7 @@ export default function PatientsPage() {
   };
 
   return (
-    <AppLayout title="Gestion des Patients">
+    <AppLayout title={showArchives ? "Dossiers archivés" : "Gestion des Patients"}>
       <style>{`
         @keyframes spin    { to { transform: rotate(360deg); } }
         @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
@@ -1088,6 +1055,22 @@ export default function PatientsPage() {
         ))}
 
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
+          <button
+            onClick={() => { setShowArchives(v => !v); setPage(1); }}
+            title={showArchives ? 'Afficher les patients actifs' : 'Afficher les dossiers archivés'}
+            style={{
+              padding:'9px 14px', borderRadius:'var(--radius-md)',
+              border:`1px solid ${showArchives ? 'rgba(100,116,139,.45)' : 'var(--border)'}`,
+              background:showArchives ? 'rgba(100,116,139,.1)' : '#fff',
+              color:'#475569', fontSize:13, fontWeight:600, cursor:'pointer',
+              display:'flex', alignItems:'center', gap:7,
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/>
+            </svg>
+            {showArchives ? 'Patients actifs' : 'Archives'}
+          </button>
           {can.export && <button
             onClick={() => setShowExport(true)}
             style={{
@@ -1205,11 +1188,6 @@ export default function PatientsPage() {
                   </td>
                   <td style={{ padding:'12px 4px' }} onClick={e => e.stopPropagation()}>
                     <ExportSingleButton onExport={(format) => handleSingleExport(p, format)} />
-                  </td>
-                  <td style={{ padding:'12px 4px' }} onClick={e => e.stopPropagation()}>
-                    {can.writeDiagnostic && (p.statut_vital === 'decede' || p.statut_dossier === 'decede' || p.statut_dossier === 'remission') && (
-                      <ArchiveIconButton onClick={() => handleArchive(p)} />
-                    )}
                   </td>
                   <td style={{ padding:'12px 14px 12px 4px' }} onClick={e => e.stopPropagation()}>
                     <DeleteIconButton

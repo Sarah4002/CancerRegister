@@ -166,6 +166,20 @@ class Patient(models.Model):
     def save(self, *args, **kwargs):
         if not self.registration_number:
             self.registration_number = self._generate_reg_number()
+        # Les dossiers finalisés restent conservés, mais ne sont plus actifs
+        # dans la liste courante. Leur statut clinique est volontairement gardé
+        # pour qu'ils continuent d'être comptés dans les statistiques.
+        if (
+            self.statut_vital == self.StatutVital.DECEDE
+            or self.statut_dossier in [
+                self.StatutDossier.REMISSION,
+                self.StatutDossier.DECEDE,
+                self.StatutDossier.ARCHIVE,
+            ]
+        ):
+            self.est_actif = False
+            if kwargs.get('update_fields') is not None:
+                kwargs['update_fields'] = set(kwargs['update_fields']) | {'est_actif'}
         super().save(*args, **kwargs)
 
     def _generate_reg_number(self):

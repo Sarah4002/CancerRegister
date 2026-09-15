@@ -145,10 +145,22 @@ class PatientViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = (
             Patient.objects
-            .filter(est_actif=True)
             .select_related('medecin_referent', 'cree_par')
             .prefetch_related('contacts_urgence')
         )
+
+        # Les dossiers décédés ou en rémission sont archivés automatiquement.
+        # Ils restent accessibles dans la vue dédiée et lors de la consultation
+        # d'un dossier, sans réapparaître dans la liste principale.
+        archive_filter = Q(est_actif=False) | Q(statut_vital='decede') | Q(
+            statut_dossier__in=['remission', 'decede', 'archive']
+        )
+        if self.action == 'retrieve':
+            pass
+        elif self.request.query_params.get('archives') == '1':
+            queryset = queryset.filter(archive_filter)
+        else:
+            queryset = queryset.exclude(archive_filter)
 
         queryset = self._filter_age(queryset)
         queryset = self._apply_search_date_filter(queryset)
@@ -381,7 +393,12 @@ class PatientViewSet(viewsets.ModelViewSet):
         from apps.accounts.permissions import can_view_statistics
         if not can_view_statistics(request.user):
             raise PermissionDenied("Vous n'avez pas accès aux statistiques.")
-        queryset = Patient.objects.filter(est_actif=True)
+        # Inclure les dossiers archivés automatiquement dans les compteurs.
+        queryset = Patient.objects.filter(
+            Q(est_actif=True)
+            | Q(statut_vital='decede')
+            | Q(statut_dossier__in=['remission', 'decede', 'archive'])
+        )
 
         return Response({
             'total': queryset.count(),
@@ -470,8 +487,8 @@ class PatientViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        patient.statut_dossier = Patient.StatutDossier.ARCHIVE
-        patient.save(update_fields=['statut_dossier', 'date_modification'])
+        patient.est_actif = False
+        patient.save(update_fields=['est_actif', 'date_modification'])
         self._create_access_log(
             user=request.user,
             action=AccessLog.Action.UPDATE,
