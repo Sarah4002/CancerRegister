@@ -449,6 +449,37 @@ class PatientViewSet(viewsets.ModelViewSet):
             'statut': nouveau_statut,
         })
 
+    @action(detail=True, methods=['post'])
+    def archiver(self, request, pk=None):
+        """Archive a record only when the patient is deceased or in remission."""
+        from apps.accounts.permissions import can_write_diagnostic
+        if not can_write_diagnostic(request.user):
+            raise PermissionDenied("Vous n'avez pas le droit d'archiver ce dossier.")
+
+        patient = self.get_object()
+        eligible = (
+            patient.statut_vital == Patient.StatutVital.DECEDE
+            or patient.statut_dossier in [
+                Patient.StatutDossier.DECEDE,
+                Patient.StatutDossier.REMISSION,
+            ]
+        )
+        if not eligible:
+            return Response(
+                {'detail': 'Seuls les dossiers de patients decedes ou en remission peuvent etre archives.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        patient.statut_dossier = Patient.StatutDossier.ARCHIVE
+        patient.save(update_fields=['statut_dossier', 'date_modification'])
+        self._create_access_log(
+            user=request.user,
+            action=AccessLog.Action.UPDATE,
+            resource='patient',
+            resource_id=patient.id,
+        )
+        return Response({'message': 'Dossier archive.', 'statut': patient.statut_dossier})
+
     # =========================================================================
     # DOSSIER MEDICAL
     # =========================================================================
