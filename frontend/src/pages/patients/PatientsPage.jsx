@@ -165,11 +165,25 @@ function triggerDownload(blob, filename) {
 
 /* Détermine si un enregistrement patient est "archivé", quel que soit le nom
    du champ utilisé par le backend (is_archived, archived, statut_dossier === 'archive', ...).
-   Adapte cette fonction si ton modèle utilise un autre nom de champ. */
+   Adapte cette fonction si ton modèle utilise un autre nom de champ.
+
+   Archivage automatique : un patient est considéré comme archivé non
+   seulement s'il porte explicitement le statut "archive", mais aussi dès
+   que son statut de dossier devient "Décédé" ou "Rémission" (rétabli).
+   Ces patients disparaissent donc de la liste des patients actifs et
+   n'apparaissent plus que dans l'onglet Archives.
+   ⚠️ Ceci ne fait que changer l'AFFICHAGE côté front. Pour un archivage
+   réellement persistant (cohérent dans les stats, les autres pages, les
+   exports CanReg, etc.), il faut idéalement que le backend bascule aussi
+   un champ dédié (ex: is_archived=True) au moment où le statut passe à
+   "decede" ou "remission" — voir le modèle Patient / son save() côté Django. */
+const AUTO_ARCHIVE_STATUTS = ['decede', 'remission'];
+
 function isArchivedRecord(p) {
   if (!p) return false;
   if (p.is_archived === true || p.archived === true) return true;
   if (p.statut_dossier === 'archive' || p.statut === 'archive') return true;
+  if (AUTO_ARCHIVE_STATUTS.includes(p.statut_dossier) || AUTO_ARCHIVE_STATUTS.includes(p.statut)) return true;
   return false;
 }
 
