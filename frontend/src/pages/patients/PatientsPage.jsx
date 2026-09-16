@@ -163,6 +163,16 @@ function triggerDownload(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
+/* Détermine si un enregistrement patient est "archivé", quel que soit le nom
+   du champ utilisé par le backend (is_archived, archived, statut_dossier === 'archive', ...).
+   Adapte cette fonction si ton modèle utilise un autre nom de champ. */
+function isArchivedRecord(p) {
+  if (!p) return false;
+  if (p.is_archived === true || p.archived === true) return true;
+  if (p.statut_dossier === 'archive' || p.statut === 'archive') return true;
+  return false;
+}
+
 /* Essaie plusieurs noms de méthode courants pour récupérer le détail complet
    d'un patient (les lignes de la liste n'ont pas forcément tous les champs
    cliniques comme le diagnostic ou le traitement). Si aucune méthode ne
@@ -431,7 +441,7 @@ function DeleteConfirmModal({ patient, onClose, onConfirm, loading }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    EXPORT MODAL (liste complète, avec filtres et regroupement)
 ───────────────────────────────────────────────────────────────────────────── */
-function ExportModal({ onClose, currentFilters }) {
+function ExportModal({ onClose, currentFilters, showArchives }) {
   const [groupBy,      setGroupBy]      = useState('none');
   const [format,       setFormat]       = useState('csv');
   const [selCols,      setSelCols]      = useState(() => EXPORT_COLUMNS.filter(c => c.default).map(c => c.key));
@@ -454,17 +464,20 @@ function ExportModal({ onClose, currentFilters }) {
         const params = buildParams();
         params.page      = 1;
         params.page_size = 5;
-        const { data } = await patientService.list(params);
-        if (!cancelled) setPreview({ count: data.count ?? (data.results||data).length, sample: data.results || data });
+        const { data } = await patientService.searchAdvanced(params);
+        let sample = data.results || data;
+        if (showArchives) sample = sample.filter(isArchivedRecord);
+        else sample = sample.filter(p => !isArchivedRecord(p));
+        if (!cancelled) setPreview({ count: data.count ?? sample.length, sample });
       } catch { if (!cancelled) setPreview(null); }
     }
     fetchPreview();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterWilaya, filterCancer, filterAge, filterStade, filterSexe, filterStatut]);
+  }, [filterWilaya, filterCancer, filterAge, filterStade, filterSexe, filterStatut, showArchives]);
 
   function buildParams() {
-    const p = { page_size: 10000 };
+    const p = { page_size: 10000, archives: showArchives ? '1' : undefined };
     if (filterWilaya) p.wilaya         = filterWilaya;
     if (filterCancer) p.cancer_type    = filterCancer;
     if (filterStade)  p.stade          = filterStade;
@@ -481,8 +494,14 @@ function ExportModal({ onClose, currentFilters }) {
     setLoading(true);
     try {
       const params    = buildParams();
-      const { data }  = await patientService.list(params);
+      const { data }  = await patientService.searchAdvanced(params);
       let   rawRows   = data.results || data;
+
+      // Filet de sécurité : si le backend ignore le paramètre "archives",
+      // on retire quand même les dossiers qui ne correspondent pas à la vue active.
+      rawRows = showArchives
+        ? rawRows.filter(isArchivedRecord)
+        : rawRows.filter(p => !isArchivedRecord(p));
 
       if (groupBy !== 'none') {
         rawRows = groupPatients(rawRows, groupBy);
@@ -589,7 +608,7 @@ function ExportModal({ onClose, currentFilters }) {
         <div style={S.header}>
           <div>
             <div style={{ fontSize:17, fontWeight:800, color:'#0f172a', marginBottom:3 }}>
-              Exporter les patients
+              Exporter les patients {showArchives ? '(archivés)' : ''}
             </div>
             <div style={{ fontSize:11.5, color:'#94a3b8' }}>
               {preview ? `${preview.count.toLocaleString('fr-FR')} patient(s) correspondant aux critères` : 'Chargement…'}
@@ -886,15 +905,13 @@ export default function PatientsPage() {
   const fetchPatients = useCallback(async () => {
     setLoading(true);
     try {
-      const listParams = {
-        page,
-        search: search || undefined,
-        sexe: filters.sexe || undefined,
-        statut_dossier: filters.statut_dossier || undefined,
-        wilaya: filters.wilaya || undefined,
-        archives: showArchives ? '1' : undefined,
-      };
-      const advancedParams = {
+      // On utilise systématiquement searchAdvanced pour que TOUS les filtres
+      // (y compris "archives") passent toujours par le même chemin côté
+      // backend, avec la même logique de filtrage. Basculer entre deux
+      // endpoints différents selon les filtres actifs est ce qui causait des
+      // filtres "qui ne marchent pas" : list() et searchAdvanced() n'ont pas
+      // forcément la même implémentation.
+      const params = {
         page,
         q: search || undefined,
         date_naissance: dateNaissance || undefined,
@@ -904,18 +921,21 @@ export default function PatientsPage() {
         commune: filters.commune || undefined,
         archives: showArchives ? '1' : undefined,
       };
-      const hasExplicitFilters = !!(
-        dateNaissance || filters.sexe || filters.statut_dossier || filters.wilaya || filters.commune
-      );
 
-      const { data } = hasExplicitFilters
-        ? await patientService.searchAdvanced(advancedParams)
-        : await patientService.list(listParams);
+      const { data } = await patientService.searchAdvanced(params);
+      let results = data.results || data;
 
-      setPatients(data.results || data);
+      // Filet de sécurité côté client : si le backend ignore/mal interprète
+      // le paramètre "archives", on filtre quand même la vue affichée pour
+      // qu'elle corresponde à ce que l'utilisateur a choisi.
+      const filteredResults = showArchives
+        ? results.filter(isArchivedRecord)
+        : results.filter(p => !isArchivedRecord(p));
+
+      setPatients(filteredResults);
       setPagination(prev => ({
         ...prev,
-        count: data.count ?? (Array.isArray(data.results) ? data.results.length : Array.isArray(data) ? data.length : 0),
+        count: data.count ?? filteredResults.length,
         next: data.next ?? null,
         previous: data.previous ?? null,
       }));
@@ -937,7 +957,7 @@ export default function PatientsPage() {
 
   useEffect(() => {
     if (page !== 1) setPage(1);
-  }, [search, dateNaissance, filters]);
+  }, [search, dateNaissance, filters, showArchives]);
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
@@ -1040,6 +1060,7 @@ export default function PatientsPage() {
         {[
           { key:'sexe',           label:'Sexe',   opts:[['','Tous'],['M','Masculin'],['F','Féminin']] },
           { key:'statut_dossier', label:'Statut', opts:[['','Tous'],['nouveau','Nouveau'],['traitement','Traitement'],['remission','Rémission'],['perdu','Perdu de vue'],['decede','Décédé']] },
+          { key:'wilaya',         label:'Wilaya', opts:[['','Toutes'], ...WILAYAS.map(w => [w, w])] },
         ].map(({ key, label, opts }) => (
           <select key={key}
             value={filters[key]}
@@ -1050,9 +1071,31 @@ export default function PatientsPage() {
               color:'#334155', fontSize:12.5, cursor:'pointer', outline:'none',
             }}
           >
-            {opts.map(([v,l]) => <option key={v} value={v}>{l==='Tous'?`${label}: Tous`:l}</option>)}
+            {opts.map(([v,l]) => <option key={v} value={v}>{(l==='Tous'||l==='Toutes')?`${label}: ${l}`:l}</option>)}
           </select>
         ))}
+
+        {/* Commune : champ texte libre, car la liste des communes dépend de la wilaya */}
+        <input
+          value={filters.commune}
+          onChange={e => setFilters(f => ({ ...f, commune: e.target.value }))}
+          placeholder="Commune"
+          style={{
+            padding:'8px 12px', background:'var(--bg-elevated)',
+            border:'1px solid var(--border)', borderRadius:'var(--radius-md)',
+            color:'#334155', fontSize:12.5, outline:'none', width:130,
+          }}
+        />
+
+        {(filters.sexe || filters.statut_dossier || filters.wilaya || filters.commune || dateNaissance) && (
+          <button
+            onClick={() => { setFilters({ sexe:'', statut_dossier:'', wilaya:'', commune:'' }); setDateNaissance(''); }}
+            title="Effacer les filtres"
+            style={{ fontSize:11, color:'#94a3b8', background:'none', border:'none', cursor:'pointer', padding:'4px 6px' }}
+          >
+            ✕ Filtres
+          </button>
+        )}
 
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
           <button
@@ -1225,6 +1268,7 @@ export default function PatientsPage() {
         <ExportModal
           onClose={() => setShowExport(false)}
           currentFilters={filters}
+          showArchives={showArchives}
         />
       )}
 
