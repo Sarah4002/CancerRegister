@@ -539,7 +539,17 @@ class PatientViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def search_advanced(self, request):
+        # Construire le queryset de base, puis appliquer les filtres DRF
+        # (DjangoFilterBackend, SearchFilter, OrderingFilter) afin que
+        # les paramètres fournis (sexe, wilaya, statut_dossier, etc.)
+        # soient pris en compte pour cette action custom.
         queryset = self.get_queryset()
+        try:
+            queryset = self.filter_queryset(queryset)
+        except Exception:
+            # En cas d'erreur dans l'application des filtres, on poursuit
+            # avec le queryset de base pour éviter de bloquer l'endpoint.
+            pass
 
         q = request.query_params.get('q', '').strip()
 
