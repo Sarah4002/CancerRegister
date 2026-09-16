@@ -925,9 +925,16 @@ export default function PatientsPage() {
       // endpoints différents selon les filtres actifs est ce qui causait des
       // filtres "qui ne marchent pas" : list() et searchAdvanced() n'ont pas
       // forcément la même implémentation.
+      // On envoie le texte de recherche et le filtre wilaya sous plusieurs noms
+      // de paramètres possibles (q/search, wilaya/filter_wilaya) : sans le code
+      // exact du backend, impossible de savoir lequel il attend réellement, et
+      // un paramètre non reconnu par une API Django/DRF est simplement ignoré
+      // (donc ceci est sans danger, juste une rustine en attendant de voir le
+      // vrai code de patientService.searchAdvanced / la vue Django associée).
       const params = {
         page,
         q: search || undefined,
+        search: search || undefined,
         date_naissance: dateNaissance || undefined,
         sexe: filters.sexe || undefined,
         statut_dossier: filters.statut_dossier || undefined,
@@ -938,6 +945,17 @@ export default function PatientsPage() {
 
       const { data } = await patientService.searchAdvanced(params);
       let results = data.results || data;
+
+      if (!Array.isArray(results)) {
+        console.error('Réponse inattendue de searchAdvanced :', data);
+        results = [];
+      }
+
+      // DEBUG TEMPORAIRE : vérifie dans la console du navigateur si les
+      // paramètres envoyés correspondent au nombre de résultats reçus.
+      // Si "results.length" reste identique quel que soit le filtre choisi,
+      // le backend ignore les paramètres -> le problème est côté API, pas ici.
+      console.log('[PatientsPage] params envoyés à searchAdvanced:', params, '-> résultats reçus:', results.length, '/ count backend:', data.count);
 
       // Filet de sécurité côté client : si le backend ignore/mal interprète
       // le paramètre "archives", on filtre quand même la vue affichée pour
