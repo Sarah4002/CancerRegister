@@ -15,19 +15,27 @@ def parse_debug(value):
     return str(value).strip().lower() in {'1', 'true', 'yes', 'on', 'debug'}
 
 DATABASE_URL = config('DATABASE_URL', default=None)
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 if DATABASE_URL:
+    parsed_db = dj_database_url.parse(
+        DATABASE_URL,
+        conn_max_age=600,
+        ssl_require=not DATABASE_URL.startswith('sqlite:'),
+    )
+    if DATABASE_URL.startswith('sqlite:'):
+        parsed_db.pop('OPTIONS', None)
+    DATABASES = {'default': parsed_db}
+else:
     DATABASES = {
-        'default': dj_database_url.parse(
-            DATABASE_URL,
-            conn_max_age=600,
-            ssl_require=True
-        )
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
 # ─────────────────────────────────────────────
 # Base
 # ─────────────────────────────────────────────
-BASE_DIR = Path(__file__).resolve().parent.parent
 GROQ_API_KEY = config('GROQ_API_KEY', default=None)
 
 # ─────────────────────────────────────────────

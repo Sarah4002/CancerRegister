@@ -37,8 +37,8 @@ const NAV_CONFIG = [
   {
     section: 'Statistiques & Rapports',
     items: [
-      { path: '/stats', label: 'Statistiques', icon: ChartIcon, roles: ['doctor_chef', 'epidemiologist', 'readonly'] },
-      { path: '/carte', label: 'Carte SIG', icon: MapIcon, roles: ['doctor_chef', 'epidemiologist'] },
+      { path: '/stats', label: 'Statistiques', icon: ChartIcon, roles: [ 'epidemiologist', 'readonly'] },
+      { path: '/carte', label: 'Carte SIG', icon: MapIcon, roles: [ 'epidemiologist'] },
       { path: '/rcp', label: 'RCP', icon: CalendarIcon, permission: 'viewRcp' },
     ],
   },

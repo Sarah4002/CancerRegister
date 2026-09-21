@@ -34,6 +34,7 @@ class PatientListSerializer(serializers.ModelSerializer):
     medecin_nom = serializers.CharField(source='medecin_referent.get_display_name', read_only=True)
     sexe_label   = serializers.SerializerMethodField()
     statut_label = serializers.SerializerMethodField()
+    statut_confirmation_label = serializers.SerializerMethodField()
     age          = serializers.SerializerMethodField()
 
     class Meta:
@@ -42,6 +43,7 @@ class PatientListSerializer(serializers.ModelSerializer):
             'id', 'registration_number', 'id_national', 'num_securite_sociale',
             'nom', 'prenom', 'full_name', 'sexe', 'sexe_label', 'age',
             'statut_dossier', 'statut_label', 'statut_vital',
+            'statut_confirmation', 'statut_confirmation_label',
             'wilaya', 'telephone',
             'date_enregistrement', 'medecin_referent', 'medecin_nom',
         ]
@@ -58,16 +60,21 @@ class PatientListSerializer(serializers.ModelSerializer):
     def get_statut_label(self, obj):
         return dict(Patient.StatutDossier.choices).get(obj.statut_dossier, obj.statut_dossier)
 
+    def get_statut_confirmation_label(self, obj):
+        return dict(Patient.StatutConfirmation.choices).get(obj.statut_confirmation, obj.statut_confirmation)
+
 
 class PatientDetailSerializer(serializers.ModelSerializer):
     medecin_referent_info = UserSummarySerializer(source='medecin_referent', read_only=True)
     cree_par_info         = UserSummarySerializer(source='cree_par', read_only=True)
     contacts_urgence      = ContactUrgenceSerializer(many=True, read_only=True)
+    confirme_par_info     = UserSummarySerializer(source='confirme_par', read_only=True)
     full_name             = serializers.SerializerMethodField()
     age                   = serializers.SerializerMethodField()
     sexe_label            = serializers.SerializerMethodField()
     statut_label          = serializers.SerializerMethodField()
     statut_vital_label    = serializers.SerializerMethodField()
+    statut_confirmation_label = serializers.SerializerMethodField()
     qr_url                = serializers.SerializerMethodField()
 
     class Meta:
@@ -90,6 +97,9 @@ class PatientDetailSerializer(serializers.ModelSerializer):
             # Statut
             'statut_dossier', 'statut_label', 'statut_vital', 'statut_vital_label',
             'date_deces', 'cause_deces',
+            # Confirmation diagnostic
+            'statut_confirmation', 'statut_confirmation_label', 'motif_refus',
+            'confirme_par', 'confirme_par_info', 'date_confirmation',
             # Médecin référent
             'medecin_referent', 'medecin_referent_info', 'etablissement_pec', 'service_clinique',
             # Métadonnées
@@ -103,6 +113,7 @@ class PatientDetailSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id', 'registration_number', 'date_enregistrement',
             'date_modification', 'cree_par',
+            'statut_confirmation', 'motif_refus', 'confirme_par', 'date_confirmation',
         ]
 
     def get_full_name(self, obj):
@@ -119,6 +130,9 @@ class PatientDetailSerializer(serializers.ModelSerializer):
 
     def get_statut_vital_label(self, obj):
         return dict(Patient.StatutVital.choices).get(obj.statut_vital, obj.statut_vital)
+
+    def get_statut_confirmation_label(self, obj):
+        return dict(Patient.StatutConfirmation.choices).get(obj.statut_confirmation, obj.statut_confirmation)
 
     def get_qr_url(self, obj):
         request = self.context.get('request')
@@ -208,6 +222,65 @@ class PatientAdministrativeDetailSerializer(serializers.ModelSerializer):
             'date_enregistrement', 'date_modification',
         ]
         read_only_fields = ['id', 'registration_number', 'date_enregistrement', 'date_modification']
+
+
+class PatientEnAttenteSerializer(serializers.ModelSerializer):
+    """
+    Fiche allégée utilisée par la file d'attente de confirmation
+    (dossiers créés par le secrétariat, pas encore validés par un médecin).
+    """
+    full_name       = serializers.SerializerMethodField()
+    secretaire_nom  = serializers.CharField(source='cree_par.get_display_name', read_only=True)
+    resume_labo     = serializers.SerializerMethodField()
+    resume_radio    = serializers.SerializerMethodField()
+    resume_anapath  = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Patient
+        fields = [
+            'id', 'registration_number', 'nom', 'prenom', 'full_name',
+            'sexe', 'date_naissance', 'wilaya', 'telephone',
+            'secretaire_nom', 'date_enregistrement',
+            'resume_labo', 'resume_radio', 'resume_anapath',
+            'statut_confirmation',
+        ]
+
+    def get_full_name(self, obj):
+        return f"{obj.nom} {obj.prenom}".strip()
+
+    def _dernier_resume(self, obj, related_name):
+        """
+        Va chercher le dernier résultat lié (labo / radiologie / anapath) si
+        l'application correspondante est branchée sur Patient via cette
+        related_name. Ne casse jamais si l'app n'existe pas encore côté
+        backend — retourne simplement None (affiché comme '—' au frontend).
+        À adapter avec le vrai related_name une fois les modules labo/
+        radiologie/anapath en place (ex: 'analyses_labo', 'examens_radiologie',
+        'examens_anapath').
+        """
+        manager = getattr(obj, related_name, None)
+        if manager is None:
+            return None
+        try:
+            dernier = manager.order_by('-id').first()
+        except Exception:
+            return None
+        if not dernier:
+            return None
+        for champ in ('resume', 'conclusion', 'resultat', 'notes'):
+            val = getattr(dernier, champ, None)
+            if val:
+                return str(val)[:150]
+        return None
+
+    def get_resume_labo(self, obj):
+        return self._dernier_resume(obj, 'analyses_labo')
+
+    def get_resume_radio(self, obj):
+        return self._dernier_resume(obj, 'examens_radiologie')
+
+    def get_resume_anapath(self, obj):
+        return self._dernier_resume(obj, 'examens_anapath')
 
 
 class PatientClinicalContextSerializer(serializers.ModelSerializer):

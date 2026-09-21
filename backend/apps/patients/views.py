@@ -27,9 +27,13 @@ from .serializers import (
     PatientAdministrativeDetailSerializer,
     PatientClinicalContextSerializer,
     PatientDetailSerializer,
+    PatientEnAttenteSerializer,
     PatientListSerializer,
     DocumentAdministratifSerializer,
 )
+
+# Rôles habilités à confirmer ou refuser un diagnostic (voir action `confirmer`)
+ROLES_CONFIRMATION = ('doctor', 'doctor_chef')
 
 
 class DocumentAdministratifViewSet(viewsets.ModelViewSet):
@@ -155,12 +159,23 @@ class PatientViewSet(viewsets.ModelViewSet):
         archive_filter = Q(est_actif=False) | Q(statut_vital='decede') | Q(
             statut_dossier__in=['remission', 'decede', 'archive']
         )
-        if self.action == 'retrieve':
+
+        # Circuit de confirmation : un dossier créé par le secrétariat reste
+        # "en attente" et n'apparaît PAS dans le registre principal tant
+        # qu'un médecin/médecin chef ne l'a pas confirmé. Un dossier "refusé"
+        # (pas de cancer) n'y entre jamais. Ces dossiers restent néanmoins
+        # consultables individuellement (retrieve) et gérables via l'action
+        # `confirmer`, qui doit pouvoir les retrouver par pk quel que soit
+        # leur statut.
+        en_attente_filter = Q(statut_confirmation=Patient.StatutConfirmation.EN_ATTENTE)
+        refuse_filter = Q(statut_confirmation=Patient.StatutConfirmation.REFUSE)
+
+        if self.action in ('retrieve', 'confirmer'):
             pass
         elif self.request.query_params.get('archives') == '1':
-            queryset = queryset.filter(archive_filter)
+            queryset = queryset.filter(archive_filter).exclude(en_attente_filter)
         else:
-            queryset = queryset.exclude(archive_filter)
+            queryset = queryset.exclude(archive_filter).exclude(en_attente_filter).exclude(refuse_filter)
 
         queryset = self._filter_age(queryset)
         queryset = self._apply_search_date_filter(queryset)
@@ -464,6 +479,74 @@ class PatientViewSet(viewsets.ModelViewSet):
         return Response({
             'message': 'Statut mis à jour.',
             'statut': nouveau_statut,
+        })
+
+    @action(detail=False, methods=['get'], url_path='en_attente')
+    def en_attente(self, request):
+        """Liste des dossiers créés par la secrétaire, en attente de validation médicale."""
+        if request.user.role not in ROLES_CONFIRMATION:
+            return Response(
+                {'detail': 'Accès réservé aux médecins et au médecin chef.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        queryset = Patient.objects.filter(
+            statut_confirmation=Patient.StatutConfirmation.EN_ATTENTE
+        ).select_related('cree_par').order_by('-date_enregistrement')
+
+        serializer = PatientEnAttenteSerializer(queryset, many=True, context={'request': request})
+        return Response({
+            'results': serializer.data,
+            'count': queryset.count(),
+        })
+
+    @action(detail=True, methods=['post'], url_path='confirmer')
+    def confirmer(self, request, pk=None):
+        """Confirme ou refuse un dossier après lecture des résultats de labo/radio/anapath."""
+        if request.user.role not in ROLES_CONFIRMATION:
+            return Response(
+                {'detail': 'Seuls les médecins et le médecin chef peuvent confirmer ou refuser un dossier.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        patient = self.get_object()
+        decision = request.data.get('decision')
+
+        if decision not in {'confirme', 'refuse'}:
+            return Response(
+                {'detail': 'Décision invalide. Utilisez "confirme" ou "refuse".'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from django.utils import timezone
+
+        if decision == 'confirme':
+            patient.statut_confirmation = Patient.StatutConfirmation.CONFIRME
+            patient.motif_refus = ''
+            patient.confirme_par = request.user
+            patient.date_confirmation = timezone.now()
+            patient.save(update_fields=['statut_confirmation', 'motif_refus', 'confirme_par', 'date_confirmation', 'date_modification'])
+            return Response({
+                'detail': 'Patient confirmé et ajouté au registre principal.',
+                'statut_confirmation': patient.statut_confirmation,
+            })
+
+        motif = str(request.data.get('motif_refus', '') or '').strip()
+        if not motif:
+            return Response(
+                {'detail': 'Un motif de refus est obligatoire.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        patient.statut_confirmation = Patient.StatutConfirmation.REFUSE
+        patient.motif_refus = motif
+        patient.confirme_par = request.user
+        patient.date_confirmation = timezone.now()
+        patient.save(update_fields=['statut_confirmation', 'motif_refus', 'confirme_par', 'date_confirmation', 'date_modification'])
+
+        return Response({
+            'detail': 'Patient refusé. Le dossier reste tracé sans entrer dans le registre principal.',
+            'statut_confirmation': patient.statut_confirmation,
         })
 
     @action(detail=True, methods=['post'])

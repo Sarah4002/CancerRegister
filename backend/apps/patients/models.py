@@ -27,6 +27,22 @@ class Patient(models.Model):
         DECEDE        = 'decede',     'Décédé'
         ARCHIVE       = 'archive',    'Archivé'
 
+    class StatutConfirmation(models.TextChoices):
+        """
+        Circuit de validation du diagnostic :
+          - EN_ATTENTE : dossier créé par le secrétariat, pas encore
+            examiné. N'apparaît PAS dans le registre principal.
+          - CONFIRME   : un médecin ou le médecin chef a confirmé le
+            cancer (sur la base labo/radiologie/anapath). Le patient
+            entre automatiquement dans le registre principal.
+          - REFUSE     : un médecin ou le médecin chef a examiné le
+            dossier et conclu à l'absence de cancer. Le dossier reste
+            tracé mais n'entre jamais dans le registre.
+        """
+        EN_ATTENTE = 'en_attente', 'En attente de confirmation'
+        CONFIRME   = 'confirme',   'Confirmé (cancer)'
+        REFUSE     = 'refuse',     'Refusé (pas de cancer)'
+
     class NiveauInstruction(models.TextChoices):
         AUCUN      = '0', 'Aucun'
         PRIMAIRE   = '1', 'Primaire'
@@ -136,6 +152,24 @@ class Patient(models.Model):
     )
     date_deces  = models.DateField(null=True, blank=True)
     cause_deces = models.CharField(max_length=200, blank=True)
+
+    # ── Confirmation diagnostic (circuit secrétaire → médecin) ─────
+    statut_confirmation = models.CharField(
+        max_length=12,
+        choices=StatutConfirmation.choices,
+        default=StatutConfirmation.EN_ATTENTE,
+        help_text="En attente tant qu'un médecin n'a pas confirmé le diagnostic de cancer.",
+    )
+    motif_refus = models.TextField(
+        blank=True,
+        help_text="Renseigné uniquement si le médecin a refusé le dossier (pas de cancer).",
+    )
+    confirme_par = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='patients_confirmes',
+        help_text="Médecin ou médecin chef ayant confirmé ou refusé le dossier.",
+    )
+    date_confirmation = models.DateTimeField(null=True, blank=True)
 
     # ── Médecin référent ──────────────────────────────────────────
     medecin_referent = models.ForeignKey(

@@ -75,7 +75,7 @@ def can_write_anapath_report(user):
 
 def can_validate_diagnosis(user):
     """Valider un diagnostic définitif."""
-    return has_role(user, ROLE_DOCTOR_CHEF)
+    return has_role(user, ROLE_DOCTOR_CHEF, ROLE_DOCTOR)
 
 def can_write_treatment(user):
     """Saisir ou modifier un traitement."""
