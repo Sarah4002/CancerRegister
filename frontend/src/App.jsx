@@ -189,7 +189,7 @@ function App() {
         } />
 
         <Route path="/patients/en-attente" element={
-          <PermRoute permission="validateDiagnosis">
+          <PermRoute permission="readPatient">
             <PatientsEnAttentePage />
           </PermRoute>
         } />

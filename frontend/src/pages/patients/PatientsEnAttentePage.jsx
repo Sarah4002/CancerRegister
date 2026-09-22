@@ -1,13 +1,17 @@
 // PatientsEnAttentePage.jsx
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { patientService } from '../../services/patientService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import usePermissions from '../../hooks/usePermissions';
+import useAuthStore from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
 
 export default function PatientsEnAttentePage() {
   const { can } = usePermissions();
+  const { user } = useAuthStore();
   const canValidate = can.validateDiagnosis || can.confirmDiagnostic;
+  const canAccess = canValidate || user?.role === 'secretaire';
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [motifModal, setMotifModal] = useState(null); // {patient}
@@ -45,11 +49,11 @@ export default function PatientsEnAttentePage() {
     }
   };
 
-  if (!canValidate) {
+  if (!canAccess) {
     return (
       <AppLayout title="Accès refusé">
         <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>
-          Cette page est réservée aux médecins et au médecin chef.
+          Cette page est réservée aux médecins, au médecin chef et à la secrétaire.
         </div>
       </AppLayout>
     );
@@ -80,19 +84,32 @@ export default function PatientsEnAttentePage() {
                   Labo: {p.resume_labo || '—'} · Radiologie: {p.resume_radio || '—'} · Anapath: {p.resume_anapath || '—'}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => handleConfirm(p.id)} style={{
-                  padding: '8px 16px', background: '#16a34a', color: '#fff',
-                  border: 'none', borderRadius: 9, fontWeight: 600, cursor: 'pointer',
-                }}>
-                  Confirmer (cancer)
-                </button>
-                <button onClick={() => setMotifModal({ patient: p })} style={{
-                  padding: '8px 16px', background: '#fff', color: '#dc2626',
-                  border: '1px solid rgba(220,38,38,0.3)', borderRadius: 9, fontWeight: 600, cursor: 'pointer',
-                }}>
-                  Refuser
-                </button>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                {canValidate ? (
+                  <>
+                    <button onClick={() => handleConfirm(p.id)} style={{
+                      padding: '8px 16px', background: '#16a34a', color: '#fff',
+                      border: 'none', borderRadius: 9, fontWeight: 600, cursor: 'pointer',
+                    }}>
+                      Confirmer (cancer)
+                    </button>
+                    <button onClick={() => setMotifModal({ patient: p })} style={{
+                      padding: '8px 16px', background: '#fff', color: '#dc2626',
+                      border: '1px solid rgba(220,38,38,0.3)', borderRadius: 9, fontWeight: 600, cursor: 'pointer',
+                    }}>
+                      Refuser
+                    </button>
+                  </>
+                ) : (
+                  <Link to={`/patients/${p.id}`} style={{ textDecoration: 'none' }}>
+                    <button style={{
+                      padding: '8px 16px', background: '#fff', color: '#2563eb',
+                      border: '1px solid rgba(37,99,235,0.2)', borderRadius: 9, fontWeight: 600, cursor: 'pointer',
+                    }}>
+                      Consulter le dossier
+                    </button>
+                  </Link>
+                )}
               </div>
             </div>
           ))}
