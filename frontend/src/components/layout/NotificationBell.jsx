@@ -93,6 +93,10 @@ export default function NotificationBell() {
       setCount(prev => Math.max(0, prev - 1));
     }
     setOpen(false);
+    if (notif.dossier_id) {
+      navigate(`/patients/${notif.dossier_id}`);
+      return;
+    }
     if (notif.reunion_id) {
       navigate(`/rcp/${notif.reunion_id}`);
     }
@@ -328,7 +332,7 @@ export default function NotificationBell() {
                   cursor: 'pointer',
                 }}
               >
-                Voir toutes les reunions RCP
+                Voir les notifications
               </button>
             </div>
           )}

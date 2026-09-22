@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from apps.accounts.models import User
+from apps.notifications.models import Notification
 from apps.patients.models import Patient
 
 
@@ -123,3 +124,31 @@ class PatientConfirmationWorkflowTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()['count'], 1)
         self.assertEqual(response.json()['results'][0]['id'], patient.id)
+
+    def test_new_patient_creation_notifies_doctors(self):
+        doctor_chef = User.objects.create_user(
+            email='chef@example.com',
+            username='chef',
+            first_name='Chef',
+            last_name='Doc',
+            role='doctor_chef',
+            password='Password123!',
+        )
+        self.client.force_authenticate(user=self.secretary)
+
+        response = self.client.post(
+            '/api/v1/patients/',
+            {'nom': 'Nouveau', 'prenom': 'Patient', 'sexe': 'F'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        patient = Patient.objects.filter(nom='Nouveau', prenom='Patient').latest('id')
+        self.assertEqual(patient.statut_confirmation, Patient.StatutConfirmation.EN_ATTENTE)
+        self.assertTrue(
+            Notification.objects.filter(
+                destinataire=doctor_chef,
+                type=Notification.Type.DOSSIER_AJOUTE,
+                dossier_id=patient.id,
+            ).exists()
+        )

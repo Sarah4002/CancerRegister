@@ -260,6 +260,29 @@ class PatientViewSet(viewsets.ModelViewSet):
 
         patient = serializer.save(cree_par=self.request.user)
 
+        if patient.statut_confirmation == Patient.StatutConfirmation.EN_ATTENTE:
+            from apps.notifications.models import Notification
+            from apps.accounts.models import User
+
+            destinataires = User.objects.filter(
+                role__in=['doctor', 'doctor_chef'],
+                is_active=True,
+            )
+
+            Notification.objects.bulk_create([
+                Notification(
+                    destinataire=user,
+                    type=Notification.Type.DOSSIER_AJOUTE,
+                    titre='Nouveau dossier en attente',
+                    message=(
+                        f"Un nouveau patient {patient.get_full_name()} a été créé et est en attente "
+                        "de confirmation médicale."
+                    ),
+                    dossier_id=patient.id,
+                )
+                for user in destinataires
+            ])
+
         self._create_access_log(
             user=self.request.user,
             action=AccessLog.Action.CREATE,
