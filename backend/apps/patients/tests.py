@@ -107,3 +107,19 @@ class PatientConfirmationWorkflowTests(TestCase):
         self.assertEqual(patient.statut_confirmation, Patient.StatutConfirmation.REFUSE)
         self.assertEqual(patient.motif_refus, 'Résultats négatifs')
         self.assertEqual(patient.confirme_par_id, self.doctor.id)
+
+    def test_secretary_can_list_pending_patients(self):
+        patient = Patient.objects.create(
+            nom='Messaoud',
+            prenom='Amel',
+            sexe='F',
+            cree_par=self.secretary,
+            statut_confirmation=Patient.StatutConfirmation.EN_ATTENTE,
+        )
+        self.client.force_authenticate(user=self.secretary)
+
+        response = self.client.get('/api/v1/patients/en_attente/')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()['count'], 1)
+        self.assertEqual(response.json()['results'][0]['id'], patient.id)

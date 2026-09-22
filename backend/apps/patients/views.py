@@ -484,9 +484,10 @@ class PatientViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='en_attente')
     def en_attente(self, request):
         """Liste des dossiers créés par la secrétaire, en attente de validation médicale."""
-        if request.user.role not in ROLES_CONFIRMATION:
+        allowed_roles = ROLES_CONFIRMATION + ('secretaire',)
+        if request.user.role not in allowed_roles:
             return Response(
-                {'detail': 'Accès réservé aux médecins et au médecin chef.'},
+                {'detail': 'Accès réservé aux médecins, au médecin chef et à la secrétaire.'},
                 status=status.HTTP_403_FORBIDDEN,
             )
 

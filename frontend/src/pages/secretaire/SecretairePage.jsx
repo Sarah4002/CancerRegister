@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { secretaryService } from '../../services/secretaryService';
 import { suiviService } from '../../services/suiviService';
+import { patientService } from '../../services/patientService';
 import { AppLayout } from '../../components/layout/Sidebar';
 
 /* ── Palette (identique au Dashboard) ── */
@@ -395,16 +396,19 @@ export default function SecretairePage() {
 
   const [upcoming, setUpcoming]   = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [pendingPatients, setPendingPatients] = useState([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: r }, { data: s }] = await Promise.all([
+      const [{ data: r }, { data: s }, { data: p }] = await Promise.all([
         secretaryService.getRendezVous({ mois: month + 1, annee: year }),
         secretaryService.getStats(),
+        patientService.getEnAttente(),
       ]);
       setRdvs(r);
       setStats(s);
+      setPendingPatients(p.results || p || []);
     } catch (err) {
       console.error('Secrétaire error:', err);
     } finally { setLoading(false); }
@@ -623,6 +627,42 @@ export default function SecretairePage() {
           rdvs={rdvByDay[selectedDate] || []}
           onStatusChange={handleStatusChange}
         />
+      </div>
+
+      {/* ── Patients en attente ── */}
+      <div style={{ background:'#fff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:14, padding:'18px 22px', boxShadow:'0 2px 8px rgba(15,23,42,0.06)', marginBottom:16 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1.2 }}>Patients en attente</div>
+          <Link to="/patients/en-attente" style={{ textDecoration:'none', fontSize:12, fontWeight:700, color:'#2563eb' }}>
+            Voir tout
+          </Link>
+        </div>
+
+        {pendingPatients.length === 0 ? (
+          <div style={{ padding:'24px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>
+            Aucun dossier en attente de validation.
+          </div>
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {pendingPatients.slice(0, 5).map((patient) => (
+              <div key={patient.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, border:'1px solid rgba(37,99,235,0.08)', borderRadius:10, padding:'10px 12px', background:'#f8fafc' }}>
+                <div style={{ minWidth:0, flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:'#0f172a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                    {patient.full_name || `${patient.nom || ''} ${patient.prenom || ''}`.trim() || 'Patient'}
+                  </div>
+                  <div style={{ fontSize:11, color:'#64748b', marginTop:2 }}>
+                    {patient.registration_number || '—'} · Ajouté le {new Date(patient.date_enregistrement).toLocaleDateString('fr-DZ')}
+                  </div>
+                </div>
+                <Link to={`/patients/${patient.id}`} style={{ textDecoration:'none' }}>
+                  <button style={{ padding:'7px 12px', background:'#fff', border:'1px solid rgba(37,99,235,0.18)', borderRadius:8, color:'#2563eb', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                    Ouvrir
+                  </button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Accès rapides ── */}
