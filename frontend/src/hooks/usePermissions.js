@@ -65,7 +65,7 @@ function buildEmptyCan() {
     viewMap:        false, manageUsers:     false,
     viewRcp:        false,
     manageAppointments: false, accessClinicalFollowup: false, manageCanReg: false,
-    writeAnapathReport: false, validateDiagnosis: false,
+    writeAnapathReport: false, validateDiagnosis: false, confirmDiagnostic: false,
     exportIdentifiedData: false,
   };
 }
@@ -127,6 +127,7 @@ export default function usePermissions() {
     viewRcp:         perms.can_view_rcp         ?? false,
     writeAnapathReport: perms.can_write_anapath_report ?? false,
     validateDiagnosis: perms.can_validate_diagnosis ?? false,
+    confirmDiagnostic: perms.can_validate_diagnosis ?? false,
     // Les sessions existantes peuvent ne pas contenir les nouvelles clés.
     manageAppointments: perms.can_manage_appointments ?? rolePermissions.can_manage_appointments,
     accessClinicalFollowup: perms.can_access_clinical_followup ?? rolePermissions.can_access_clinical_followup,

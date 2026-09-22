@@ -6,7 +6,8 @@ import usePermissions from '../../hooks/usePermissions';
 import toast from 'react-hot-toast';
 
 export default function PatientsEnAttentePage() {
-  const { can } = usePermissions(); // suppose can.confirmDiagnostic
+  const { can } = usePermissions();
+  const canValidate = can.validateDiagnosis || can.confirmDiagnostic;
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [motifModal, setMotifModal] = useState(null); // {patient}
@@ -44,7 +45,7 @@ export default function PatientsEnAttentePage() {
     }
   };
 
-  if (!can.confirmDiagnostic) {
+  if (!canValidate) {
     return (
       <AppLayout title="Accès refusé">
         <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>

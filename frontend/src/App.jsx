@@ -10,6 +10,7 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 import PatientsPage from './pages/patients/PatientsPage';
 import NewPatientPage from './pages/patients/NewPatientPage';
 import PatientDossierPage from './pages/patients/PatientDossierPage';
+import PatientsEnAttentePage from './pages/patients/PatientsEnAttentePage';
 import DoublonsPage from './pages/patients/Doublonspage';
 
 import DiagnosticsPage from './pages/diagnostics/DiagnosticsPage';
@@ -184,6 +185,12 @@ function App() {
         <Route path="/patients/doublons" element={
           <PermRoute permission="writePatient">
             <DoublonsPage />
+          </PermRoute>
+        } />
+
+        <Route path="/patients/en-attente" element={
+          <PermRoute permission="validateDiagnosis">
+            <PatientsEnAttentePage />
           </PermRoute>
         } />
 
