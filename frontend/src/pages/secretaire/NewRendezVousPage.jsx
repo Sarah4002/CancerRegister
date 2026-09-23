@@ -4,7 +4,15 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { secretaryService } from '../../services/secretaryService';
 import { patientService } from '../../services/patientService';
+import { adminService } from '../../services/adminService';
 import { AppLayout } from '../../components/layout/Sidebar';
+
+// Rôles autorisés à apparaître dans la liste "Médecin / Praticien"
+// (mêmes valeurs que ROLE_CFG dans AdminUsersPage.jsx).
+const ROLE_MEDECIN_LABELS = {
+  doctor_chef: 'Médecin Chef',
+  doctor:      'Médecin Oncologue',
+};
 
 export default function NewRendezVousPage() {
   const navigate = useNavigate();
@@ -13,6 +21,8 @@ export default function NewRendezVousPage() {
   const [submitting, setSubmitting] = useState(false);
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [medecins, setMedecins] = useState([]);
+  const [medecinsLoading, setMedecinsLoading] = useState(true);
   const initialPatient = searchParams.get('patient') || location.state?.patientContext?.id || '';
   const initialDate = searchParams.get('date') || '';
 
@@ -20,6 +30,7 @@ export default function NewRendezVousPage() {
     mode: 'onSubmit',
     defaultValues: {
       patient: initialPatient,
+      medecin: '',
       date: initialDate,
       heure: '09:00',
       type: 'consultation',
@@ -39,6 +50,26 @@ export default function NewRendezVousPage() {
     patientService.list({ page_size: 200 }).then(({ data }) => {
       setPatients(data.results || data);
     }).catch(() => {});
+  }, []);
+
+  // Médecins & médecins chef disponibles pour la sélection du praticien.
+  useEffect(() => {
+    setMedecinsLoading(true);
+    Promise.all(
+      Object.keys(ROLE_MEDECIN_LABELS).map(role =>
+        adminService.users.list({ role, is_active: 'true', page_size: 200 })
+      )
+    )
+      .then((responses) => {
+        const merged = responses
+          .flatMap(({ data }) => data.results || data)
+          .sort((a, b) => (a.full_name || a.username).localeCompare(b.full_name || b.username));
+        setMedecins(merged);
+      })
+      .catch(() => {
+        toast.error('Impossible de charger la liste des médecins.');
+      })
+      .finally(() => setMedecinsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -107,7 +138,21 @@ export default function NewRendezVousPage() {
               </Row2>
               <Row2>
                 <Field label="Médecin / Praticien">
-                  <input {...register('medecin')} placeholder="Dr. Benali" style={inputSt} />
+                  <select {...register('medecin')} style={selSt} disabled={medecinsLoading}>
+                    <option value="">
+                      {medecinsLoading ? 'Chargement des médecins...' : 'Sélectionner un médecin...'}
+                    </option>
+                    {medecins.map(m => (
+                      <option key={m.id} value={m.id}>
+                        Dr. {m.full_name || m.username} — {ROLE_MEDECIN_LABELS[m.role] || m.role}
+                      </option>
+                    ))}
+                  </select>
+                  {!medecinsLoading && medecins.length === 0 && (
+                    <p style={{ marginTop:4, fontSize:11, color:'#94a3b8' }}>
+                      Aucun médecin actif trouvé (rôle Médecin ou Médecin Chef).
+                    </p>
+                  )}
                 </Field>
                 <Field label="Établissement / Salle">
                   <input {...register('salle')} placeholder="CHU Oran – Salle de consultation 2" style={inputSt} />
