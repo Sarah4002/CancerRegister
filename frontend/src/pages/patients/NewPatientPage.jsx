@@ -18,6 +18,15 @@ const STEPS = [
   { label: 'Antecedents' },
 ];
 
+// Champs propres à chaque étape, utilisés pour ne valider que l'étape
+// affichée lorsqu'on clique sur "Continuer" (via trigger()).
+const STEP_FIELDS = [
+  ['nom', 'prenom', 'sexe', 'id_national', 'num_securite_sociale', 'date_naissance', 'age_diagnostic', 'lieu_naissance', 'nationalite'],
+  ['adresse', 'wilaya', 'commune', 'code_postal', 'telephone', 'telephone2', 'email', 'contact_nom', 'contact_prenom', 'contact_lien', 'contact_telephone'],
+  ['niveau_instruction', 'profession', 'situation_familiale', 'nombre_enfants', 'etablissement_pec', 'statut_dossier', 'statut_vital', 'notes'],
+  ['antecedents_personnels_liste', 'antecedents_personnels_autre', 'antecedents_familiaux_liste', 'antecedents_familiaux_autre', 'tabagisme', 'alcool', 'activite_physique', 'alimentation'],
+];
+
 // ── Règles de validation téléphone algérien ───────────────────
 // Formats acceptés :
 //   - 10 chiffres locaux   : 05XXXXXXXX | 06XXXXXXXX | 07XXXXXXXX
@@ -96,7 +105,6 @@ const ANTECEDENTS_FAMILIAUX_OPTIONS = [
 export default function NewPatientPage() {
   const navigate = useNavigate();
   const [step, setStep]             = useState(0);
-  const [saved, setSaved]           = useState([{}, {}, {}, {}]);
   const [submitting, setSubmitting] = useState(false);
 
   const [suspect,     setSuspect]     = useState(null);
@@ -104,7 +112,11 @@ export default function NewPatientPage() {
   const [showModal,   setShowModal]   = useState(false);
   const lastDuplicateKey = useRef('');
 
-  const { register, handleSubmit, watch, setValue, formState: { errors }, reset } =
+  // Un seul formulaire pour toutes les étapes : react-hook-form conserve les
+  // valeurs des champs déjà saisis même quand leur étape n'est plus affichée,
+  // tant qu'on ne fait pas de reset(). C'est ce qui permet d'aller en avant
+  // puis en arrière dans le wizard sans jamais perdre de données.
+  const { register, handleSubmit, watch, setValue, getValues, trigger, formState: { errors } } =
     useForm({ mode: 'onSubmit' });
 
   const watchedWilaya = watch('wilaya');
@@ -146,7 +158,7 @@ export default function NewPatientPage() {
         if (cancelled) return;
         lastDuplicateKey.current = key;
         if (data.has_doublon && data.suspects?.length) {
-          setDonneesForm(buildPayload([...saved.slice(0, step), { nom, prenom, sexe, id_national: normalizedId }]));
+          setDonneesForm(buildPayload(getValues()));
           setSuspect(data.suspects[0]);
           setShowModal(true);
         }
@@ -156,7 +168,7 @@ export default function NewPatientPage() {
     }, 500);
 
     return () => { cancelled = true; clearTimeout(timeoutId); };
-  }, [nom, prenom, sexe, idNational, saved, step]);
+  }, [nom, prenom, sexe, idNational]);
 
   // ── Champs personnalisés ──────────────────────────────────
   const {
@@ -168,8 +180,8 @@ export default function NewPatientPage() {
   } = useCustomFields({ module: 'patient', objectId: null });
 
   // ── Helpers ───────────────────────────────────────────────
-  const buildPayload = (steps) => {
-    const payload = Object.assign({}, ...steps);
+  const buildPayload = (data) => {
+    const payload = { ...data };
     const contacts = [];
     if (payload.contact_nom && payload.contact_telephone) {
       contacts.push({
@@ -183,19 +195,22 @@ export default function NewPatientPage() {
     return payload;
   };
 
-  const onStepSubmit = async (data) => {
-    const updated = saved.map((s, i) => i === step ? data : s);
-    setSaved(updated);
+  // Avance à l'étape suivante après avoir validé uniquement les champs de
+  // l'étape en cours. Aucune donnée n'est effacée : on ne fait pas de reset().
+  const handleNext = async () => {
+    const valid = await trigger(STEP_FIELDS[step]);
+    if (!valid) return;
+    setStep(s => s + 1);
+  };
 
-    if (step < 3) {
-      setStep(step + 1);
-      reset(saved[step + 1]);
-      return;
-    }
+  // Retour à l'étape précédente : les champs déjà saisis restent tels quels
+  // puisque le formulaire n'est jamais réinitialisé entre les étapes.
+  const handlePrev = () => setStep(s => s - 1);
 
+  const onFinalSubmit = async (data) => {
     setSubmitting(true);
     try {
-      const payload = buildPayload(updated);
+      const payload = buildPayload(data);
       const { data: res } = await apiClient.post('/patients/verifier_doublon/', {
         nom: payload.nom, prenom: payload.prenom,
         date_naissance: payload.date_naissance, id_national: payload.id_national,
@@ -207,7 +222,7 @@ export default function NewPatientPage() {
       await creerPatient(payload);
     } catch (err) {
       console.warn('Verification doublon echouee, creation directe', err);
-      await creerPatient(buildPayload(updated));
+      await creerPatient(buildPayload(data));
     } finally {
       setSubmitting(false);
     }
@@ -284,7 +299,7 @@ export default function NewPatientPage() {
         </div>
 
         <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '28px 32px' }}>
-          <form onSubmit={handleSubmit(onStepSubmit)}>
+          <form onSubmit={handleSubmit(onFinalSubmit)}>
 
             {/* ══ STEP 0 : Identité ══════════════════════════════════ */}
             {step === 0 && (
@@ -586,9 +601,9 @@ export default function NewPatientPage() {
                 <div style={{ marginTop: 20, padding: '14px 16px', background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.16)', borderRadius: '12px' }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#2563eb', marginBottom: 8 }}>Recapitulatif du dossier</div>
                   <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.8 }}>
-                    <strong style={{ color: '#0f172a' }}>Patient :</strong> {saved[0]?.prenom} {saved[0]?.nom}<br />
-                    <strong style={{ color: '#0f172a' }}>Sexe :</strong> {saved[0]?.sexe === 'M' ? 'Masculin' : saved[0]?.sexe === 'F' ? 'Feminin' : '—'} · <strong style={{ color: '#0f172a' }}>Age :</strong> {saved[0]?.age_diagnostic || '—'} ans<br />
-                    <strong style={{ color: '#0f172a' }}>Wilaya :</strong> {saved[1]?.wilaya || '—'} · <strong style={{ color: '#0f172a' }}>Tel :</strong> {saved[1]?.telephone || '—'}<br />
+                    <strong style={{ color: '#0f172a' }}>Patient :</strong> {watch('prenom')} {watch('nom')}<br />
+                    <strong style={{ color: '#0f172a' }}>Sexe :</strong> {watch('sexe') === 'M' ? 'Masculin' : watch('sexe') === 'F' ? 'Feminin' : '—'} · <strong style={{ color: '#0f172a' }}>Age :</strong> {watch('age_diagnostic') || '—'} ans<br />
+                    <strong style={{ color: '#0f172a' }}>Wilaya :</strong> {watchedWilaya || '—'} · <strong style={{ color: '#0f172a' }}>Tel :</strong> {watch('telephone') || '—'}<br />
                     <strong style={{ color: '#0f172a' }}>Antécédents perso :</strong> {antecedentsPersonnelsList.length ? antecedentsPersonnelsList.join(', ') : '—'}<br />
                     <strong style={{ color: '#0f172a' }}>Antécédents familiaux :</strong> {antecedentsFamiliauxList.length ? antecedentsFamiliauxList.join(', ') : '—'}
                   </div>
@@ -599,21 +614,26 @@ export default function NewPatientPage() {
             {/* Navigation */}
             <div style={{ display: 'flex', gap: 10, marginTop: 28, paddingTop: 20, borderTop: '1px solid rgba(37,99,235,0.12)' }}>
               {step > 0 && (
-                <button type="button" onClick={() => setStep(s => s - 1)} style={{
+                <button type="button" onClick={handlePrev} style={{
                   flex: '0 0 110px', padding: '12px', background: '#f1f5f9',
                   border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px',
                   color: '#334155', fontSize: 13.5, cursor: 'pointer',
                 }}>Retour</button>
               )}
-              <button type="submit" disabled={submitting} style={{
-                flex: 1, padding: '12px',
-                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                border: 'none', borderRadius: '12px',
-                color: '#fff', fontSize: 13.5, fontWeight: 600,
-                cursor: submitting ? 'not-allowed' : 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                opacity: submitting ? 0.7 : 1,
-              }}>
+              <button
+                type={step === 3 ? 'submit' : 'button'}
+                onClick={step === 3 ? undefined : handleNext}
+                disabled={submitting}
+                style={{
+                  flex: 1, padding: '12px',
+                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                  border: 'none', borderRadius: '12px',
+                  color: '#fff', fontSize: 13.5, fontWeight: 600,
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  opacity: submitting ? 0.7 : 1,
+                }}
+              >
                 {submitting
                   ? <><Spinner /> Verification...</>
                   : step === 3 ? 'Enregistrer le patient' : 'Continuer'}
