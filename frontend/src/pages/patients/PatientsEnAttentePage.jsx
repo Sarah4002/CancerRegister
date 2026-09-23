@@ -38,6 +38,100 @@ function UrgenceBadge({ dateEnregistrement }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   CONFIRM ICON BUTTON — check vert, même gabarit que DeleteIconButton
+───────────────────────────────────────────────────────────────────────────── */
+function ConfirmIconButton({ onClick, loading }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      disabled={loading}
+      title="Confirmer le diagnostic (cancer)"
+      style={{
+        width:32, height:32,
+        display:'flex', alignItems:'center', justifyContent:'center',
+        borderRadius:8,
+        border: hovered ? '1px solid rgba(22,163,74,0.35)' : '1px solid rgba(22,163,74,0.15)',
+        background: hovered ? 'rgba(22,163,74,0.1)' : 'rgba(22,163,74,0.05)',
+        cursor: loading ? 'not-allowed' : 'pointer',
+        transition:'all .15s',
+        flexShrink:0,
+        opacity: loading ? .6 : 1,
+      }}
+    >
+      {loading ? (
+        <span style={{ width:13, height:13, border:'2px solid rgba(22,163,74,0.3)', borderTopColor:'#16a34a', borderRadius:'50%', animation:'spin .7s linear infinite', display:'inline-block' }} />
+      ) : (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      )}
+    </button>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   REFUSE ICON BUTTON — croix rouge, même gabarit que DeleteIconButton
+───────────────────────────────────────────────────────────────────────────── */
+function RefuseIconButton({ onClick }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      title="Refuser le diagnostic"
+      style={{
+        width:32, height:32,
+        display:'flex', alignItems:'center', justifyContent:'center',
+        borderRadius:8,
+        border: hovered ? '1px solid rgba(220,38,38,0.35)' : '1px solid rgba(220,38,38,0.15)',
+        background: hovered ? 'rgba(220,38,38,0.1)' : 'rgba(220,38,38,0.05)',
+        cursor:'pointer',
+        transition:'all .15s',
+        flexShrink:0,
+      }}
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   VOIR ICON BUTTON — oeil, même gabarit
+───────────────────────────────────────────────────────────────────────────── */
+function VoirIconButton() {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      title="Voir le dossier"
+      style={{
+        width:32, height:32,
+        display:'flex', alignItems:'center', justifyContent:'center',
+        borderRadius:8,
+        border: hovered ? '1px solid rgba(37,99,235,0.3)' : '1px solid rgba(37,99,235,0.12)',
+        background: hovered ? 'rgba(37,99,235,0.08)' : 'transparent',
+        cursor:'pointer',
+        transition:'all .15s',
+        flexShrink:0,
+      }}
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={hovered ? '#2563eb' : '#64748b'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition:'stroke .15s' }}>
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    </button>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    REFUS MODAL — même gabarit que DeleteConfirmModal (PatientsPage)
 ───────────────────────────────────────────────────────────────────────────── */
 function RefusModal({ patient, onClose, onConfirm, loading }) {
@@ -373,37 +467,20 @@ export default function PatientsEnAttentePage() {
                     </div>
                   </td>
                   <td style={{ padding:'12px 14px' }}>
-                    <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+                    <div style={{ display:'flex', gap:6, justifyContent:'flex-end' }}>
                       {canValidate ? (
                         <>
-                          <button
+                          <ConfirmIconButton
                             onClick={() => handleConfirm(p)}
-                            disabled={confirmingId === p.id}
-                            style={{
-                              padding:'6px 14px', borderRadius:8,
-                              background: confirmingId === p.id ? '#86efac' : '#16a34a',
-                              border:'none', color:'#fff', fontSize:11.5, fontWeight:700,
-                              cursor: confirmingId === p.id ? 'not-allowed' : 'pointer',
-                            }}
-                          >
-                            {confirmingId === p.id ? '…' : 'Confirmer'}
-                          </button>
-                          <button
+                            loading={confirmingId === p.id}
+                          />
+                          <RefuseIconButton
                             onClick={() => setMotifModal({ patient: p })}
-                            style={{
-                              padding:'6px 14px', background:'#fff',
-                              border:'1px solid rgba(220,38,38,0.3)', borderRadius:8,
-                              color:'#dc2626', fontSize:11.5, fontWeight:700, cursor:'pointer',
-                            }}
-                          >
-                            Refuser
-                          </button>
+                          />
                         </>
                       ) : (
                         <Link to={`/patients/${p.id}`} style={{ textDecoration:'none' }}>
-                          <button style={{ padding:'6px 14px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:8, color:'#334155', fontSize:11.5, cursor:'pointer' }}>
-                            Voir
-                          </button>
+                          <VoirIconButton />
                         </Link>
                       )}
                     </div>

@@ -67,6 +67,32 @@ const validateEmail = (value) => {
   return true;
 };
 
+// ── Options d'antécédents (choix multiples) ───────────────────
+const ANTECEDENTS_PERSONNELS_OPTIONS = [
+  'Diabète',
+  'Hypertension artérielle',
+  'Cardiopathie',
+  'Maladie rénale',
+  'Maladie hépatique',
+  'Antécédent de cancer personnel',
+  'Chirurgie antérieure',
+  'Tuberculose',
+  'Asthme / BPCO',
+  'Aucun antécédent connu',
+];
+
+const ANTECEDENTS_FAMILIAUX_OPTIONS = [
+  'Cancer du sein',
+  'Cancer du côlon',
+  'Cancer du poumon',
+  'Cancer de la prostate',
+  "Cancer de l'ovaire",
+  "Cancer de l'estomac",
+  'Leucémie / Lymphome',
+  'Autre cancer',
+  'Aucun antécédent familial connu',
+];
+
 export default function NewPatientPage() {
   const navigate = useNavigate();
   const [step, setStep]             = useState(0);
@@ -83,6 +109,22 @@ export default function NewPatientPage() {
 
   const watchedWilaya = watch('wilaya');
   const [nom, prenom, sexe, idNational] = watch(['nom', 'prenom', 'sexe', 'id_national']);
+
+  // Sélections courantes des antécédents (choix multiples)
+  const antecedentsPersonnelsList = watch('antecedents_personnels_liste') || [];
+  const antecedentsFamiliauxList  = watch('antecedents_familiaux_liste') || [];
+
+  const toggleAntecedentPersonnel = (opt) => {
+    const current = watch('antecedents_personnels_liste') || [];
+    const updated = current.includes(opt) ? current.filter(o => o !== opt) : [...current, opt];
+    setValue('antecedents_personnels_liste', updated, { shouldDirty: true });
+  };
+
+  const toggleAntecedentFamilial = (opt) => {
+    const current = watch('antecedents_familiaux_liste') || [];
+    const updated = current.includes(opt) ? current.filter(o => o !== opt) : [...current, opt];
+    setValue('antecedents_familiaux_liste', updated, { shouldDirty: true });
+  };
 
   // Vérification en temps réel : elle commence seulement une fois les quatre
   // éléments d'identification disponibles, afin d'éviter les faux positifs.
@@ -470,12 +512,37 @@ export default function NewPatientPage() {
             {step === 3 && (
               <div style={{ animation: 'fadeUp 0.3s ease' }}>
                 <SectionTitle>Antecedents medicaux</SectionTitle>
-                <Field label="Antecedents personnels">
-                  <textarea {...register('antecedents_personnels')} rows={3} placeholder="Maladies, chirurgies, hospitalisations anterieures..." style={{ ...inputStyle(), resize: 'vertical', lineHeight: 1.5 }} />
+
+                <ChoiceGroup
+                  label="Antecedents personnels"
+                  options={ANTECEDENTS_PERSONNELS_OPTIONS}
+                  selected={antecedentsPersonnelsList}
+                  onToggle={toggleAntecedentPersonnel}
+                />
+                <Field label="Précisions (antécédents personnels)">
+                  <textarea
+                    {...register('antecedents_personnels_autre')}
+                    rows={2}
+                    placeholder="Détails complémentaires si nécessaire..."
+                    style={{ ...inputStyle(), resize: 'vertical', lineHeight: 1.5 }}
+                  />
                 </Field>
-                <Field label="Antecedents familiaux (cancer)">
-                  <textarea {...register('antecedents_familiaux')} rows={3} placeholder="Antecedents familiaux de cancer, lien de parente..." style={{ ...inputStyle(), resize: 'vertical', lineHeight: 1.5 }} />
+
+                <ChoiceGroup
+                  label="Antecedents familiaux (cancer)"
+                  options={ANTECEDENTS_FAMILIAUX_OPTIONS}
+                  selected={antecedentsFamiliauxList}
+                  onToggle={toggleAntecedentFamilial}
+                />
+                <Field label="Lien de parenté / précisions">
+                  <textarea
+                    {...register('antecedents_familiaux_autre')}
+                    rows={2}
+                    placeholder="Ex: mère (cancer du sein à 55 ans), frère (cancer du côlon)..."
+                    style={{ ...inputStyle(), resize: 'vertical', lineHeight: 1.5 }}
+                  />
                 </Field>
+
                 <SectionTitle style={{ marginTop: 20 }}>Habitudes de vie</SectionTitle>
                 <Row>
                   <Field label="Tabagisme">
@@ -521,7 +588,9 @@ export default function NewPatientPage() {
                   <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.8 }}>
                     <strong style={{ color: '#0f172a' }}>Patient :</strong> {saved[0]?.prenom} {saved[0]?.nom}<br />
                     <strong style={{ color: '#0f172a' }}>Sexe :</strong> {saved[0]?.sexe === 'M' ? 'Masculin' : saved[0]?.sexe === 'F' ? 'Feminin' : '—'} · <strong style={{ color: '#0f172a' }}>Age :</strong> {saved[0]?.age_diagnostic || '—'} ans<br />
-                    <strong style={{ color: '#0f172a' }}>Wilaya :</strong> {saved[1]?.wilaya || '—'} · <strong style={{ color: '#0f172a' }}>Tel :</strong> {saved[1]?.telephone || '—'}
+                    <strong style={{ color: '#0f172a' }}>Wilaya :</strong> {saved[1]?.wilaya || '—'} · <strong style={{ color: '#0f172a' }}>Tel :</strong> {saved[1]?.telephone || '—'}<br />
+                    <strong style={{ color: '#0f172a' }}>Antécédents perso :</strong> {antecedentsPersonnelsList.length ? antecedentsPersonnelsList.join(', ') : '—'}<br />
+                    <strong style={{ color: '#0f172a' }}>Antécédents familiaux :</strong> {antecedentsFamiliauxList.length ? antecedentsFamiliauxList.join(', ') : '—'}
                   </div>
                 </div>
               </div>
@@ -582,6 +651,37 @@ function Field({ label, error, children }) {
       <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#334155', marginBottom: 6, letterSpacing: 0.3 }}>{label}</label>
       {children}
       {error && <p style={{ marginTop: 4, fontSize: 11.5, color: '#dc2626' }}>{error}</p>}
+    </div>
+  );
+}
+function ChoiceGroup({ label, options, selected, onToggle }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#334155', marginBottom: 8, letterSpacing: 0.3 }}>
+        {label}
+      </label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {options.map(opt => {
+          const active = selected.includes(opt);
+          return (
+            <button
+              type="button"
+              key={opt}
+              onClick={() => onToggle(opt)}
+              style={{
+                padding: '7px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer',
+                border: `1px solid ${active ? '#2563eb50' : 'rgba(37,99,235,0.14)'}`,
+                background: active ? 'rgba(37,99,235,0.1)' : '#f8fafc',
+                color: active ? '#1d4ed8' : '#64748b',
+                transition: 'all .12s',
+              }}
+            >
+              {active && <span style={{ marginRight: 5 }}>✓</span>}
+              {opt}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
