@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { secretaryService } from '../../services/secretaryService';
 import { patientService } from '../../services/patientService';
 import { adminService } from '../../services/adminService';
+import { medecinService } from '../../services/accountsService';
 import { AppLayout } from '../../components/layout/Sidebar';
 
 // Rôles autorisés à apparaître dans la liste "Médecin / Praticien"
@@ -55,16 +56,15 @@ export default function NewRendezVousPage() {
   // Médecins & médecins chef disponibles pour la sélection du praticien.
   useEffect(() => {
     setMedecinsLoading(true);
-    Promise.all(
-      Object.keys(ROLE_MEDECIN_LABELS).map(role =>
-        adminService.users.list({ role, is_active: 'true', page_size: 200 })
-      )
-    )
-      .then((responses) => {
-        const merged = responses
-          .flatMap(({ data }) => data.results || data)
+    // Utilise l'endpoint dédié /auth/medecins/ qui renvoie { medecins: [...] }
+    medecinService.list({ role: 'doctor', page_size: 200 })
+      .then(({ data }) => {
+        const list = data.medecins || data.results || data || [];
+        // Filtre pour ne garder que les rôles doctor/doctor_chef et tri alphabétique
+        const filtered = list
+          .filter(m => ['doctor', 'doctor_chef'].includes(m.role))
           .sort((a, b) => (a.full_name || a.username).localeCompare(b.full_name || b.username));
-        setMedecins(merged);
+        setMedecins(filtered);
       })
       .catch(() => {
         toast.error('Impossible de charger la liste des médecins.');
