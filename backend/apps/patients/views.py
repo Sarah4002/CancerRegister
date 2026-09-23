@@ -19,6 +19,7 @@ from apps.accounts.permissions import (
 
 from .duplicate_service import detecter_doublons, fusionner_patients
 from .models import ContactUrgence, DossierMedical, Patient, DocumentAdministratif
+from apps.suivi.models import ConsultationSuivi
 from .serializers import (
     ContactUrgenceSerializer,
     DossierMedicalSerializer,
@@ -282,6 +283,21 @@ class PatientViewSet(viewsets.ModelViewSet):
                 )
                 for user in destinataires
             ])
+
+            # Crée automatiquement un rendez-vous de première visite le jour même
+            try:
+                from django.utils import timezone
+                ConsultationSuivi.objects.create(
+                    patient=patient,
+                    type_consultation='suivi',
+                    statut='planifiee',
+                    date_consultation=timezone.now().date(),
+                    heure=None,
+                    cree_par=self.request.user,
+                )
+            except Exception:
+                # Ne pas bloquer la création du patient si la création du RDV échoue
+                pass
 
         self._create_access_log(
             user=self.request.user,
