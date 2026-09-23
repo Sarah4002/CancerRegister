@@ -57,7 +57,8 @@ export default function NewRendezVousPage() {
   useEffect(() => {
     setMedecinsLoading(true);
     // Utilise l'endpoint dédié /auth/medecins/ qui renvoie { medecins: [...] }
-    medecinService.list({ role: 'doctor', page_size: 200 })
+    // Ne pas filtrer côté requête pour récupérer doctor + doctor_chef
+    medecinService.list({ page_size: 200 })
       .then(({ data }) => {
         const list = data.medecins || data.results || data || [];
         // Filtre pour ne garder que les rôles doctor/doctor_chef et tri alphabétique
