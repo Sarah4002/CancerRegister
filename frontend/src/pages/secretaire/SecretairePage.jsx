@@ -421,7 +421,7 @@ function RdvListPanel({ date, rdvs, onStatusChange, conflictIds, onSendReminder,
                   borderRadius:9, color:'#2563eb', fontSize:12, fontWeight:600, cursor:'pointer',
                 }}
               >
-                🖨️ Imprimer
+                Imprimer
               </button>
             )}
             <Link to={`/secretaire/rendezvous/nouveau?date=${date}`} style={{ textDecoration:'none' }}>
