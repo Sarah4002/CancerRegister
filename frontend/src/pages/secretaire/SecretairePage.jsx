@@ -491,7 +491,7 @@ function RdvListPanel({ date, rdvs, onStatusChange, conflictIds, onSendReminder,
                       whiteSpace:'nowrap',
                     }}
                   >
-                    {rState === 'sending' ? 'Envoi...' : rState === 'sent' ? '✓ Envoyé' : rState === 'error' ? 'Échec — réessayer' : '🔔 Rappel'}
+                    {rState === 'sending' ? 'Envoi...' : rState === 'sent' ? '✓ Envoyé' : rState === 'error' ? 'Échec — réessayer' : 'Rappel'}
                   </button>
                   <select
                     value={r.statut}
