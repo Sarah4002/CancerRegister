@@ -66,6 +66,18 @@ function conflictKey(r) {
   return `${r.medecin_nom}__${r.date}__${r.heure}`;
 }
 
+/* Statuts considérés comme "actifs" : pas encore finalisés manuellement */
+const STATUTS_ACTIFS = ['en_attente', 'confirme'];
+
+/* Un RDV est en retard si sa date/heure est déjà passée et que personne
+   (médecin ou secrétaire) n'a changé son statut depuis. */
+function isPastDue(r) {
+  if (!r.date || !r.heure) return false;
+  const dt = new Date(`${r.date}T${r.heure}:00`);
+  if (Number.isNaN(dt.getTime())) return false;
+  return dt.getTime() < Date.now();
+}
+
 /* ══════════════════════════════════════════════
    Petits composants réutilisés du design system
    ══════════════════════════════════════════════ */
@@ -177,16 +189,16 @@ function SearchField({ value, onChange }) {
   );
 }
 
-/* Petite pastille d'alerte quand un médecin a 2 RDV à la même heure */
-function ConflictFlag({ title = 'Conflit : ce médecin a un autre RDV à la même heure' }) {
+/* Petite pastille d'alerte générique (conflit médecin, doublon patient, etc.) */
+function AlertFlag({ title, color = '#dc2626' }) {
   return (
     <span
       title={title}
       style={{
         display:'inline-flex', alignItems:'center', justifyContent:'center',
         width:14, height:14, borderRadius:'50%', flexShrink:0,
-        background:'#dc262618', color:'#dc2626', fontSize:9, fontWeight:800,
-        border:'1px solid #dc262640',
+        background:`${color}18`, color, fontSize:9, fontWeight:800,
+        border:`1px solid ${color}40`,
       }}
     >
       !
@@ -194,10 +206,21 @@ function ConflictFlag({ title = 'Conflit : ce médecin a un autre RDV à la mêm
   );
 }
 
+/* Rétro-compatibilité : ancien nom utilisé partout dans le fichier pour le conflit médecin */
+function ConflictFlag({ title = 'Conflit : ce médecin a un autre RDV à la même heure' }) {
+  return <AlertFlag title={title} color="#dc2626" />;
+}
+
+/* Pastille pour un doublon de patient : le même patient a déjà un autre
+   rendez-vous actif (en attente / confirmé) à venir. */
+function DuplicatePatientFlag({ title = 'Ce patient a déjà un autre rendez-vous actif' }) {
+  return <AlertFlag title={title} color="#d97706" />;
+}
+
 /* ══════════════════════════════════════════════
    Calendrier mensuel (avec drag & drop + conflits)
    ══════════════════════════════════════════════ */
-function CalendarGrid({ year, month, rdvByDay, selectedDate, onSelectDay, conflictIds, onDropRdv, searchActive }) {
+function CalendarGrid({ year, month, rdvByDay, selectedDate, onSelectDay, conflictIds, patientDuplicateIds, onDropRdv, searchActive }) {
   const firstOfMonth = new Date(year, month, 1);
   const startOffset = (firstOfMonth.getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -263,6 +286,7 @@ function CalendarGrid({ year, month, rdvByDay, selectedDate, onSelectDay, confli
               <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
                 {visible.map(r => {
                   const isConflict = conflictIds.has(r.id);
+                  const isDuplicate = patientDuplicateIds.has(r.id);
                   const isMatch = searchActive && searchActive(r);
                   return (
                     <div
@@ -273,7 +297,7 @@ function CalendarGrid({ year, month, rdvByDay, selectedDate, onSelectDay, confli
                         e.stopPropagation();
                       }}
                       onClick={e => e.stopPropagation()}
-                      title={isConflict ? 'Conflit de planning pour ce médecin' : undefined}
+                      title={isConflict ? 'Conflit de planning pour ce médecin' : isDuplicate ? 'Ce patient a déjà un autre rendez-vous actif' : undefined}
                       style={{
                         display:'flex', alignItems:'center', gap:3,
                         fontSize:9, padding:'1px 5px', borderRadius:5,
@@ -281,10 +305,11 @@ function CalendarGrid({ year, month, rdvByDay, selectedDate, onSelectDay, confli
                         color: STATUT_RDV_COLORS[r.statut] || '#64748b',
                         whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                         fontWeight:600, cursor:'grab',
-                        outline: isMatch ? '1.5px solid #7c3aed' : isConflict ? '1.5px solid #dc2626' : 'none',
+                        outline: isMatch ? '1.5px solid #7c3aed' : isConflict ? '1.5px solid #dc2626' : isDuplicate ? '1.5px solid #d97706' : 'none',
                       }}
                     >
                       {isConflict && <ConflictFlag />}
+                      {!isConflict && isDuplicate && <DuplicatePatientFlag />}
                       <span style={{ overflow:'hidden', textOverflow:'ellipsis' }}>{r.heure} {r.patient_nom}</span>
                     </div>
                   );
@@ -304,7 +329,7 @@ function CalendarGrid({ year, month, rdvByDay, selectedDate, onSelectDay, confli
 /* ══════════════════════════════════════════════
    Vue semaine (avec drag & drop + conflits)
    ══════════════════════════════════════════════ */
-function WeekGrid({ weekDates, rdvByDay, selectedDate, onSelectDay, conflictIds, onDropRdv, searchActive }) {
+function WeekGrid({ weekDates, rdvByDay, selectedDate, onSelectDay, conflictIds, patientDuplicateIds, onDropRdv, searchActive }) {
   const todayStr = todayISO();
   const [dragOverDate, setDragOverDate] = useState(null);
 
@@ -358,6 +383,7 @@ function WeekGrid({ weekDates, rdvByDay, selectedDate, onSelectDay, conflictIds,
               )}
               {dayRdv.map(r => {
                 const isConflict = conflictIds.has(r.id);
+                const isDuplicate = patientDuplicateIds.has(r.id);
                 const isMatch = searchActive && searchActive(r);
                 return (
                   <div
@@ -368,17 +394,18 @@ function WeekGrid({ weekDates, rdvByDay, selectedDate, onSelectDay, conflictIds,
                       e.stopPropagation();
                     }}
                     onClick={e => e.stopPropagation()}
-                    title={isConflict ? 'Conflit de planning pour ce médecin' : undefined}
+                    title={isConflict ? 'Conflit de planning pour ce médecin' : isDuplicate ? 'Ce patient a déjà un autre rendez-vous actif' : undefined}
                     style={{
                       display:'flex', flexDirection:'column', gap:1,
                       fontSize:10, padding:'4px 6px', borderRadius:7,
                       background: `${STATUT_RDV_COLORS[r.statut] || '#94a3b8'}14`,
-                      border: isMatch ? '1.5px solid #7c3aed' : isConflict ? '1.5px solid #dc2626' : `1px solid ${STATUT_RDV_COLORS[r.statut] || '#94a3b8'}30`,
+                      border: isMatch ? '1.5px solid #7c3aed' : isConflict ? '1.5px solid #dc2626' : isDuplicate ? '1.5px solid #d97706' : `1px solid ${STATUT_RDV_COLORS[r.statut] || '#94a3b8'}30`,
                       cursor:'grab',
                     }}
                   >
                     <div style={{ display:'flex', alignItems:'center', gap:4, fontWeight:700, color: STATUT_RDV_COLORS[r.statut] || '#64748b' }}>
                       {isConflict && <ConflictFlag />}
+                      {!isConflict && isDuplicate && <DuplicatePatientFlag />}
                       {r.heure}
                     </div>
                     <div style={{ color:'#0f172a', fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
@@ -399,7 +426,7 @@ function WeekGrid({ weekDates, rdvByDay, selectedDate, onSelectDay, conflictIds,
 /* ══════════════════════════════════════════════
    Liste des RDV d'une journée sélectionnée
    ══════════════════════════════════════════════ */
-function RdvListPanel({ date, rdvs, onStatusChange, conflictIds, onSendReminder, reminderState, onPrint }) {
+function RdvListPanel({ date, rdvs, onStatusChange, conflictIds, patientDuplicateIds, onSendReminder, reminderState, onPrint }) {
   const dateObj = date ? new Date(`${date}T00:00:00`) : null;
   const dateLabel = dateObj
     ? dateObj.toLocaleDateString('fr-DZ', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
@@ -452,13 +479,14 @@ function RdvListPanel({ date, rdvs, onStatusChange, conflictIds, onSendReminder,
             .sort((a, b) => a.heure.localeCompare(b.heure))
             .map(r => {
               const isConflict = conflictIds.has(r.id);
+              const isDuplicate = patientDuplicateIds.has(r.id);
               const rState = reminderState[r.id];
               return (
                 <div key={r.id} style={{
                   display:'flex', alignItems:'center', gap:12,
                   padding:'10px 12px', borderRadius:10,
-                  border: isConflict ? '1px solid #dc262650' : '1px solid rgba(37,99,235,0.08)',
-                  background: isConflict ? '#fef2f2' : '#fbfcfe',
+                  border: isConflict ? '1px solid #dc262650' : isDuplicate ? '1px solid #d9770650' : '1px solid rgba(37,99,235,0.08)',
+                  background: isConflict ? '#fef2f2' : isDuplicate ? '#fffbeb' : '#fbfcfe',
                 }}>
                   <div style={{
                     fontFamily:'var(--font-mono)', fontSize:13, fontWeight:700,
@@ -470,12 +498,16 @@ function RdvListPanel({ date, rdvs, onStatusChange, conflictIds, onSendReminder,
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                       {isConflict && <ConflictFlag />}
+                      {!isConflict && isDuplicate && <DuplicatePatientFlag />}
                       <div style={{ fontSize:13, fontWeight:700, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                         {r.patient_nom}
                       </div>
                     </div>
                     <div style={{ fontSize:11, color:'#64748b' }}>
                       {TYPE_RDV_LABELS[r.type] || r.type} · Dr. {r.medecin_nom}
+                      {isDuplicate && !isConflict && (
+                        <span style={{ color:'#d97706', fontWeight:600 }}> · Doublon patient</span>
+                      )}
                     </div>
                   </div>
                   <button
@@ -747,6 +779,34 @@ export default function SecretairePage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  /* ── Passage automatique en "Absent" ──
+     Si l'heure du RDV est dépassée et que ni le médecin ni la secrétaire
+     n'ont changé le statut (toujours "en_attente" ou "confirme"), le RDV
+     passe automatiquement à "absent". Vérifié au chargement puis toutes
+     les 60s, avec répercussion sur le backend en arrière-plan. */
+  const checkNoShows = useCallback(() => {
+    setRdvs(prev => {
+      let changed = false;
+      const next = prev.map(r => {
+        if (STATUTS_ACTIFS.includes(r.statut) && isPastDue(r)) {
+          changed = true;
+          secretaryService.updateStatut(r.id, 'absent').catch(err => {
+            console.error(`Erreur passage automatique en "absent" du RDV ${r.id}:`, err);
+          });
+          return { ...r, statut: 'absent' };
+        }
+        return r;
+      });
+      return changed ? next : prev;
+    });
+  }, []);
+
+  useEffect(() => {
+    checkNoShows();
+    const interval = setInterval(checkNoShows, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [checkNoShows, rdvs.length]);
+
   /* Notifications : RDV secrétariat classiques + "prochaine_consultation"
      saisies depuis NewConsultationPage, fusionnés et triés sur les 72h à venir. */
   const fetchUpcoming = useCallback(async () => {
@@ -834,6 +894,40 @@ export default function SecretairePage() {
     return n;
   }, [filteredRdvs, conflictIds]);
 
+  /* Détection de doublons patient : un même patient a déjà un autre RDV
+     actif (en_attente / confirme) à venir — sert à empêcher la création
+     ou le déplacement d'un rendez-vous en double. Le(s) rendez-vous déjà
+     existant(s) ne sont jamais modifiés automatiquement ; ils gardent
+     leur statut (par ex. "En attente") tel quel. */
+  const patientDuplicateIds = useMemo(() => {
+    const today = todayISO();
+    const counts = {};
+    rdvs.forEach(r => {
+      if (!r.patient_nom || !STATUTS_ACTIFS.includes(r.statut) || r.date < today) return;
+      const key = normalize(r.patient_nom);
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    const ids = new Set();
+    rdvs.forEach(r => {
+      if (!r.patient_nom || !STATUTS_ACTIFS.includes(r.statut) || r.date < today) return;
+      const key = normalize(r.patient_nom);
+      if (counts[key] > 1) ids.add(r.id);
+    });
+    return ids;
+  }, [rdvs]);
+
+  const duplicatePatientCount = useMemo(() => {
+    const today = todayISO();
+    const seen = new Set();
+    let n = 0;
+    rdvs.forEach(r => {
+      if (!r.patient_nom || !STATUTS_ACTIFS.includes(r.statut) || r.date < today) return;
+      const key = normalize(r.patient_nom);
+      if (patientDuplicateIds.has(r.id) && !seen.has(key)) { seen.add(key); n++; }
+    });
+    return n;
+  }, [rdvs, patientDuplicateIds]);
+
   /* Recherche rapide : fonction de correspondance réutilisée pour le surlignage */
   const searchMatch = useMemo(() => {
     const q = normalize(searchQuery);
@@ -890,11 +984,29 @@ export default function SecretairePage() {
     }
   };
 
-  /* Drag & drop : déplace un RDV vers une nouvelle date */
+  /* Drag & drop : déplace un RDV vers une nouvelle date.
+     Empêche le déplacement si le patient a déjà un autre RDV actif
+     (en_attente / confirme) ce jour-là : le RDV existant garde son
+     statut ("En attente") et le déplacement est refusé. */
   const handleDropRdv = async (rdvIdRaw, newDate) => {
     const rdvId = /^\d+$/.test(rdvIdRaw) ? Number(rdvIdRaw) : rdvIdRaw;
     const target = rdvs.find(r => String(r.id) === String(rdvId));
     if (!target || target.date === newDate) return;
+
+    const patientKey = normalize(target.patient_nom);
+    const hasActiveDuplicate = rdvs.some(r =>
+      String(r.id) !== String(rdvId) &&
+      normalize(r.patient_nom) === patientKey &&
+      r.date === newDate &&
+      STATUTS_ACTIFS.includes(r.statut)
+    );
+    if (hasActiveDuplicate) {
+      window.alert(
+        `Impossible de déplacer ce rendez-vous : ${target.patient_nom} a déjà un rendez-vous actif ce jour-là. ` +
+        `Le rendez-vous existant reste "En attente".`
+      );
+      return;
+    }
 
     const previousDate = target.date;
     setRdvs(prev => prev.map(r => (String(r.id) === String(rdvId) ? { ...r, date: newDate } : r)));
@@ -1005,10 +1117,21 @@ export default function SecretairePage() {
           <div style={{
             display:'flex', alignItems:'center', gap:10,
             background:'#fef2f2', border:'1px solid #dc262640', borderRadius:12,
-            padding:'10px 16px', marginBottom:16, fontSize:12, color:'#991b1b', fontWeight:600,
+            padding:'10px 16px', marginBottom:12, fontSize:12, color:'#991b1b', fontWeight:600,
           }}>
             <ConflictFlag title="" />
             {conflictCount} conflit{conflictCount > 1 ? 's' : ''} de planning détecté{conflictCount > 1 ? 's' : ''} (un médecin avec deux RDV à la même heure).
+          </div>
+        )}
+
+        {duplicatePatientCount > 0 && (
+          <div style={{
+            display:'flex', alignItems:'center', gap:10,
+            background:'#fffbeb', border:'1px solid #d9770640', borderRadius:12,
+            padding:'10px 16px', marginBottom:16, fontSize:12, color:'#92400e', fontWeight:600,
+          }}>
+            <DuplicatePatientFlag title="" />
+            {duplicatePatientCount} patient{duplicatePatientCount > 1 ? 's ont' : ' a'} déjà un rendez-vous actif en double. La création ou le déplacement d'un nouveau RDV pour ce{duplicatePatientCount > 1 ? 's patients' : ' patient'} est bloqué tant que le doublon n'est pas résolu.
           </div>
         )}
 
@@ -1085,6 +1208,7 @@ export default function SecretairePage() {
                 selectedDate={selectedDate}
                 onSelectDay={handleSelectDay}
                 conflictIds={conflictIds}
+                patientDuplicateIds={patientDuplicateIds}
                 onDropRdv={handleDropRdv}
                 searchActive={searchMatch}
               />
@@ -1095,6 +1219,7 @@ export default function SecretairePage() {
                 selectedDate={selectedDate}
                 onSelectDay={handleSelectDay}
                 conflictIds={conflictIds}
+                patientDuplicateIds={patientDuplicateIds}
                 onDropRdv={handleDropRdv}
                 searchActive={searchMatch}
               />
@@ -1110,6 +1235,9 @@ export default function SecretairePage() {
               <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#64748b' }}>
                 <ConflictFlag title="" /> Conflit de planning
               </div>
+              <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#64748b' }}>
+                <DuplicatePatientFlag title="" /> Doublon patient
+              </div>
               {searchQuery && (
                 <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#64748b' }}>
                   <div style={{ width:9, height:9, borderRadius:3, border:'1.5px solid #7c3aed' }} /> Correspond à « {searchQuery} »
@@ -1123,6 +1251,7 @@ export default function SecretairePage() {
             rdvs={rdvByDay[selectedDate] || []}
             onStatusChange={handleStatusChange}
             conflictIds={conflictIds}
+            patientDuplicateIds={patientDuplicateIds}
             onSendReminder={handleSendReminder}
             reminderState={reminderState}
             onPrint={handlePrint}
