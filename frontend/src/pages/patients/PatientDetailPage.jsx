@@ -224,7 +224,7 @@ export default function PatientDetailPage() {
     { key: 'antecedents', label: 'Antecedents'      },
     { key: 'habitudes',   label: 'Habitudes de vie' },
     { key: 'contacts',    label: 'Contacts'         },
-    { key: 'qrcode',      label: 'QR Code'          },
+    
   ];
 
   return (

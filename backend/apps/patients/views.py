@@ -1,6 +1,7 @@
 import re
-from datetime import datetime
+from datetime import datetime, time, timedelta
 
+from django.db import models
 from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -35,6 +36,73 @@ from .serializers import (
 
 # Rôles habilités à confirmer ou refuser un diagnostic (voir action `confirmer`)
 ROLES_CONFIRMATION = ('doctor', 'doctor_chef')
+
+
+def creer_rdv_premiere_visite(patient, created_by=None):
+    """Crée automatiquement un premier RDV au premier créneau libre, entre 08:00 et 16:00."""
+    from django.utils import timezone
+    from apps.accounts.models import User
+
+    if not patient or not patient.id:
+        return None
+
+    now = timezone.localtime(timezone.now())
+    doctors = list(
+        User.objects.filter(role__in=['doctor', 'doctor_chef'], is_active=True)
+        .order_by(
+            models.Case(
+                models.When(role='doctor', then=0),
+                models.When(role='doctor_chef', then=1),
+                default=2,
+                output_field=models.IntegerField(),
+            ),
+            'id',
+        )
+    )
+
+    if not doctors:
+        return None
+
+    days_to_scan = 7
+    for day_offset in range(days_to_scan):
+        slot_date = now.date() + timedelta(days=day_offset)
+        slot_start_hour = 8
+        if day_offset == 0:
+            slot_start_hour = now.hour
+            if now.minute > 0:
+                slot_start_hour += 1
+            slot_start_hour = max(8, min(slot_start_hour, 15))
+
+        for hour in range(slot_start_hour, 16):
+            slot_time = time(hour=hour, minute=0)
+            candidate = timezone.make_aware(
+                datetime.combine(slot_date, slot_time),
+                timezone.get_current_timezone(),
+            )
+            if day_offset == 0 and candidate <= now:
+                continue
+
+            for doctor in doctors:
+                has_conflict = ConsultationSuivi.objects.filter(
+                    medecin=doctor,
+                    date_consultation=slot_date,
+                    heure=slot_time,
+                ).exists()
+                if has_conflict:
+                    continue
+
+                appointment = ConsultationSuivi.objects.create(
+                    patient=patient,
+                    medecin=doctor,
+                    type_consultation='suivi',
+                    statut='planifiee',
+                    date_consultation=slot_date,
+                    heure=slot_time,
+                    cree_par=created_by,
+                )
+                return appointment
+
+    return None
 
 
 class DocumentAdministratifViewSet(viewsets.ModelViewSet):
@@ -284,19 +352,11 @@ class PatientViewSet(viewsets.ModelViewSet):
                 for user in destinataires
             ])
 
-            # Crée automatiquement un rendez-vous de première visite le jour même
+            # Crée automatiquement un rendez-vous de première visite au premier créneau libre.
             try:
-                from django.utils import timezone
-                ConsultationSuivi.objects.create(
-                    patient=patient,
-                    type_consultation='suivi',
-                    statut='planifiee',
-                    date_consultation=timezone.now().date(),
-                    heure=None,
-                    cree_par=self.request.user,
-                )
+                creer_rdv_premiere_visite(patient, created_by=self.request.user)
             except Exception:
-                # Ne pas bloquer la création du patient si la création du RDV échoue
+                # Ne pas bloquer la création du patient si la création du RDV échoue.
                 pass
 
         self._create_access_log(

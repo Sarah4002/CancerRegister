@@ -5,6 +5,8 @@ from rest_framework.test import APIClient
 from apps.accounts.models import User
 from apps.notifications.models import Notification
 from apps.patients.models import Patient
+from apps.patients.views import creer_rdv_premiere_visite
+from apps.suivi.models import ConsultationSuivi
 
 
 class PublicPatientQRTests(TestCase):
@@ -152,3 +154,53 @@ class PatientConfirmationWorkflowTests(TestCase):
                 dossier_id=patient.id,
             ).exists()
         )
+
+    def test_new_waiting_patient_gets_first_free_doctor_slot_automatically(self):
+        from datetime import time, timedelta
+        from django.utils import timezone
+
+        doctor_1 = User.objects.create_user(
+            email='doctor1@example.com',
+            username='doctor1',
+            first_name='Medecin',
+            last_name='Un',
+            role='doctor',
+            password='Password123!',
+        )
+        doctor_2 = User.objects.create_user(
+            email='doctor2@example.com',
+            username='doctor2',
+            first_name='Medecin',
+            last_name='Deux',
+            role='doctor',
+            password='Password123!',
+        )
+
+        now = timezone.localtime(timezone.now())
+        if now.hour >= 15:
+            candidate_date = now.date() + timedelta(days=1)
+            candidate_hour = 8
+        else:
+            candidate_date = now.date()
+            candidate_hour = min(max(now.hour + 1, 8), 15)
+        candidate_time = time(hour=candidate_hour, minute=0)
+
+        for doctor in [self.doctor, doctor_1]:
+            ConsultationSuivi.objects.create(
+                patient=Patient.objects.create(nom=f'Conflict{doctor.id}', prenom='Patient', sexe='M', cree_par=self.secretary),
+                medecin=doctor,
+                type_consultation='suivi',
+                statut='planifiee',
+                date_consultation=candidate_date,
+                heure=candidate_time,
+                cree_par=self.secretary,
+            )
+
+        patient = Patient.objects.create(nom='Auto', prenom='RDV', sexe='F', cree_par=self.secretary)
+        appointment = creer_rdv_premiere_visite(patient, created_by=self.secretary)
+
+        self.assertIsNotNone(appointment)
+        self.assertEqual(appointment.medecin_id, doctor_2.id)
+        self.assertEqual(appointment.date_consultation, candidate_date)
+        self.assertEqual(str(appointment.heure), candidate_time.strftime('%H:%M:%S'))
+        self.assertEqual(patient.statut_confirmation, Patient.StatutConfirmation.EN_ATTENTE)
