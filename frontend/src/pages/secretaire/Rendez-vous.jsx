@@ -27,6 +27,18 @@ const TYPE_CFG = {
   autre:        { color:'#64748b', label:'Autre' },
 };
 
+/* Statuts considérés comme "actifs" : pas encore finalisés manuellement
+   par le médecin ou la secrétaire. */
+const STATUTS_ACTIFS = ['en_attente', 'confirme'];
+
+/* Un RDV est en retard si sa date/heure est déjà passée. */
+function isPastDue(rdv) {
+  if (!rdv?.date || !rdv?.heure) return false;
+  const dt = new Date(`${rdv.date}T${rdv.heure}:00`);
+  if (Number.isNaN(dt.getTime())) return false;
+  return dt.getTime() < Date.now();
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    BADGES
 ───────────────────────────────────────────────────────────────────────────── */
@@ -231,6 +243,36 @@ export default function RendezVousPage() {
   }, [fetchAll]);
 
   useEffect(() => { setPage(1); }, [search, dateFilter, statusFilter, typeFilter]);
+
+  /* ── Passage automatique en "Absent" ──
+     Dès que la liste est chargée (ou rechargée), tout RDV dont la date/heure
+     est passée et dont le statut est toujours "en_attente" ou "confirme"
+     (donc jamais mis à jour par le médecin ou la secrétaire) bascule
+     automatiquement sur "absent". Vérifié à chaque chargement de la liste
+     puis toutes les 60s pendant que la page reste ouverte, avec
+     répercussion côté backend via secretaryService.updateStatut. */
+  const checkNoShows = useCallback(() => {
+    setRdvs(prev => {
+      const toUpdate = prev.filter(r => STATUTS_ACTIFS.includes(r.statut) && isPastDue(r));
+      if (toUpdate.length === 0) return prev;
+
+      toUpdate.forEach(r => {
+        secretaryService.updateStatut(r.id, 'absent').catch(err => {
+          console.error(`Erreur passage automatique en "absent" du RDV ${r.id}:`, err);
+        });
+      });
+
+      const updatedIds = new Set(toUpdate.map(r => r.id));
+      return prev.map(r => updatedIds.has(r.id) ? { ...r, statut: 'absent' } : r);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (loading) return; // attend que la liste initiale soit chargée
+    checkNoShows();
+    const interval = setInterval(checkNoShows, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [loading, checkNoShows]);
 
   const filtered = rdvs.filter((rdv) => {
     const query = search.trim().toLowerCase();
