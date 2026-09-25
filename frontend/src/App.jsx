@@ -40,7 +40,7 @@ import AuditLogsPage from './pages/admin/AuditLogsPage';
 import SecretairePage from './pages/secretaire/SecretairePage';
 import NewRendezVousPage from './pages/secretaire/NewRendezVousPage';
 import RendezVousPage from './pages/secretaire/Rendez-vous';
-
+ import RendezVousDetailPage from './pages/secretaire/RendezVousDetailPage';
 
 import SettingsPage from './pages/settings/SettingsPage';
 import HelpCenterPage from './pages/help/HelpCenterPage';
@@ -370,6 +370,11 @@ function App() {
             <RendezVousPage />
           </PermRoute>
         } />
+       
+
+       <Route path="/secretaire/rendezvous/:id" element={
+        <RendezVousDetailPage />} 
+        />
 
         {/* ───────── Accès refusé ───────── */}
         <Route path="/acces-refuse" element={
