@@ -725,23 +725,7 @@ export default function PatientDossierPage() {
                  )}
                </div>
                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                 {isSecretary && (
-                   <>
-                     <button type="button" onClick={() => setShowUploadModal(true)} style={addBtnStyleOutline}>
-                       <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
-                       </svg>
-                       Document administratif
-                     </button>
-                     <button type="button" onClick={openSendModal} style={sendBtnStyle}>
-                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                         <line x1="22" y1="2" x2="11" y2="13" />
-                         <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                       </svg>
-                       Envoyer au médecin pour validation
-                     </button>
-                   </>
-                 )}
+                 
                  {can.writePatient && <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
                    Modifier le patient
                  </button>}
