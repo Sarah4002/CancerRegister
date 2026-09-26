@@ -2,8 +2,23 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { secretaryService } from '../../services/secretaryService';
 import { medecinService } from '../../services/accountsService';
+import { patientService } from '../../services/patientService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import toast from 'react-hot-toast';
+import useAuthStore from '../../hooks/useAuth';
+import usePermissions from '../../hooks/usePermissions';
+
+/* ── Mêmes sections que dans le sidebar du dossier patient (PatientDossierPage.js) ── */
+const PATIENT_SECTIONS = [
+  { key: 'identite',    label: 'Identité & Profil'  },
+  { key: 'clinique',    label: 'Infos Cliniques'    },
+  { key: 'diagnostic',  label: 'Diagnostic'         },
+  { key: 'examens',     label: 'Examens & Bilans'   },
+  { key: 'traitements', label: 'Traitements'        },
+  { key: 'suivi',       label: 'Suivi Clinique'     },
+  { key: 'rcp',         label: 'RCP'                },
+  { key: 'rendezvous',  label: 'Rendez-vous'        },
+];
 
 /* ─────────────────────────────────────────────────────────────────────────────
    IMPORTANT — méthodes de service attendues
@@ -199,8 +214,12 @@ function DeleteConfirmModal({ rdv, onClose, onConfirm, loading }) {
 export default function RendezVousDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { can } = usePermissions();
+  const { user } = useAuthStore();
+  const isSecretary = user?.role === 'secretaire';
 
   const [rdv, setRdv]           = useState(null);
+  const [patient, setPatient]   = useState(null);
   const [loading, setLoading]   = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -231,6 +250,9 @@ export default function RendezVousDetailPage() {
       }
       if (!data) { setNotFound(true); return; }
       setRdv(data);
+      if (data.patient) {
+        patientService.get(data.patient).then(res => setPatient(res.data)).catch(() => {});
+      }
     } catch (err) {
       setNotFound(true);
     } finally {
@@ -239,6 +261,38 @@ export default function RendezVousDetailPage() {
   }, [id]);
 
   useEffect(() => { fetchRdv(); }, [fetchRdv]);
+
+  /* ── Sections du sidebar patient (mêmes règles de visibilité que PatientDossierPage) ── */
+  const visiblePatientSections = PATIENT_SECTIONS.filter((section) => {
+    if (isSecretary) return section.key === 'identite' || section.key === 'rendezvous';
+    return {
+      identite: can.readPatient,
+      clinique: can.writeDiagnostic,
+      diagnostic: can.readDiagnostic,
+      examens: can.readDiagnostic,
+      traitements: can.readTreatment,
+      suivi: can.accessClinicalFollowup,
+      rcp: can.viewRcp,
+      rendezvous: can.manageAppointments,
+    }[section.key];
+  });
+
+  const handleSectionSelect = (key) => {
+    if (!rdv?.patient) return;
+    navigate(`/patients/${rdv.patient}`, { state: { returnSection: key } });
+  };
+
+  // Tant que le patient complet n'est pas encore chargé, on affiche une
+  // version minimale (à partir des champs dénormalisés du RDV) pour éviter
+  // que le sidebar bascule du mode global au mode patient une fois le
+  // patient arrivé.
+  const patientForSidebar = patient || (rdv?.patient ? {
+    id: rdv.patient,
+    nom: rdv.patient_nom || '',
+    prenom: '',
+    full_name: rdv.patient_nom || 'Patient',
+    registration_number: rdv.patient_numero || '',
+  } : null);
 
   const openEdit = async () => {
     setForm({
@@ -333,6 +387,15 @@ export default function RendezVousDetailPage() {
     );
   }
 
+  const patientContext = patientForSidebar ? {
+    patient: patientForSidebar,
+    sections: visiblePatientSections,
+    activeKey: 'rendezvous',
+    onSelect: handleSectionSelect,
+    backPath: `/patients/${rdv.patient}`,
+    backLabel: 'Retour au dossier patient',
+  } : undefined;
+
   const past = isPastDue(rdv);
   const stCfg = STATUS_CFG[rdv.statut] || STATUS_CFG.en_attente;
   const tyCfg = TYPE_CFG[rdv.type] || TYPE_CFG.autre;
@@ -340,6 +403,7 @@ export default function RendezVousDetailPage() {
   return (
     <AppLayout
       title="Détail du rendez-vous"
+      patientContext={patientContext}
       breadcrumb={[
         { label: 'Rendez-vous', onClick: () => navigate('/secretaire/rendezvous') },
         { label: rdv.patient_nom || 'Rendez-vous' },
