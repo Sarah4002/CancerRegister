@@ -434,6 +434,8 @@ export default function RendezVousDetailPage() {
         {!editMode ? (
           
           <> <button onClick={openEdit} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
+              Modifier 
+            </button>
             <SectionLabel>Informations du rendez-vous</SectionLabel>
             <Grid>
               <InfoRow label="Patient" value={rdv.patient_nom} />
