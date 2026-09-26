@@ -427,15 +427,38 @@ export default function RendezVousDetailPage() {
         Retour
       </button>
 
-      
+      {/* ── En-tête avec titre + actions (Modifier / Supprimer / Statut) ── */}
+      {!editMode && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>{rdv.patient_nom || 'Rendez-vous'}</div>
+            <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 2 }}>
+              {rdv.date ? new Date(`${rdv.date}T00:00:00`).toLocaleDateString('fr-DZ') : '—'} à {rdv.heure || '—'}
+              {past ? ' · Passé' : ''}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <StatusChangeMenu statut={rdv.statut} onChange={handleStatusChange} disabled={statusLoading} />
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              style={{ padding: '10px 16px', background: '#fff', color: '#dc2626', border: '1px solid rgba(220,38,38,0.25)', borderRadius: 12, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+            >
+              Supprimer
+            </button>
+            <button
+              onClick={openEdit}
+              style={{ padding: '10px 18px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+            >
+              Modifier
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Contenu ── */}
       <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 16, padding: 24 }}>
         {!editMode ? (
-          
-          <> <button onClick={openEdit} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
-              Modifier 
-            </button>
+          <>
             <SectionLabel>Informations du rendez-vous</SectionLabel>
             <Grid>
               <InfoRow label="Patient" value={rdv.patient_nom} />
