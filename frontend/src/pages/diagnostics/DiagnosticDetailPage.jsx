@@ -345,20 +345,9 @@ export default function DiagnosticDetailPage() {
       {/* ── En-tête avec titre + actions (Modifier / Supprimer) ── */}
       {!editMode && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>{diag.patient_nom || 'Diagnostic'}</div>
-            <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 2 }}>
-              {diag.topographie_libelle || '—'}
-              {diag.date_diagnostic ? ` · ${new Date(diag.date_diagnostic).toLocaleDateString('fr-DZ')}` : ''}
-            </div>
-          </div>
+         
           <div style={{ display: 'flex', gap: 10 }}>
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              style={{ padding: '10px 16px', background: '#fff', color: '#dc2626', border: '1px solid rgba(220,38,38,0.25)', borderRadius: 12, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
-            >
-              Supprimer
-            </button>
+            
             <button
               onClick={openEdit}
               style={{ padding: '10px 18px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
