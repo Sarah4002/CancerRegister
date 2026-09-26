@@ -342,52 +342,14 @@ export default function DiagnosticDetailPage() {
         Retour
       </button>
 
-      {/* ── En-tête ── */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 16, overflow: 'hidden', marginBottom: 20 }}>
-        <div style={{ height: 4, background: `linear-gradient(90deg, ${stadeCfg.color}, ${stadeCfg.color}aa)` }} />
-        <div style={{ padding: '22px 26px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
-              <TNMBadge tnm={diag.tnm_complet} big />
-              <StageBadge stade={diag.stade_ajcc} label={diag.stade_label} big />
-              {diag.grade_label && (
-                <span style={{ padding: '5px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 600, background: 'rgba(124,58,237,0.08)', color: '#7c3aed', border: '1px solid rgba(124,58,237,0.2)' }}>
-                  Grade {diag.grade_label}
-                </span>
-              )}
-            </div>
-            {diag.patient ? (
-              <Link to={`/patients/${diag.patient}`} style={{ textDecoration: 'none' }}>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>{diag.patient_nom || 'Patient'}</div>
-              </Link>
-            ) : (
-              <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>{diag.patient_nom || 'Patient'}</div>
-            )}
-            <div style={{ fontSize: 13, color: '#64748b' }}>
-              {diag.diagnostic_resume || diag.topographie_libelle || 'Diagnostic'}
-              {diag.date_diagnostic ? ` — diagnostiqué le ${new Date(diag.date_diagnostic).toLocaleDateString('fr-DZ')}` : ''}
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {!editMode && can.writeDiagnostic && (
-              <button onClick={openEdit} style={{ padding: '8px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 12.5, fontWeight: 600 }}>
-                Modifier
-              </button>
-            )}
-            {can.writeDiagnostic && (
-              <button onClick={() => setShowDeleteModal(true)} style={{ padding: '8px 16px', background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 10, color: '#dc2626', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
-                Supprimer
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+     
 
       {/* ── Contenu ── */}
       <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 16, padding: 24 }}>
         {!editMode ? (
           <>
+           <button onClick={openEdit} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
+              </button>
             <SectionLabel>Patient</SectionLabel>
             <Grid>
               <InfoRow label="Patient" value={diag.patient_nom} />

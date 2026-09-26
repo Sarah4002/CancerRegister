@@ -433,9 +433,7 @@ export default function RendezVousDetailPage() {
       <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 16, padding: 24 }}>
         {!editMode ? (
           
-          <> <button onClick={openEdit} style={{ padding: '8px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 12.5, fontWeight: 600 }}>
-                Modifier
-              </button>
+          <> <button onClick={openEdit} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
             <SectionLabel>Informations du rendez-vous</SectionLabel>
             <Grid>
               <InfoRow label="Patient" value={rdv.patient_nom} />
