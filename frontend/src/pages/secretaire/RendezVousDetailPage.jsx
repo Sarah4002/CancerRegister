@@ -427,51 +427,15 @@ export default function RendezVousDetailPage() {
         Retour
       </button>
 
-      {/* ── En-tête ── */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 16, overflow: 'hidden', marginBottom: 20 }}>
-        <div style={{ height: 4, background: `linear-gradient(90deg, ${stCfg.color}, ${stCfg.color}aa)` }} />
-        <div style={{ padding: '22px 26px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-              <TypeBadge type={rdv.type} />
-              <StatusBadge statut={rdv.statut} />
-              {past && ['en_attente', 'confirme'].includes(rdv.statut) && (
-                <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 11.5, fontWeight: 600, background: 'rgba(220,38,38,0.08)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)' }}>
-                  Date passée
-                </span>
-              )}
-            </div>
-            {rdv.patient ? (
-              <Link to={`/patients/${rdv.patient}`} style={{ textDecoration: 'none' }}>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>{rdv.patient_nom || 'Patient'}</div>
-              </Link>
-            ) : (
-              <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>{rdv.patient_nom || 'Patient'}</div>
-            )}
-            <div style={{ fontSize: 13, color: '#64748b' }}>
-              {rdv.date ? new Date(`${rdv.date}T00:00:00`).toLocaleDateString('fr-DZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
-              {rdv.heure ? ` à ${rdv.heure}` : ''}
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <StatusChangeMenu statut={rdv.statut} onChange={handleStatusChange} disabled={statusLoading} />
-            {!editMode && (
-              <button onClick={openEdit} style={{ padding: '8px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 12.5, fontWeight: 600 }}>
-                Modifier
-              </button>
-            )}
-            <button onClick={() => setShowDeleteModal(true)} style={{ padding: '8px 16px', background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 10, color: '#dc2626', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
-              Supprimer
-            </button>
-          </div>
-        </div>
-      </div>
+      
 
       {/* ── Contenu ── */}
       <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 16, padding: 24 }}>
         {!editMode ? (
-          <>
+          
+          <> <button onClick={openEdit} style={{ padding: '8px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 12.5, fontWeight: 600 }}>
+                Modifier
+              </button>
             <SectionLabel>Informations du rendez-vous</SectionLabel>
             <Grid>
               <InfoRow label="Patient" value={rdv.patient_nom} />
