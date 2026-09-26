@@ -463,10 +463,11 @@ export default function RendezVousPage() {
             <tbody>
               {paginated.map((rdv, i) => (
                 <tr key={rdv.id}
-                  onClick={() => rdv.patient && navigate(`/patients/${rdv.patient}`)}
+                  onClick={() => navigate(`/secretaire/rendezvous/${rdv.id}`)}
                   style={{
-                    cursor: rdv.patient ? 'pointer' : 'default', borderBottom:'1px solid rgba(37,99,235,0.06)', transition:'background .1s',
+                    cursor:'pointer', borderBottom:'1px solid rgba(37,99,235,0.06)', transition:'background .1s',
                     background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
+                    opacity: isPastDue(rdv) ? 0.75 : 1,
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
                   onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'}
@@ -475,8 +476,8 @@ export default function RendezVousPage() {
                     {rdv.date ? new Date(`${rdv.date}T00:00:00`).toLocaleDateString('fr-DZ') : '—'}
                   </td>
                   <td style={{ padding:'12px 14px', fontSize:12.5, color:'#334155', fontFamily:'var(--font-mono)' }}>{rdv.heure}</td>
-                  <td style={{ padding:'12px 14px' }}>
-                    <div style={{ fontWeight:600, fontSize:13, color:'#0f172a' }}>{rdv.patient_nom || '—'}</div>
+                  <td style={{ padding:'12px 14px' }} onClick={e => { if (rdv.patient) { e.stopPropagation(); navigate(`/patients/${rdv.patient}`); } }}>
+                    <div style={{ fontWeight:600, fontSize:13, color: rdv.patient ? '#2563eb' : '#0f172a', cursor: rdv.patient ? 'pointer' : 'default' }}>{rdv.patient_nom || '—'}</div>
                   </td>
                   <td style={{ padding:'12px 14px' }}><TypeBadge type={rdv.type} /></td>
                   <td style={{ padding:'12px 14px', fontSize:12, color:'#64748b' }}>{rdv.medecin_nom || '—'}</td>

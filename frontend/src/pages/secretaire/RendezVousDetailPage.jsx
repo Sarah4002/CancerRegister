@@ -1,13 +1,25 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { secretaryService } from '../../services/secretaryService';
 import { medecinService } from '../../services/accountsService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import toast from 'react-hot-toast';
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   CONSTANTS (identiques à RendezVousPage.jsx)
+   IMPORTANT — méthodes de service attendues
+   ─────────────────────────────────────────────────────────────────────────────
+   Cette page suppose que `secretaryService` expose deux méthodes en plus de
+   celles déjà utilisées dans RendezVousPage.js. Si elles n'existent pas encore,
+   ajoutez-les dans services/secretaryService.js sur le même modèle que les
+   autres appels (getRendezVous, updateStatut, deleteRendezVous) :
+
+     getRendezVousById: (id) => api.get(`/secretaire/rendezvous/${id}/`),
+     updateRendezVous:  (id, payload) => api.patch(`/secretaire/rendezvous/${id}/`, payload),
+
+   Adaptez l'URL exacte à celle utilisée par vos autres endpoints RDV.
 ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Mêmes tables de configuration que RendezVousPage.js, pour rester cohérent ── */
 const STATUS_CFG = {
   confirme:   { bg:'rgba(37,99,235,0.08)',   color:'#2563eb', border:'rgba(37,99,235,0.2)',   label:'Confirmé' },
   en_attente: { bg:'rgba(217,119,6,0.08)',   color:'#d97706', border:'rgba(217,119,6,0.2)',   label:'En attente' },
@@ -28,9 +40,29 @@ const TYPE_CFG = {
   autre:        { color:'#64748b', label:'Autre' },
 };
 
+function isPastDue(rdv) {
+  if (!rdv?.date || !rdv?.heure) return false;
+  const dt = new Date(`${rdv.date}T${rdv.heure}:00`);
+  if (Number.isNaN(dt.getTime())) return false;
+  return dt.getTime() < Date.now();
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
-   BADGES (identiques à RendezVousPage.jsx)
+   MICRO-COMPONENTS — repris du langage visuel de PatientDossierPage.js
 ───────────────────────────────────────────────────────────────────────────── */
+function SectionLabel({ children, style: s }) {
+  return <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: '#64748b', marginBottom: 12, ...s }}>{children}</div>;
+}
+function Grid({ children }) { return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>{children}</div>; }
+function InfoRow({ label, value, mono, full }) {
+  return (
+    <div style={{ padding: '10px 0', borderBottom: '1px solid rgba(37,99,235,0.12)', gridColumn: full ? '1 / -1' : 'auto' }}>
+      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 3, letterSpacing: 0.3, textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ fontSize: 13.5, color: '#0f172a', fontFamily: mono ? 'var(--font-mono)' : 'inherit' }}>{value || '—'}</div>
+    </div>
+  );
+}
+
 function StatusBadge({ statut }) {
   const c = STATUS_CFG[statut] || { bg:'rgba(100,116,139,0.08)', color:'#64748b', border:'rgba(100,116,139,0.2)', label:statut || '—' };
   return (
@@ -51,59 +83,56 @@ function TypeBadge({ type }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   STATUS CHANGE DROPDOWN (identique à RendezVousPage.jsx, version large)
-───────────────────────────────────────────────────────────────────────────── */
-function StatusChangeButton({ statut, onChange }) {
+/* Menu déroulant de changement de statut, même comportement que sur la liste */
+function StatusChangeMenu({ statut, onChange, disabled }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
-    function handleOutside(e) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
-    }
+    function handleOutside(e) { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); }
     document.addEventListener('mousedown', handleOutside);
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [open]);
 
   return (
-    <div ref={wrapRef} style={{ position:'relative' }}>
+    <div ref={wrapRef} style={{ position: 'relative' }}>
       <button
-        onClick={() => setOpen(o => !o)}
+        onClick={() => !disabled && setOpen(o => !o)}
+        disabled={disabled}
         style={{
-          padding:'9px 16px', background:'#fff', border:'1px solid rgba(37,99,235,0.2)',
-          borderRadius:'var(--radius-md)', color:'#2563eb', fontSize:13, fontWeight:600, cursor:'pointer',
-          display:'flex', alignItems:'center', gap:8, boxShadow:'0 2px 6px rgba(15,23,42,0.06)',
+          padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(37,99,235,0.2)',
+          background: '#fff', color: '#2563eb', fontSize: 12.5, fontWeight: 600,
+          cursor: disabled ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+          opacity: disabled ? 0.5 : 1,
         }}
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
         Changer le statut
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </button>
-
       {open && (
         <div style={{
-          position:'absolute', right:0, top:'110%', zIndex:50,
-          background:'#fff', border:'1px solid rgba(37,99,235,0.14)',
-          borderRadius:10, boxShadow:'0 10px 28px rgba(15,23,42,0.14)',
-          minWidth:180, overflow:'hidden',
+          position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: 50,
+          background: '#fff', border: '1px solid rgba(37,99,235,0.14)',
+          borderRadius: 10, boxShadow: '0 10px 28px rgba(15,23,42,0.14)',
+          minWidth: 180, overflow: 'hidden',
         }}>
           {Object.entries(STATUS_CFG).map(([key, cfg]) => (
             <button
               key={key}
               onClick={() => { setOpen(false); if (key !== statut) onChange(key); }}
               style={{
-                width:'100%', textAlign:'left', padding:'10px 14px',
-                fontSize:12.5, fontWeight: statut === key ? 700 : 500, color: cfg.color,
-                border:'none', background: statut === key ? `${cfg.color}0c` : 'transparent', cursor:'pointer',
-                display:'flex', alignItems:'center', gap:8,
+                width: '100%', textAlign: 'left', padding: '10px 14px',
+                fontSize: 12.5, fontWeight: statut === key ? 700 : 500, color: cfg.color,
+                border: 'none', background: statut === key ? `${cfg.color}0c` : 'transparent', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 8,
               }}
               onMouseEnter={e => { e.currentTarget.style.background = `${cfg.color}10`; }}
               onMouseLeave={e => { e.currentTarget.style.background = statut === key ? `${cfg.color}0c` : 'transparent'; }}
             >
-              {statut === key && <span style={{ fontSize:10 }}>✓</span>}
+              {statut === key && <span style={{ fontSize: 10 }}>✓</span>}
               {cfg.label}
             </button>
           ))}
@@ -114,7 +143,7 @@ function StatusChangeButton({ statut, onChange }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   DELETE CONFIRM MODAL (identique à RendezVousPage.jsx)
+   MODAL — Confirmation de suppression (identique RendezVousPage.js)
 ───────────────────────────────────────────────────────────────────────────── */
 function DeleteConfirmModal({ rdv, onClose, onConfirm, loading }) {
   const overlayRef = useRef(null);
@@ -122,39 +151,39 @@ function DeleteConfirmModal({ rdv, onClose, onConfirm, loading }) {
 
   return (
     <div ref={overlayRef} onClick={handleOverlay} style={{
-      position:'fixed', inset:0, background:'rgba(15,23,42,0.6)', backdropFilter:'blur(4px)',
-      zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:16, animation:'fadeIn .15s ease',
+      position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)',
+      zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, animation: 'fadeIn .15s ease',
     }}>
-      <div style={{ background:'#fff', borderRadius:18, width:'100%', maxWidth:420, boxShadow:'0 24px 64px rgba(220,38,38,0.18)', overflow:'hidden', animation:'slideUp .2s ease' }}>
-        <div style={{ height:4, background:'linear-gradient(90deg,#ef4444,#dc2626)' }} />
-        <div style={{ padding:'28px 28px 24px' }}>
-          <div style={{ width:52, height:52, background:'rgba(220,38,38,0.08)', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:16, border:'1px solid rgba(220,38,38,0.15)' }}>
+      <div style={{ background: '#fff', borderRadius: 18, width: '100%', maxWidth: 420, boxShadow: '0 24px 64px rgba(220,38,38,0.18)', overflow: 'hidden', animation: 'slideUp .2s ease' }}>
+        <div style={{ height: 4, background: 'linear-gradient(90deg,#ef4444,#dc2626)' }} />
+        <div style={{ padding: '28px 28px 24px' }}>
+          <div style={{ width: 52, height: 52, background: 'rgba(220,38,38,0.08)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, border: '1px solid rgba(220,38,38,0.15)' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-              <path d="M10 11v6"/><path d="M14 11v6"/>
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              <path d="M10 11v6" /><path d="M14 11v6" />
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
             </svg>
           </div>
-          <div style={{ fontSize:17, fontWeight:800, color:'#0f172a', marginBottom:8 }}>Supprimer ce rendez-vous ?</div>
-          <div style={{ fontSize:13, color:'#64748b', lineHeight:1.6, marginBottom:6 }}>
+          <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>Supprimer ce rendez-vous ?</div>
+          <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6, marginBottom: 6 }}>
             Vous êtes sur le point de supprimer définitivement le rendez-vous de :
           </div>
-          <div style={{ padding:'10px 14px', background:'rgba(220,38,38,0.05)', border:'1px solid rgba(220,38,38,0.15)', borderRadius:10, marginBottom:16 }}>
-            <div style={{ fontWeight:700, color:'#0f172a', fontSize:14 }}>{rdv?.patient_nom || 'Patient'}</div>
-            <div style={{ fontSize:11.5, color:'#64748b', marginTop:2 }}>
+          <div style={{ padding: '10px 14px', background: 'rgba(220,38,38,0.05)', border: '1px solid rgba(220,38,38,0.15)', borderRadius: 10, marginBottom: 16 }}>
+            <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 14 }}>{rdv?.patient_nom || 'Patient'}</div>
+            <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>
               {rdv?.date && new Date(`${rdv.date}T00:00:00`).toLocaleDateString('fr-DZ')} à {rdv?.heure}
             </div>
           </div>
-          <div style={{ display:'flex', gap:10 }}>
-            <button onClick={onClose} disabled={loading} style={{ flex:1, padding:'11px', borderRadius:10, border:'1px solid rgba(37,99,235,0.2)', background:'transparent', color:'#64748b', fontSize:13, fontWeight:600, cursor:'pointer', opacity: loading ? .5 : 1 }}>Annuler</button>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={onClose} disabled={loading} style={{ flex: 1, padding: '11px', borderRadius: 10, border: '1px solid rgba(37,99,235,0.2)', background: 'transparent', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: loading ? .5 : 1 }}>Annuler</button>
             <button
               onClick={onConfirm}
               disabled={loading}
-              style={{ flex:1, padding:'11px', borderRadius:10, border:'none', background: loading ? '#fca5a5' : 'linear-gradient(135deg,#ef4444,#dc2626)', color:'#fff', fontSize:13, fontWeight:700, cursor: loading ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 4px 12px rgba(220,38,38,0.3)' }}
+              style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', background: loading ? '#fca5a5' : 'linear-gradient(135deg,#ef4444,#dc2626)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 12px rgba(220,38,38,0.3)' }}
             >
               {loading ? (
-                <><span style={{ width:13, height:13, border:'2px solid #ffffff44', borderTopColor:'#fff', borderRadius:'50%', animation:'spin .7s linear infinite', display:'inline-block' }} /> Suppression…</>
+                <><span style={{ width: 13, height: 13, border: '2px solid #ffffff44', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} /> Suppression…</>
               ) : 'Supprimer définitivement'}
             </button>
           </div>
@@ -165,270 +194,290 @@ function DeleteConfirmModal({ rdv, onClose, onConfirm, loading }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   MINI HELPERS UI
-───────────────────────────────────────────────────────────────────────────── */
-function InfoBlock({ icon, label, value, mono }) {
-  return (
-    <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
-      <div style={{
-        width:36, height:36, borderRadius:10, background:'rgba(37,99,235,0.07)',
-        border:'1px solid rgba(37,99,235,0.14)', display:'flex', alignItems:'center',
-        justifyContent:'center', flexShrink:0, color:'#2563eb',
-      }}>{icon}</div>
-      <div style={{ minWidth:0 }}>
-        <div style={{ fontSize:10.5, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:.5, marginBottom:2 }}>{label}</div>
-        <div style={{ fontSize:13.5, fontWeight:600, color:'#0f172a', fontFamily: mono ? 'var(--font-mono)' : 'var(--font-body)', wordBreak:'break-word' }}>{value || '—'}</div>
-      </div>
-    </div>
-  );
-}
-
-function Section({ title, children }) {
-  return (
-    <div style={{ marginBottom:24 }}>
-      <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:0.8, marginBottom:14, paddingBottom:8, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>{title}</div>
-      {children}
-    </div>
-  );
-}
-
-const ICONS = {
-  calendar: <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,
-  clock:    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>,
-  user:     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-  doctor:   <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M9 12h6M12 9v6"/><circle cx="12" cy="12" r="9"/></svg>,
-  building: <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M3 21h18M6 21V7l6-4 6 4v14M9 9h1m4 0h1m-6 4h1m4 0h1m-6 4h1m4 0h1"/></svg>,
-  note:     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M14 3v4a1 1 0 001 1h4"/><path d="M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/><path d="M9 13h6M9 17h4"/></svg>,
-  bell:     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>,
-};
-
-/* ─────────────────────────────────────────────────────────────────────────────
    MAIN PAGE
 ───────────────────────────────────────────────────────────────────────────── */
 export default function RendezVousDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [rdv, setRdv]                 = useState(null);
-  const [loading, setLoading]         = useState(true);
-  const [notFound, setNotFound]       = useState(false);
-  const [medecins, setMedecins]       = useState([]);
-  const [deleteOpen, setDeleteOpen]   = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [statusSaving, setStatusSaving]   = useState(false);
+  const [rdv, setRdv]           = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  const fetchDetail = useCallback(async () => {
+  const [editMode, setEditMode] = useState(false);
+  const [form, setForm]         = useState({});
+  const [saving, setSaving]     = useState(false);
+
+  const [medecins, setMedecins] = useState([]);
+
+  const [statusLoading, setStatusLoading]   = useState(false);
+  const [deleteLoading, setDeleteLoading]   = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const fetchRdv = useCallback(async () => {
+    if (!id) return;
     setLoading(true);
     setNotFound(false);
     try {
-      const { data } = await secretaryService.getRendezVousDetail(id);
+      let data;
+      if (typeof secretaryService.getRendezVousById === 'function') {
+        const res = await secretaryService.getRendezVousById(id);
+        data = res.data;
+      } else {
+        // Repli si la méthode dédiée n'existe pas encore côté service :
+        // on recharge la liste complète et on filtre par id.
+        const res = await secretaryService.getRendezVous({});
+        data = (res.data || []).find(r => String(r.id) === String(id));
+      }
+      if (!data) { setNotFound(true); return; }
       setRdv(data);
-    } catch {
+    } catch (err) {
       setNotFound(true);
-      toast.error("Impossible de charger ce rendez-vous");
     } finally {
       setLoading(false);
     }
   }, [id]);
 
-  useEffect(() => { fetchDetail(); }, [fetchDetail]);
-  useEffect(() => {
-    medecinService.list({ page_size: 200 }).then(({ data }) => {
-      const list = data.medecins || data.results || data || [];
-      setMedecins(list);
-    }).catch(() => {});
-  }, []);
+  useEffect(() => { fetchRdv(); }, [fetchRdv]);
 
-  const medecinNom = rdv?.medecin_nom || medecins.find(m => String(m.id) === String(rdv?.medecin))?.full_name;
+  const openEdit = async () => {
+    setForm({
+      date: rdv.date || '',
+      heure: rdv.heure || '',
+      type: rdv.type || 'consultation',
+      medecin: rdv.medecin || '',
+      motif: rdv.motif || rdv.note || '',
+    });
+    setEditMode(true);
+    if (medecins.length === 0) {
+      try {
+        const { data } = await medecinService.list();
+        setMedecins(data?.results || data || []);
+      } catch {
+        toast.error('Impossible de charger la liste des médecins');
+      }
+    }
+  };
+
+  const handleCancelEdit = () => { setEditMode(false); setForm({}); };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      if (typeof secretaryService.updateRendezVous !== 'function') {
+        toast.error("La fonction de mise à jour n'est pas encore disponible côté service.");
+        return;
+      }
+      await secretaryService.updateRendezVous(id, form);
+      toast.success('Rendez-vous mis à jour');
+      setEditMode(false);
+      await fetchRdv();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erreur lors de la mise à jour');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleStatusChange = async (newStatut) => {
-    if (!rdv) return;
     const previous = rdv;
+    setStatusLoading(true);
     setRdv(prev => ({ ...prev, statut: newStatut }));
-    setStatusSaving(true);
     try {
-      await secretaryService.updateStatut(rdv.id, newStatut);
+      await secretaryService.updateStatut(id, newStatut);
       toast.success('Statut mis à jour.');
     } catch (err) {
       setRdv(previous);
       toast.error(err.response?.data?.error || 'Échec de la mise à jour du statut.');
     } finally {
-      setStatusSaving(false);
+      setStatusLoading(false);
     }
   };
 
   const handleDeleteConfirm = async () => {
-    if (!rdv) return;
     setDeleteLoading(true);
     try {
-      await secretaryService.deleteRendezVous(rdv.id);
+      await secretaryService.deleteRendezVous(id);
       toast.success('Rendez-vous supprimé avec succès');
       navigate('/secretaire/rendezvous');
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Erreur lors de la suppression');
-    } finally {
       setDeleteLoading(false);
     }
   };
 
+  if (loading) {
+    return (
+      <AppLayout title="Détail du rendez-vous">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: '#64748b' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ width: 36, height: 36, border: '3px solid rgba(37,99,235,0.12)', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+            Chargement du rendez-vous...
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (notFound || !rdv) {
+    return (
+      <AppLayout title="Détail du rendez-vous">
+        <div style={{ padding: 64, textAlign: 'center', background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 16 }}>
+          <div style={{ fontSize: 15, color: '#0f172a', fontWeight: 700, marginBottom: 6 }}>Rendez-vous introuvable</div>
+          <div style={{ fontSize: 13, color: '#64748b', marginBottom: 18 }}>Ce rendez-vous n'existe plus ou a été supprimé.</div>
+          <button onClick={() => navigate('/secretaire/rendezvous')} style={{ padding: '10px 20px', background: 'linear-gradient(135deg,#3b82f6,#2563eb)', border: 'none', borderRadius: 12, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            Retour à la liste des rendez-vous
+          </button>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const past = isPastDue(rdv);
+  const stCfg = STATUS_CFG[rdv.statut] || STATUS_CFG.en_attente;
+  const tyCfg = TYPE_CFG[rdv.type] || TYPE_CFG.autre;
+
   return (
     <AppLayout
       title="Détail du rendez-vous"
-      patientContext={rdv?.patient ? {
-        patient: { id: rdv.patient, full_name: rdv.patient_nom, registration_number: rdv.patient_numero },
-        backPath: `/patients/${rdv.patient}`,
-        backLabel: 'Retour au patient',
-      } : undefined}
+      breadcrumb={[
+        { label: 'Rendez-vous', onClick: () => navigate('/secretaire/rendezvous') },
+        { label: rdv.patient_nom || 'Rendez-vous' },
+      ]}
     >
       <style>{`
         @keyframes spin    { to { transform: rotate(360deg); } }
-        @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
+        @keyframes fadeIn  { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
         @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+        .input-st    { width: 100%; padding: 9px 12px; background: #f1f5f9; border: 1px solid rgba(37,99,235,0.15); border-radius: 9px; color: #0f172a; font-size: 13px; outline: none; box-sizing: border-box; font-family: var(--font-body); }
+        .label-st    { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 6px; font-weight: 600; }
       `}</style>
 
-      {loading ? (
-        <div style={{ padding:64, textAlign:'center', color:'#64748b', background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)' }}>
-          <div style={{ width:32, height:32, border:'3px solid #dbeafe', borderTopColor:'#2563eb', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 12px' }} />
-          Chargement...
-        </div>
-      ) : notFound || !rdv ? (
-        <div style={{ padding:64, textAlign:'center', background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:'var(--radius-md)' }}>
-          <div style={{ fontSize:14, color:'#64748b', marginBottom:16 }}>Rendez-vous introuvable.</div>
-          <button onClick={() => navigate('/secretaire/rendezvous')} style={{ padding:'9px 18px', background:'#fff', border:'1px solid rgba(37,99,235,0.2)', borderRadius:'var(--radius-md)', color:'#2563eb', fontSize:13, fontWeight:600, cursor:'pointer' }}>
-            ← Retour à la liste
-          </button>
-        </div>
-      ) : (
-        <div style={{ maxWidth:860, margin:'0 auto' }}>
+      <button
+        onClick={() => navigate(-1)}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#64748b', fontSize: 12.5, cursor: 'pointer', marginBottom: 14, padding: 0 }}
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        Retour
+      </button>
 
-          {/* Toolbar */}
-          <div style={{
-            background:'var(--bg-card)', border:'1px solid var(--border-light)',
-            borderRadius:'var(--radius-md)', padding:'14px 18px',
-            display:'flex', alignItems:'center', gap:12, marginBottom:16, flexWrap:'wrap',
-          }}>
-            <Link to="/secretaire/rendezvous" style={{ textDecoration:'none' }}>
-              <button style={{ padding:'9px 14px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-md)', color:'#334155', fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-                ← Retour
-              </button>
-            </Link>
-
-            <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
-              {statusSaving && <span style={{ fontSize:11.5, color:'#94a3b8' }}>Mise à jour…</span>}
-              <StatusChangeButton statut={rdv.statut} onChange={handleStatusChange} />
-
-              <Link to={`/secretaire/rendezvous/${rdv.id}/modifier`} style={{ textDecoration:'none' }}>
-                <button style={{
-                  padding:'9px 18px', background:'linear-gradient(135deg,#3b82f6,#2563eb)',
-                  border:'none', borderRadius:'var(--radius-md)', color:'#fff', fontSize:13, fontWeight:600,
-                  cursor:'pointer', display:'flex', alignItems:'center', gap:6, fontFamily:'var(--font-display)',
-                }}>
-                  <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                  Modifier
-                </button>
+      {/* ── En-tête ── */}
+      <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 16, overflow: 'hidden', marginBottom: 20 }}>
+        <div style={{ height: 4, background: `linear-gradient(90deg, ${stCfg.color}, ${stCfg.color}aa)` }} />
+        <div style={{ padding: '22px 26px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+              <TypeBadge type={rdv.type} />
+              <StatusBadge statut={rdv.statut} />
+              {past && ['en_attente', 'confirme'].includes(rdv.statut) && (
+                <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 11.5, fontWeight: 600, background: 'rgba(220,38,38,0.08)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)' }}>
+                  Date passée
+                </span>
+              )}
+            </div>
+            {rdv.patient ? (
+              <Link to={`/patients/${rdv.patient}`} style={{ textDecoration: 'none' }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>{rdv.patient_nom || 'Patient'}</div>
               </Link>
-
-              <button
-                onClick={() => setDeleteOpen(true)}
-                style={{ padding:'9px 14px', background:'rgba(220,38,38,0.06)', border:'1px solid rgba(220,38,38,0.2)', borderRadius:'var(--radius-md)', color:'#dc2626', fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                  <path d="M10 11v6"/><path d="M14 11v6"/>
-                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                </svg>
-                Supprimer
-              </button>
+            ) : (
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>{rdv.patient_nom || 'Patient'}</div>
+            )}
+            <div style={{ fontSize: 13, color: '#64748b' }}>
+              {rdv.date ? new Date(`${rdv.date}T00:00:00`).toLocaleDateString('fr-DZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+              {rdv.heure ? ` à ${rdv.heure}` : ''}
             </div>
           </div>
 
-          {/* Carte principale */}
-          <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <StatusChangeMenu statut={rdv.statut} onChange={handleStatusChange} disabled={statusLoading} />
+            {!editMode && (
+              <button onClick={openEdit} style={{ padding: '8px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 12.5, fontWeight: 600 }}>
+                Modifier
+              </button>
+            )}
+            <button onClick={() => setShowDeleteModal(true)} style={{ padding: '8px 16px', background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 10, color: '#dc2626', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
+              Supprimer
+            </button>
+          </div>
+        </div>
+      </div>
 
-            {/* Header */}
-            <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:16, marginBottom:24, paddingBottom:20, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
-              <div>
-                <h2 style={{ fontFamily:'var(--font-display)', fontSize:20, fontWeight:700, color:'#0f172a', marginBottom:8 }}>
-                  {rdv.patient_nom || 'Patient'}
-                </h2>
-                <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                  <TypeBadge type={rdv.type} />
-                  <StatusBadge statut={rdv.statut} />
-                  {rdv.premiere_visite && (
-                    <span style={{ padding:'4px 12px', borderRadius:20, fontSize:12, fontWeight:600, background:'rgba(13,148,136,0.08)', color:'#0d9488', border:'1px solid rgba(13,148,136,0.2)' }}>
-                      Première visite
-                    </span>
-                  )}
-                </div>
-              </div>
-              {rdv.patient && (
-                <Link to={`/patients/${rdv.patient}`} style={{ textDecoration:'none' }}>
-                  <button style={{ padding:'9px 16px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:'var(--radius-md)', color:'#334155', fontSize:12.5, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
+      {/* ── Contenu ── */}
+      <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 16, padding: 24 }}>
+        {!editMode ? (
+          <>
+            <SectionLabel>Informations du rendez-vous</SectionLabel>
+            <Grid>
+              <InfoRow label="Patient" value={rdv.patient_nom} />
+              <InfoRow label="N° dossier" value={rdv.patient_numero} mono />
+              <InfoRow label="Date" value={rdv.date ? new Date(`${rdv.date}T00:00:00`).toLocaleDateString('fr-DZ') : '—'} />
+              <InfoRow label="Heure" value={rdv.heure} mono />
+              <InfoRow label="Type" value={tyCfg.label} />
+              <InfoRow label="Statut" value={stCfg.label} />
+              <InfoRow label="Médecin" value={rdv.medecin_nom || '—'} />
+              <InfoRow label="Créé le" value={rdv.date_creation ? new Date(rdv.date_creation).toLocaleString('fr-DZ') : '—'} />
+              {(rdv.motif || rdv.note) && <InfoRow label="Motif / Note" value={rdv.motif || rdv.note} full />}
+            </Grid>
+
+            {rdv.patient && (
+              <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(37,99,235,0.12)' }}>
+                <Link to={`/patients/${rdv.patient}`} style={{ textDecoration: 'none' }}>
+                  <button style={{ padding: '9px 18px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 12, color: '#334155', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                     Voir le dossier patient
                   </button>
                 </Link>
-              )}
-            </div>
-
-            {/* Date & Heure */}
-            <Section title="Date & Heure">
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:20 }}>
-                <InfoBlock icon={ICONS.calendar} label="Date" value={rdv.date ? new Date(`${rdv.date}T00:00:00`).toLocaleDateString('fr-DZ', { weekday:'long', day:'numeric', month:'long', year:'numeric' }) : '—'} />
-                <InfoBlock icon={ICONS.clock} label="Heure" value={rdv.heure} mono />
-                <InfoBlock icon={ICONS.clock} label="Durée" value={rdv.duree_minutes ? `${rdv.duree_minutes} min` : '—'} />
               </div>
-            </Section>
-
-            {/* Praticien & Contexte */}
-            <Section title="Praticien & Contexte">
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:20 }}>
-                <InfoBlock icon={ICONS.doctor} label="Médecin / Praticien" value={medecinNom ? `Dr. ${medecinNom}` : '—'} />
-                <InfoBlock icon={ICONS.building} label="Établissement / Salle" value={rdv.salle} />
-                <InfoBlock icon={ICONS.user} label="N° dossier patient" value={rdv.patient_numero} mono />
-                {rdv.type === 'autre' && rdv.type_autre_detail && (
-                  <InfoBlock icon={ICONS.note} label="Précision du type" value={rdv.type_autre_detail} />
-                )}
-              </div>
-            </Section>
-
-            {/* Rappels */}
-            <Section title="Rappels au patient">
-              <div style={{ display:'flex', gap:20 }}>
-                <InfoBlock icon={ICONS.bell} label="Rappel SMS" value={rdv.rappel_sms ? 'Activé' : 'Désactivé'} />
-                <InfoBlock icon={ICONS.bell} label="Rappel Email" value={rdv.rappel_email ? 'Activé' : 'Désactivé'} />
-              </div>
-            </Section>
-
-            {/* Notes */}
-            {(rdv.motif || rdv.notes) && (
-              <Section title="Notes complémentaires">
-                {rdv.motif && (
-                  <div style={{ marginBottom: rdv.notes ? 14 : 0 }}>
-                    <div style={{ fontSize:10.5, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:.5, marginBottom:5 }}>Motif du rendez-vous</div>
-                    <div style={{ fontSize:13.5, color:'#334155', lineHeight:1.6 }}>{rdv.motif}</div>
-                  </div>
-                )}
-                {rdv.notes && (
-                  <div>
-                    <div style={{ fontSize:10.5, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:.5, marginBottom:5 }}>Notes internes (secrétariat)</div>
-                    <div style={{ fontSize:13.5, color:'#334155', lineHeight:1.6, background:'#f8fafc', border:'1px solid var(--border)', borderRadius:10, padding:'12px 14px' }}>{rdv.notes}</div>
-                  </div>
-                )}
-              </Section>
             )}
+          </>
+        ) : (
+          <div style={{ animation: 'fadeIn 0.2s ease' }}>
+            <SectionLabel>Modifier le rendez-vous</SectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px' }}>
+              <div style={{ marginBottom: 16 }}>
+                <label className="label-st">Date</label>
+                <input type="date" className="input-st" value={form.date || ''} onChange={e => setForm({ ...form, date: e.target.value })} />
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <label className="label-st">Heure</label>
+                <input type="time" className="input-st" value={form.heure || ''} onChange={e => setForm({ ...form, heure: e.target.value })} />
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <label className="label-st">Type</label>
+                <select className="input-st" value={form.type || ''} onChange={e => setForm({ ...form, type: e.target.value })} style={{ cursor: 'pointer' }}>
+                  {Object.entries(TYPE_CFG).map(([k, cfg]) => <option key={k} value={k}>{cfg.label}</option>)}
+                </select>
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <label className="label-st">Médecin</label>
+                <select className="input-st" value={form.medecin || ''} onChange={e => setForm({ ...form, medecin: e.target.value })} style={{ cursor: 'pointer' }}>
+                  <option value="">— Sélectionner —</option>
+                  {medecins.map(m => (
+                    <option key={m.id} value={m.id}>{m.full_name || `${m.first_name || ''} ${m.last_name || ''}`.trim()}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ marginBottom: 16, gridColumn: '1 / -1' }}>
+                <label className="label-st">Motif / Note</label>
+                <textarea className="input-st" rows={3} style={{ resize: 'vertical' }} value={form.motif || ''} onChange={e => setForm({ ...form, motif: e.target.value })} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 8, paddingTop: 20, borderTop: '1px solid rgba(37,99,235,0.12)', justifyContent: 'flex-end' }}>
+              <button onClick={handleCancelEdit} disabled={saving} style={{ padding: '10px 20px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 12, color: '#334155', fontSize: 13, cursor: 'pointer' }}>Annuler</button>
+              <button onClick={handleSave} disabled={saving} style={{ padding: '10px 26px', background: saving ? 'rgba(37,99,235,0.12)' : 'linear-gradient(135deg,#16a34a,#00b38a)', border: 'none', borderRadius: 12, color: '#fff', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer' }}>
+                {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {deleteOpen && (
+      {showDeleteModal && (
         <DeleteConfirmModal
           rdv={rdv}
           loading={deleteLoading}
-          onClose={() => !deleteLoading && setDeleteOpen(false)}
+          onClose={() => !deleteLoading && setShowDeleteModal(false)}
           onConfirm={handleDeleteConfirm}
         />
       )}
