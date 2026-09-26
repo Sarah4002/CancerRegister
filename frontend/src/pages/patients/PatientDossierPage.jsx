@@ -955,7 +955,7 @@ export default function PatientDossierPage() {
                           const isPast = rdv.date && rdv.date < new Date().toISOString().slice(0, 10);
                           return (
                             <tr key={rdv.id}
-                              onClick={() => navigate(`/secretaire/rendezvous?patient=${id}`)}
+                              onClick={() => navigate(`/secretaire/rendezvous/${rdv.id}`)}
                               style={{
                                 cursor: 'pointer', borderBottom: '1px solid rgba(37,99,235,0.12)',
                                 background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
@@ -976,7 +976,7 @@ export default function PatientDossierPage() {
                                 </span>
                               </td>
                               <td style={tdStyle} onClick={e => e.stopPropagation()}>
-                                <Link to={`/secretaire/rendezvous?patient=${id}`} style={{ textDecoration: 'none' }}>
+                                <Link to={`/secretaire/rendezvous/${rdv.id}`} style={{ textDecoration: 'none' }}>
                                   <button style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: 'pointer' }}>Voir</button>
                                 </Link>
                               </td>
