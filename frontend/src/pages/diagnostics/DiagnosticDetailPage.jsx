@@ -182,6 +182,9 @@ export default function DiagnosticDetailPage() {
       }
       if (!data) { setNotFound(true); return; }
       setDiag(data);
+      if (data.patient) {
+        patientService.get(data.patient).then(res => setPatient(res.data)).catch(() => {});
+      }
     } catch (err) {
       setNotFound(true);
     } finally {
@@ -190,6 +193,38 @@ export default function DiagnosticDetailPage() {
   }, [id]);
 
   useEffect(() => { fetchDiag(); }, [fetchDiag]);
+
+  /* ── Sections du sidebar patient (mêmes règles de visibilité que PatientDossierPage) ── */
+  const visiblePatientSections = PATIENT_SECTIONS.filter((section) => {
+    if (isSecretary) return section.key === 'identite' || section.key === 'rendezvous';
+    return {
+      identite: can.readPatient,
+      clinique: can.writeDiagnostic,
+      diagnostic: can.readDiagnostic,
+      examens: can.readDiagnostic,
+      traitements: can.readTreatment,
+      suivi: can.accessClinicalFollowup,
+      rcp: can.viewRcp,
+      rendezvous: can.manageAppointments,
+    }[section.key];
+  });
+
+  const handleSectionSelect = (key) => {
+    if (!diag?.patient) return;
+    navigate(`/patients/${diag.patient}`, { state: { returnSection: key } });
+  };
+
+  // Version minimale du patient (à partir des champs dénormalisés du
+  // diagnostic) tant que le patient complet n'est pas encore chargé, pour
+  // éviter que le sidebar bascule du mode global au mode patient une fois
+  // la requête terminée.
+  const patientForSidebar = patient || (diag?.patient ? {
+    id: diag.patient,
+    nom: diag.patient_nom || '',
+    prenom: '',
+    full_name: diag.patient_nom || 'Patient',
+    registration_number: diag.patient_numero || '',
+  } : null);
 
   const openEdit = () => {
     setForm({
@@ -271,9 +306,19 @@ export default function DiagnosticDetailPage() {
   const stadeCfg = STADE_COLORS[diag.stade_ajcc] || STADE_COLORS['U'];
   const localisation = diag.categorie_cancer === 'liquide' ? 'HEMATO' : diag.topographie_code;
 
+  const patientContext = patientForSidebar ? {
+    patient: patientForSidebar,
+    sections: visiblePatientSections,
+    activeKey: 'diagnostic',
+    onSelect: handleSectionSelect,
+    backPath: `/patients/${diag.patient}`,
+    backLabel: 'Retour au dossier patient',
+  } : undefined;
+
   return (
     <AppLayout
       title="Détail du diagnostic"
+      patientContext={patientContext}
       breadcrumb={[
         { label: 'Diagnostics', onClick: () => navigate('/diagnostics') },
         { label: diag.patient_nom || 'Diagnostic' },
