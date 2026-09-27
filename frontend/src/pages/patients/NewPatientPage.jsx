@@ -1,252 +1,109 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-
 import { patientService } from '../../services/patientService';
 import { apiClient } from '../../services/apiClient';
 import { AppLayout } from '../../components/layout/Sidebar';
 import ComparaisonFusionModal from '../../components/patients/ComparaisonFusionModal';
-
 import { WILAYAS, COMMUNES_PAR_WILAYA } from './communesAlgerie';
-
 import VoiceDictation from '../../components/voice/VoiceDictation';
 import useCustomFields from '../../hooks/useCustomFields';
 import CustomFieldsSection from '../../components/custom_fields/CustomFieldsSection';
 
-
-/* =========================================================
-   STEPS
-========================================================= */
-
 const STEPS = [
-  { label: 'Identité' },
-  { label: 'Coordonnées' },
+  { label: 'Identite' },
+  { label: 'Coordonnees' },
   { label: 'Profil' },
-  { label: 'Antécédents' },
+  { label: 'Antecedents' },
 ];
 
-
-/* =========================================================
-   FIELDS À VALIDER PAR STEP
-========================================================= */
-
+// Champs propres à chaque étape, utilisés pour ne valider que l'étape
+// affichée lorsqu'on clique sur "Continuer" (via trigger()).
 const STEP_FIELDS = [
-  [
-    'nom',
-    'prenom',
-    'sexe',
-    'date_naissance',
-  ],
-  [
-    'telephone',
-    'wilaya',
-    'commune',
-  ],
-  [
-    'niveau_instruction',
-    'profession',
-    'situation_familiale',
-    'nombre_enfants',
-    'etablissement_pec',
-    'statut_dossier',
-    'statut_vital',
-    'notes',
-  ],
-  [
-    'antecedents_personnels_liste',
-    'antecedents_personnels_autre',
-    'antecedents_familiaux_liste',
-    'antecedents_familiaux_autre',
-    'tabagisme',
-    'alcool',
-    'activite_physique',
-    'alimentation',
-  ],
+  ['nom', 'prenom', 'sexe', 'id_national', 'num_securite_sociale', 'date_naissance', 'age_diagnostic', 'lieu_naissance', 'nationalite'],
+  ['adresse', 'wilaya', 'commune', 'code_postal', 'telephone', 'telephone2', 'email', 'contact_nom', 'contact_prenom', 'contact_lien', 'contact_telephone'],
+  ['niveau_instruction', 'profession', 'situation_familiale', 'nombre_enfants', 'etablissement_pec', 'statut_dossier', 'statut_vital', 'notes'],
+  ['antecedents_personnels_liste', 'antecedents_personnels_autre', 'antecedents_familiaux_liste', 'antecedents_familiaux_autre', 'tabagisme', 'alcool', 'activite_physique', 'alimentation'],
 ];
 
-
-/* =========================================================
-   VALIDATION TÉLÉPHONE
-========================================================= */
-
+// ── Règles de validation téléphone algérien ───────────────────
+// Formats acceptés :
+//   - 10 chiffres locaux   : 05XXXXXXXX | 06XXXXXXXX | 07XXXXXXXX
+//   - Avec indicatif (+213): +213 5XXXXXXXX | +2136XXXXXXXX | +2137XXXXXXXX
+//   - Avec 00213           : 00213 5XXXXXXXX …
 const PHONE_REGEX = /^(\+213|00213|0)(5|6|7)\d{8}$/;
 
 const validatePhone = (value) => {
-  if (!value || value.trim() === '') {
-    return true;
-  }
-
+  if (!value || value.trim() === '') return true; // champ optionnel
   const cleaned = value.replace(/[\s\-\.]/g, '');
-
   if (!PHONE_REGEX.test(cleaned)) {
     return 'Numéro invalide (ex: 0551234567, +213551234567) — doit commencer par 05, 06 ou 07';
   }
-
   return true;
 };
 
 const validatePhoneRequired = (value) => {
-  if (!value || value.trim() === '') {
-    return 'Téléphone requis';
-  }
-
+  if (!value || value.trim() === '') return 'Téléphone requis';
   return validatePhone(value);
 };
 
-
-/* =========================================================
-   VALIDATION ID NATIONAL
-========================================================= */
-
+// ── Validation ID national (10 chiffres) ─────────────────────
 const validateIdNational = (value) => {
-  if (!value || value.trim() === '') {
-    return true;
-  }
-
-  if (!/^\d{10}$/.test(value.trim())) {
-    return "L'ID nationale doit contenir exactement 10 chiffres";
-  }
-
+  if (!value || value.trim() === '') return true;
+  if (!/^\d{10}$/.test(value.trim())) return 'L\'ID nationale doit contenir exactement 10 chiffres';
   return true;
 };
 
-
-/* =========================================================
-   VALIDATION NUMÉRO SÉCURITÉ SOCIALE
-========================================================= */
-
+// ── Validation numéro sécurité sociale (14 chiffres) ─────────
 const validateSecuriteSociale = (value) => {
-  if (!value || value.trim() === '') {
-    return true;
-  }
-
-  if (!/^\d{14}$/.test(value.trim())) {
-    return 'Le N° sécurité sociale doit contenir exactement 14 chiffres';
-  }
-
+  if (!value || value.trim() === '') return true;
+  if (!/^\d{14}$/.test(value.trim())) return 'Le N° sécurité sociale doit contenir exactement 14 chiffres';
   return true;
 };
 
-
-/* =========================================================
-   VALIDATION CODE POSTAL
-========================================================= */
-
+// ── Validation code postal (5 chiffres) ──────────────────────
 const validateCodePostal = (value) => {
-  if (!value || value.trim() === '') {
-    return true;
-  }
-
-  if (!/^\d{5}$/.test(value.trim())) {
-    return 'Le code postal doit contenir exactement 5 chiffres';
-  }
-
+  if (!value || value.trim() === '') return true;
+  if (!/^\d{5}$/.test(value.trim())) return 'Le code postal doit contenir exactement 5 chiffres';
   return true;
 };
 
-
-/* =========================================================
-   VALIDATION EMAIL
-========================================================= */
-
+// ── Validation email ──────────────────────────────────────────
 const validateEmail = (value) => {
-  if (!value || value.trim() === '') {
-    return true;
-  }
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) {
-    return 'Adresse email invalide';
-  }
-
+  if (!value || value.trim() === '') return true;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return 'Adresse email invalide';
   return true;
 };
 
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
-/* =========================================================
-   VALIDATION DATE DE NAISSANCE
-========================================================= */
-
+// ── Validation date de naissance (requise, pas dans le futur) ─
 const validateDateNaissance = (value) => {
-  if (!value) {
-    return 'Date de naissance requise';
-  }
-
-  const date = new Date(value + 'T00:00:00');
-
-  if (Number.isNaN(date.getTime())) {
-    return 'Date de naissance invalide';
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  if (date > today) {
-    return 'La date de naissance ne peut pas être dans le futur';
-  }
-
+  if (!value || value.trim() === '') return 'Date de naissance requise';
+  const d = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return 'Date invalide';
+  if (d > new Date()) return 'La date de naissance ne peut pas être dans le futur';
   return true;
 };
 
+// ── Validation wilaya / commune (requises) ────────────────────
+const validateWilaya = (value) => (!value || value.trim() === '') ? 'Wilaya requise' : true;
+const validateCommune = (value) => (!value || value.trim() === '') ? 'Commune requise' : true;
 
-/* =========================================================
-   DATE DU JOUR POUR INPUT DATE
-========================================================= */
-
-const getTodayDateInputValue = () => {
+// ── Calcul de l'âge à partir de la date de naissance ──────────
+function calculateAge(dateStr) {
+  if (!dateStr) return null;
+  const birth = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(birth.getTime())) return null;
   const today = new Date();
-
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-};
-
-
-/* =========================================================
-   CALCUL ÂGE ACTUEL
-========================================================= */
-
-const calculateAge = (dateNaissance) => {
-  if (!dateNaissance) {
-    return null;
-  }
-
-  const birthDate = new Date(dateNaissance + 'T00:00:00');
-
-  if (Number.isNaN(birthDate.getTime())) {
-    return null;
-  }
-
-  const today = new Date();
-
-  let age =
-    today.getFullYear() -
-    birthDate.getFullYear();
-
-  const monthDiff =
-    today.getMonth() -
-    birthDate.getMonth();
-
-  if (
-    monthDiff < 0 ||
-    (
-      monthDiff === 0 &&
-      today.getDate() < birthDate.getDate()
-    )
-  ) {
-    age--;
-  }
-
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
   return age >= 0 ? age : null;
-};
+}
 
-
-/* =========================================================
-   OPTIONS ANTÉCÉDENTS
-========================================================= */
-
+// ── Options d'antécédents (choix multiples) ───────────────────
 const ANTECEDENTS_PERSONNELS_OPTIONS = [
   'Diabète',
   'Hypertension artérielle',
@@ -272,2002 +129,641 @@ const ANTECEDENTS_FAMILIAUX_OPTIONS = [
   'Aucun antécédent familial connu',
 ];
 
-
-/* =========================================================
-   COMPONENT
-========================================================= */
-
 export default function NewPatientPage() {
-
   const navigate = useNavigate();
-
-  const [step, setStep] = useState(0);
+  const [step, setStep]             = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
-  const [suspect, setSuspect] = useState(null);
+  const [suspect,     setSuspect]     = useState(null);
   const [donneesForm, setDonneesForm] = useState(null);
-
-  const [showModal, setShowModal] = useState(false);
-
+  const [showModal,   setShowModal]   = useState(false);
   const lastDuplicateKey = useRef('');
 
-
-  /* =======================================================
-     REACT HOOK FORM
-  ======================================================= */
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    getValues,
-    trigger,
-    formState: { errors },
-  } = useForm({
-    mode: 'onSubmit',
-  });
-
-
-  /* =======================================================
-     WATCH
-  ======================================================= */
+  // Un seul formulaire pour toutes les étapes : react-hook-form conserve les
+  // valeurs des champs déjà saisis même quand leur étape n'est plus affichée,
+  // tant qu'on ne fait pas de reset(). C'est ce qui permet d'aller en avant
+  // puis en arrière dans le wizard sans jamais perdre de données.
+  const { register, handleSubmit, watch, setValue, getValues, trigger, formState: { errors } } =
+    useForm({ mode: 'onSubmit' });
 
   const watchedWilaya = watch('wilaya');
+  const watchedDateNaissance = watch('date_naissance');
+  const [nom, prenom, sexe, idNational] = watch(['nom', 'prenom', 'sexe', 'id_national']);
 
-  const [
-    nom,
-    prenom,
-    sexe,
-    idNational,
-  ] = watch([
-    'nom',
-    'prenom',
-    'sexe',
-    'id_national',
-  ]);
-
-  const dateNaissance = watch('date_naissance');
-
-  const ageActuel = calculateAge(dateNaissance);
-
-
-  /* =======================================================
-     CUSTOM FIELDS
-  ======================================================= */
-
-  const customFieldsHook = useCustomFields();
-
-  const {
-    fields: customFields = [],
-    loading: customFieldsLoading = false,
-  } = customFieldsHook || {};
-
-
-  /* =======================================================
-     DUPLICATE CHECK
-  ======================================================= */
+  // Âge calculé automatiquement à partir de la date de naissance, et
+  // répercuté dans le champ `age_diagnostic` envoyé au backend.
+  const computedAge = useMemo(() => calculateAge(watchedDateNaissance), [watchedDateNaissance]);
 
   useEffect(() => {
+    if (computedAge !== null) {
+      setValue('age_diagnostic', computedAge, { shouldDirty: true });
+    }
+  }, [computedAge, setValue]);
 
-    const checkDuplicate = async () => {
+  // Sélections courantes des antécédents (choix multiples)
+  const antecedentsPersonnelsList = watch('antecedents_personnels_liste') || [];
+  const antecedentsFamiliauxList  = watch('antecedents_familiaux_liste') || [];
 
-      if (
-        !nom ||
-        !prenom ||
-        !sexe ||
-        !idNational ||
-        idNational.length !== 10
-      ) {
-        return;
-      }
+  const toggleAntecedentPersonnel = (opt) => {
+    const current = watch('antecedents_personnels_liste') || [];
+    const updated = current.includes(opt) ? current.filter(o => o !== opt) : [...current, opt];
+    setValue('antecedents_personnels_liste', updated, { shouldDirty: true });
+  };
 
-      const duplicateKey = `${nom}-${prenom}-${sexe}-${idNational}`;
+  const toggleAntecedentFamilial = (opt) => {
+    const current = watch('antecedents_familiaux_liste') || [];
+    const updated = current.includes(opt) ? current.filter(o => o !== opt) : [...current, opt];
+    setValue('antecedents_familiaux_liste', updated, { shouldDirty: true });
+  };
 
-      if (lastDuplicateKey.current === duplicateKey) {
-        return;
-      }
+  // Vérification en temps réel : elle commence seulement une fois les quatre
+  // éléments d'identification disponibles, afin d'éviter les faux positifs.
+  useEffect(() => {
+    const normalizedId = String(idNational || '').trim();
+    const key = [nom, prenom, sexe, normalizedId].map(value => String(value || '').trim().toUpperCase()).join('|');
+    if (!nom?.trim() || !prenom?.trim() || !sexe || !/^\d{10}$/.test(normalizedId)) {
+      lastDuplicateKey.current = '';
+      return undefined;
+    }
+    if (key === lastDuplicateKey.current) return undefined;
 
-      lastDuplicateKey.current = duplicateKey;
-
+    let cancelled = false;
+    const timeoutId = setTimeout(async () => {
       try {
-
-        const { data } = await apiClient.post(
-          '/patients/verifier_doublon/',
-          {
-            nom,
-            prenom,
-            sexe,
-            id_national: idNational,
-          }
-        );
-
-        if (
-          data?.has_doublon &&
-          data?.suspects?.length > 0
-        ) {
+        const { data } = await apiClient.post('/patients/verifier_doublon/', {
+          nom, prenom, sexe, id_national: normalizedId,
+        });
+        if (cancelled) return;
+        lastDuplicateKey.current = key;
+        if (data.has_doublon && data.suspects?.length) {
+          setDonneesForm(buildPayload(getValues()));
           setSuspect(data.suspects[0]);
+          setShowModal(true);
         }
-
-      } catch (error) {
-
-        console.warn(
-          'Vérification doublon échouée',
-          error
-        );
+      } catch (err) {
+        console.warn('Verification de doublon en temps reel indisponible', err);
       }
-    };
+    }, 500);
 
-    checkDuplicate();
+    return () => { cancelled = true; clearTimeout(timeoutId); };
+  }, [nom, prenom, sexe, idNational]);
 
-  }, [
-    nom,
-    prenom,
-    sexe,
-    idNational,
-  ]);
+  // ── Champs personnalisés ──────────────────────────────────
+  const {
+    champs:    champsCustom,
+    valeurs:   valeursCustom,
+    setValeur,
+    sauvegarder: sauvegarderCustom,
+    loading:   loadingCustom,
+  } = useCustomFields({ module: 'patient', objectId: null });
 
-
-  /* =======================================================
-     INPUT STYLE
-  ======================================================= */
-
-  const inputStyle = (error) => ({
-    width: '100%',
-    padding: '10px 12px',
-    borderRadius: '8px',
-    border: `1px solid ${
-      error ? '#dc2626' : '#d1d5db'
-    }`,
-    outline: 'none',
-    background: '#ffffff',
-    boxSizing: 'border-box',
-  });
-
-
-  /* =======================================================
-     BUILD PAYLOAD
-  ======================================================= */
-
+  // ── Helpers ───────────────────────────────────────────────
   const buildPayload = (data) => {
-
-    const payload = {
-      ...data,
-    };
-
+    const payload = { ...data };
     const contacts = [];
-
-    if (
-      payload.contact_nom &&
-      payload.contact_telephone
-    ) {
+    if (payload.contact_nom && payload.contact_telephone) {
       contacts.push({
-        nom: payload.contact_nom,
-        prenom: payload.contact_prenom || '',
-        lien: payload.contact_lien || '',
-        telephone: payload.contact_telephone,
+        nom: payload.contact_nom, prenom: payload.contact_prenom || '',
+        lien: payload.contact_lien || '', telephone: payload.contact_telephone,
       });
     }
-
-    [
-      'contact_nom',
-      'contact_prenom',
-      'contact_lien',
-      'contact_telephone',
-    ].forEach((key) => {
-      delete payload[key];
-    });
-
-    if (contacts.length) {
-      payload.contacts_urgence = contacts;
-    }
-
-    Object.keys(payload).forEach((key) => {
-
-      if (
-        payload[key] === '' ||
-        payload[key] === undefined
-      ) {
-        delete payload[key];
-      }
-
-    });
-
+    ['contact_nom','contact_prenom','contact_lien','contact_telephone'].forEach(k => delete payload[k]);
+    if (contacts.length) payload.contacts_urgence = contacts;
+    Object.keys(payload).forEach(k => { if (payload[k] === '' || payload[k] === undefined) delete payload[k]; });
     return payload;
   };
 
-
-  /* =======================================================
-     CREER PATIENT
-  ======================================================= */
-
-  const creerPatient = async (payload) => {
-
-    try {
-
-      const response =
-        await patientService.create(payload);
-
-      toast.success(
-        'Patient créé avec succès'
-      );
-
-      navigate('/patients');
-
-      return response;
-
-    } catch (error) {
-
-      console.error(
-        'Erreur création patient',
-        error
-      );
-
-      toast.error(
-        error?.response?.data?.detail ||
-        'Erreur lors de la création du patient'
-      );
-
-      throw error;
-    }
+  // Avance à l'étape suivante après avoir validé uniquement les champs de
+  // l'étape en cours. Aucune donnée n'est effacée : on ne fait pas de reset().
+  const handleNext = async () => {
+    const valid = await trigger(STEP_FIELDS[step]);
+    if (!valid) return;
+    setStep(s => s + 1);
   };
 
-
-  /* =======================================================
-     SUBMIT FINAL
-  ======================================================= */
+  // Retour à l'étape précédente : les champs déjà saisis restent tels quels
+  // puisque le formulaire n'est jamais réinitialisé entre les étapes.
+  const handlePrev = () => setStep(s => s - 1);
 
   const onFinalSubmit = async (data) => {
-
     setSubmitting(true);
-
     try {
-
       const payload = buildPayload(data);
-
-      const { data: res } =
-        await apiClient.post(
-          '/patients/verifier_doublon/',
-          {
-            nom: payload.nom,
-            prenom: payload.prenom,
-            date_naissance:
-              payload.date_naissance,
-            id_national:
-              payload.id_national,
-          }
-        );
-
-      if (
-        res.has_doublon &&
-        res.suspects?.length > 0
-      ) {
-
-        setDonneesForm(payload);
-
-        setSuspect(
-          res.suspects[0]
-        );
-
-        setShowModal(true);
-
-        setSubmitting(false);
-
-        return;
+      const { data: res } = await apiClient.post('/patients/verifier_doublon/', {
+        nom: payload.nom, prenom: payload.prenom,
+        date_naissance: payload.date_naissance, id_national: payload.id_national,
+      });
+      if (res.has_doublon && res.suspects.length > 0) {
+        setDonneesForm(payload); setSuspect(res.suspects[0]);
+        setShowModal(true); setSubmitting(false); return;
       }
-
       await creerPatient(payload);
-
-    } catch (error) {
-
-      console.warn(
-        'Vérification doublon échouée, création directe',
-        error
-      );
-
-      await creerPatient(
-        buildPayload(data)
-      );
-
+    } catch (err) {
+      console.warn('Verification doublon echouee, creation directe', err);
+      await creerPatient(buildPayload(data));
     } finally {
-
       setSubmitting(false);
     }
   };
 
-
-  /* =======================================================
-     NAVIGATION
-  ======================================================= */
-
-  const handleNext = async () => {
-
-    const valid =
-      await trigger(
-        STEP_FIELDS[step]
-      );
-
-    if (!valid) {
-      return;
-    }
-
-    setStep(
-      (current) => current + 1
-    );
-  };
-
-
-  const handlePrev = () => {
-
-    setStep(
-      (current) => current - 1
-    );
-  };
-
-
-  /* =======================================================
-     FUSION
-  ======================================================= */
-
-  const handleFusionner = async () => {
-
-    if (!donneesForm || !suspect) {
-      return;
-    }
-
+  const creerPatient = async (payload) => {
     try {
-
-      await patientService.fusionner(
-        suspect.id,
-        donneesForm
-      );
-
-      toast.success(
-        'Patients fusionnés avec succès'
-      );
-
-      setShowModal(false);
-
-      navigate('/patients');
-
-    } catch (error) {
-
-      console.error(
-        error
-      );
-
-      toast.error(
-        'Erreur lors de la fusion'
-      );
+      const { data: patient } = await patientService.create(payload);
+      if (Object.keys(valeursCustom).length > 0) {
+        await sauvegarderCustom(patient.id);
+      }
+      toast.success('Patient ' + patient.registration_number + ' cree avec succes !');
+      navigate('/patients/' + patient.id);
+    } catch (err) {
+      const errs = err.response?.data;
+      toast.error(errs ? Object.values(errs).flat().join(' ') : 'Erreur lors de la creation.');
     }
   };
 
-
-  /* =======================================================
-     FORCER CRÉATION
-  ======================================================= */
+  const handleFusionner = async (idPrincipal, idSecondaire, champsFusion) => {
+    try {
+      // Pendant la création, le "secondaire" n'existe pas encore : on enrichit
+      // donc le dossier existant avec les valeurs retenues dans la comparaison.
+      if (!idSecondaire) {
+        await patientService.patch(idPrincipal, champsFusion);
+        toast.success('Dossier existant mis a jour apres verification du doublon');
+        setShowModal(false);
+        navigate('/patients/' + idPrincipal);
+        return;
+      }
+      const { data } = await apiClient.post('/patients/' + idPrincipal + '/fusionner/', {
+        id_secondaire: idSecondaire, champs_fusion: champsFusion,
+      });
+      toast.success(data.message || 'Dossier fusionne avec succes');
+      setShowModal(false);
+      navigate('/patients/' + idPrincipal);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Erreur lors de la fusion');
+      throw err;
+    }
+  };
 
   const handleForcerCreation = async () => {
-
-    if (!donneesForm) {
-      return;
-    }
-
-    setShowModal(false);
-
-    await creerPatient(
-      donneesForm
-    );
+    setShowModal(false); setSubmitting(true);
+    await creerPatient(donneesForm);
+    setSubmitting(false);
   };
 
-
-  /* =======================================================
-     COMMUNES
-  ======================================================= */
-
-  const communesDispo =
-    watchedWilaya
-      ? (
-        COMMUNES_PAR_WILAYA[
-          watchedWilaya
-        ] || []
-      )
-      : [];
-
-
-  /* =======================================================
-     RENDER
-  ======================================================= */
+  const communesDispo = watchedWilaya ? (COMMUNES_PAR_WILAYA[watchedWilaya] || []).sort() : [];
 
   return (
+    <AppLayout title="Nouveau Patient">
+      <style>{`
+        @keyframes spin    { to { transform: rotate(360deg); } }
+        @keyframes fadeUp  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+      `}</style>
 
-    <AppLayout>
+      <div style={{ maxWidth: 760, margin: '0 auto' }}>
 
-      <div
-        style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          padding: '24px',
-        }}
-      >
-
-        {/* =================================================
-            HEADER
-        ================================================= */}
-
-        <div
-          style={{
-            marginBottom: '24px',
-          }}
-        >
-
-          <h1
-            style={{
-              margin: 0,
-              fontSize: '28px',
-              fontWeight: 700,
-            }}
-          >
-            Nouveau patient
-          </h1>
-
-          <p
-            style={{
-              marginTop: '8px',
-              color: '#64748b',
-            }}
-          >
-            Création du dossier patient
-          </p>
-
+        {/* Stepper */}
+        <div style={{ display: 'flex', marginBottom: 28, background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+          {STEPS.map((s, i) => (
+            <div key={i} onClick={() => i < step && setStep(i)} style={{
+              flex: 1, padding: '14px 12px', textAlign: 'center',
+              background: i === step ? 'rgba(37,99,235,0.08)' : i < step ? 'rgba(59,130,246,0.08)' : 'transparent',
+              borderRight: i < STEPS.length - 1 ? '1px solid rgba(37,99,235,0.12)' : 'none',
+              cursor: i < step ? 'pointer' : 'default', transition: 'all 0.2s',
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: i === step ? '#2563eb' : i < step ? '#1d4ed8' : '#64748b' }}>
+                {i < step ? '✓ ' : ''}{s.label}
+              </div>
+            </div>
+          ))}
         </div>
 
-
-        {/* =================================================
-            STEPS
-        ================================================= */}
-
-        <div
-          style={{
-            display: 'flex',
-            gap: '12px',
-            marginBottom: '30px',
-          }}
-        >
-
-          {STEPS.map(
-            (item, index) => (
-
-              <div
-                key={index}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  borderRadius: '10px',
-                  background:
-                    index === step
-                      ? '#e0e7ff'
-                      : '#f1f5f9',
-                  color:
-                    index === step
-                      ? '#3730a3'
-                      : '#64748b',
-                  fontWeight:
-                    index === step
-                      ? 600
-                      : 400,
-                  textAlign: 'center',
-                }}
-              >
-                {index + 1}. {item.label}
-              </div>
-
-            )
-          )}
-
-        </div>
-
-
-        {/* =================================================
-            FORM
-        ================================================= */}
-
-        <form
-          onSubmit={handleSubmit(
-            onFinalSubmit
-          )}
-        >
-
-          {/* =================================================
-              STEP 0 — IDENTITÉ
-          ================================================= */}
-
-          {step === 0 && (
-
-            <section>
-
-              <h2>
-                Identité du patient
-              </h2>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns:
-                    'repeat(2, minmax(0, 1fr))',
-                  gap: '20px',
-                  marginTop: '20px',
-                }}
-              >
-
-                {/* NOM */}
-
-                <Field
-                  label="Nom *"
-                  error={
-                    errors.nom?.message
-                  }
-                >
-
-                  <input
-                    type="text"
-                    {...register('nom', {
-                      required:
-                        'Nom requis',
-                    })}
-                    style={inputStyle(
-                      errors.nom
-                    )}
-                  />
-
-                </Field>
-
-
-                {/* PRÉNOM */}
-
-                <Field
-                  label="Prénom *"
-                  error={
-                    errors.prenom?.message
-                  }
-                >
-
-                  <input
-                    type="text"
-                    {...register('prenom', {
-                      required:
-                        'Prénom requis',
-                    })}
-                    style={inputStyle(
-                      errors.prenom
-                    )}
-                  />
-
-                </Field>
-
-
-                {/* ID NATIONAL */}
-
-                <Field
-                  label="N° identité nationale"
-                  error={
-                    errors.id_national?.message
-                  }
-                >
-
-                  <input
-                    type="text"
-                    {...register(
-                      'id_national',
-                      {
-                        validate:
-                          validateIdNational,
-                      }
-                    )}
-                    style={inputStyle(
-                      errors.id_national
-                    )}
-                  />
-
-                </Field>
-
-
-                {/* SÉCURITÉ SOCIALE */}
-
-                <Field
-                  label="N° sécurité sociale"
-                  error={
-                    errors.num_securite_sociale
-                      ?.message
-                  }
-                >
-
-                  <input
-                    type="text"
-                    {...register(
-                      'num_securite_sociale',
-                      {
-                        validate:
-                          validateSecuriteSociale,
-                      }
-                    )}
-                    style={inputStyle(
-                      errors.num_securite_sociale
-                    )}
-                  />
-
-                </Field>
-
-
-                {/* SEXE */}
-
-                <Field
-                  label="Sexe *"
-                  error={
-                    errors.sexe?.message
-                  }
-                >
-
-                  <select
-                    {...register('sexe', {
-                      required:
-                        'Sexe requis',
-                    })}
-                    style={inputStyle(
-                      errors.sexe
-                    )}
-                  >
-
-                    <option value="">
-                      Sélectionner
-                    </option>
-
-                    <option value="M">
-                      Masculin
-                    </option>
-
-                    <option value="F">
-                      Féminin
-                    </option>
-
-                  </select>
-
-                </Field>
-
-
-                {/* DATE DE NAISSANCE */}
-
-                <Field
-                  label="Date de naissance *"
-                  error={
-                    errors.date_naissance
-                      ?.message
-                  }
-                >
-
-                  <input
-                    type="date"
-                    {...register(
-                      'date_naissance',
-                      {
-                        required:
-                          'Date de naissance requise',
-
-                        validate:
-                          validateDateNaissance,
-                      }
-                    )}
-                    max={
-                      getTodayDateInputValue()
-                    }
-                    style={inputStyle(
-                      errors.date_naissance
-                    )}
-                  />
-
-                </Field>
-
-
-                {/* ÂGE ACTUEL */}
-
-                <Field
-                  label="Âge actuel (automatique)"
-                >
-
-                  <div
-                    style={{
-                      ...inputStyle(),
-                      display: 'flex',
-                      alignItems: 'center',
-                      minHeight: '40px',
-                      background:
-                        '#f8fafc',
-                      color:
-                        ageActuel !== null
-                          ? '#0f172a'
-                          : '#94a3b8',
-                    }}
-                  >
-
-                    {ageActuel !== null
-                      ? `${ageActuel} ans`
-                      : 'Calculé automatiquement'}
-
-                  </div>
-
-                </Field>
-
-
-                {/* LIEU NAISSANCE */}
-
-                <Field
-                  label="Lieu de naissance"
-                >
-
-                  <input
-                    type="text"
-                    {...register(
-                      'lieu_naissance'
-                    )}
-                    style={inputStyle()}
-                  />
-
-                </Field>
-
-
-                {/* NATIONALITÉ */}
-
-                <Field
-                  label="Nationalité"
-                >
-
-                  <input
-                    type="text"
-                    {...register(
-                      'nationalite'
-                    )}
-                    defaultValue="Algérienne"
-                    style={inputStyle()}
-                  />
-
-                </Field>
-
-              </div>
-
-            </section>
-          )}
-
-
-          {/* =================================================
-              STEP 1 — COORDONNÉES
-          ================================================= */}
-
-          {step === 1 && (
-
-            <section>
-
-              <h2>
-                Coordonnées
-              </h2>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns:
-                    'repeat(2, minmax(0, 1fr))',
-                  gap: '20px',
-                  marginTop: '20px',
-                }}
-              >
-
-                {/* ADRESSE */}
-
-                <Field
-                  label="Adresse"
-                >
-
-                  <input
-                    type="text"
-                    {...register('adresse')}
-                    style={inputStyle()}
-                  />
-
-                </Field>
-
-
-                {/* WILAYA */}
-
-                <Field
-                  label="Wilaya *"
-                  error={
-                    errors.wilaya?.message
-                  }
-                >
-
-                  <select
-                    {...register('wilaya', {
-                      required:
-                        'Wilaya requise',
-                    })}
-                    onChange={(e) => {
-
-                      setValue(
-                        'wilaya',
-                        e.target.value,
-                        {
-                          shouldValidate:
-                            true,
-                          shouldDirty:
-                            true,
-                        }
-                      );
-
-                      setValue(
-                        'commune',
-                        '',
-                        {
-                          shouldValidate:
-                            true,
-                          shouldDirty:
-                            true,
-                        }
-                      );
-
-                    }}
-                    style={inputStyle(
-                      errors.wilaya
-                    )}
-                  >
-
-                    <option value="">
-                      Sélectionner une wilaya
-                    </option>
-
-                    {WILAYAS.map(
-                      (wilaya) => (
-
-                        <option
-                          key={wilaya}
-                          value={wilaya}
-                        >
-                          {wilaya}
-                        </option>
-
-                      )
-                    )}
-
-                  </select>
-
-                </Field>
-
-
-                {/* COMMUNE */}
-
-                <Field
-                  label="Commune *"
-                  error={
-                    errors.commune?.message
-                  }
-                >
-
-                  {communesDispo.length > 0 ? (
-
-                    <select
-                      {...register(
-                        'commune',
-                        {
-                          required:
-                            'Commune requise',
-                        }
-                      )}
-                      style={inputStyle(
-                        errors.commune
-                      )}
-                    >
-
-                      <option value="">
-                        Sélectionner une commune
-                      </option>
-
-                      {communesDispo.map(
-                        (commune) => (
-
-                          <option
-                            key={commune}
-                            value={commune}
-                          >
-                            {commune}
-                          </option>
-
-                        )
-                      )}
-
+        <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '28px 32px' }}>
+          <form onSubmit={handleSubmit(onFinalSubmit)}>
+
+            {/* ══ STEP 0 : Identité ══════════════════════════════════ */}
+            {step === 0 && (
+              <div style={{ animation: 'fadeUp 0.3s ease' }}>
+                <SectionTitle>Identite du patient</SectionTitle>
+
+              
+                <div style={{ margin: '12px 0', height: 1, background: 'rgba(37,99,235,0.12)' }} />
+
+                <Row>
+                  <Field label="Nom *" error={errors.nom?.message}>
+                    <input {...register('nom', { required: 'Nom requis' })} placeholder="BENALI" style={inputStyle(errors.nom)} />
+                  </Field>
+                  <Field label="Prenom *" error={errors.prenom?.message}>
+                    <input {...register('prenom', { required: 'Prenom requis' })} placeholder="Mohamed" style={inputStyle(errors.prenom)} />
+                  </Field>
+                </Row>
+                <Row>
+                  <Field label="N° identité nationale" error={errors.id_national?.message}>
+                    <input
+                      {...register('id_national', { validate: validateIdNational })}
+                      placeholder="Ex: 1234567890 (10 chiffres)"
+                      maxLength={10}
+                      style={inputStyle(errors.id_national)}
+                    />
+                  </Field>
+                  <Field label="N° sécurité sociale" error={errors.num_securite_sociale?.message}>
+                    <input
+                      {...register('num_securite_sociale', { validate: validateSecuriteSociale })}
+                      placeholder="Ex: 12345678901234 (14 chiffres)"
+                      maxLength={14}
+                      style={inputStyle(errors.num_securite_sociale)}
+                    />
+                  </Field>
+                </Row>
+                <Row>
+                  <Field label="Sexe *" error={errors.sexe?.message}>
+                    <select {...register('sexe', { required: 'Sexe requis' })} style={selectStyle(errors.sexe)}>
+                      <option value="">Selectionner</option>
+                      <option value="M">Masculin</option>
+                      <option value="F">Feminin</option>
+                      <option value="U">Inconnu</option>
                     </select>
-
-                  ) : (
-
-                    <div
-                      style={{
-                        ...inputStyle(
-                          errors.commune
-                        ),
-                        color:
-                          '#94a3b8',
-                      }}
-                    >
-                      Choisir d'abord une wilaya
+                  </Field>
+                  <Field label="Date de naissance *" error={errors.date_naissance?.message}>
+                    <input
+                      type="date"
+                      max={todayISO()}
+                      {...register('date_naissance', { validate: validateDateNaissance })}
+                      style={inputStyle(errors.date_naissance)}
+                    />
+                  </Field>
+                </Row>
+                <Row>
+                  <Field label="Âge au diagnostic">
+                    <div style={{
+                      ...inputStyle(), display: 'flex', alignItems: 'center',
+                      background: '#eef2f7', color: computedAge !== null ? '#0f172a' : '#94a3b8',
+                    }}>
+                      {computedAge !== null ? `${computedAge} an${computedAge > 1 ? 's' : ''} (calculé automatiquement)` : 'Renseignez la date de naissance'}
                     </div>
-
-                  )}
-
+                  </Field>
+                  <Field label="Lieu de naissance">
+                    <input {...register('lieu_naissance')} placeholder="Oran" style={inputStyle()} />
+                  </Field>
+                </Row>
+                <Field label="Nationalite">
+                  <input {...register('nationalite')} defaultValue="Algerienne" style={inputStyle()} />
                 </Field>
-
-
-                {/* CODE POSTAL */}
-
-                <Field
-                  label="Code postal"
-                  error={
-                    errors.code_postal
-                      ?.message
-                  }
-                >
-
-                  <input
-                    type="text"
-                    {...register(
-                      'code_postal',
-                      {
-                        validate:
-                          validateCodePostal,
-                      }
-                    )}
-                    style={inputStyle(
-                      errors.code_postal
-                    )}
-                  />
-
-                </Field>
-
-
-                {/* TÉLÉPHONE PRINCIPAL */}
-
-                <Field
-                  label="Téléphone principal *"
-                  error={
-                    errors.telephone?.message
-                  }
-                >
-
-                  <input
-                    type="tel"
-                    {...register(
-                      'telephone',
-                      {
-                        validate:
-                          validatePhoneRequired,
-                      }
-                    )}
-                    placeholder="0551234567"
-                    style={inputStyle(
-                      errors.telephone
-                    )}
-                  />
-
-                </Field>
-
-
-                {/* TÉLÉPHONE SECONDAIRE */}
-
-                <Field
-                  label="Téléphone secondaire"
-                  error={
-                    errors.telephone2?.message
-                  }
-                >
-
-                  <input
-                    type="tel"
-                    {...register(
-                      'telephone2',
-                      {
-                        validate:
-                          validatePhone,
-                      }
-                    )}
-                    placeholder="0551234567"
-                    style={inputStyle(
-                      errors.telephone2
-                    )}
-                  />
-
-                </Field>
-
-
-                {/* EMAIL */}
-
-                <Field
-                  label="Email"
-                  error={
-                    errors.email?.message
-                  }
-                >
-
-                  <input
-                    type="email"
-                    {...register(
-                      'email',
-                      {
-                        validate:
-                          validateEmail,
-                      }
-                    )}
-                    placeholder="exemple@email.com"
-                    style={inputStyle(
-                      errors.email
-                    )}
-                  />
-
-                </Field>
-
-
-                {/* CONTACT URGENCE NOM */}
-
-                <Field
-                  label="Nom contact urgence"
-                >
-
-                  <input
-                    type="text"
-                    {...register(
-                      'contact_nom'
-                    )}
-                    style={inputStyle()}
-                  />
-
-                </Field>
-
-
-                {/* CONTACT URGENCE PRÉNOM */}
-
-                <Field
-                  label="Prénom contact urgence"
-                >
-
-                  <input
-                    type="text"
-                    {...register(
-                      'contact_prenom'
-                    )}
-                    style={inputStyle()}
-                  />
-
-                </Field>
-
-
-                {/* CONTACT URGENCE LIEN */}
-
-                <Field
-                  label="Lien avec le patient"
-                >
-
-                  <input
-                    type="text"
-                    {...register(
-                      'contact_lien'
-                    )}
-                    placeholder="Parent, conjoint..."
-                    style={inputStyle()}
-                  />
-
-                </Field>
-
-
-                {/* CONTACT URGENCE TÉLÉPHONE */}
-
-                <Field
-                  label="Téléphone contact urgence"
-                  error={
-                    errors.contact_telephone
-                      ?.message
-                  }
-                >
-
-                  <input
-                    type="tel"
-                    {...register(
-                      'contact_telephone',
-                      {
-                        validate:
-                          validatePhone,
-                      }
-                    )}
-                    placeholder="0551234567"
-                    style={inputStyle(
-                      errors.contact_telephone
-                    )}
-                  />
-
-                </Field>
-
               </div>
-
-            </section>
-          )}
-
-
-          {/* =================================================
-              STEP 2 — PROFIL
-          ================================================= */}
-
-          {step === 2 && (
-
-            <section>
-
-              <h2>
-                Profil socio-démographique
-              </h2>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns:
-                    'repeat(2, minmax(0, 1fr))',
-                  gap: '20px',
-                  marginTop: '20px',
-                }}
-              >
-
-                {/* NIVEAU INSTRUCTION */}
-
-                <Field
-                  label="Niveau d'instruction"
-                  error={
-                    errors.niveau_instruction
-                      ?.message
-                  }
-                >
-
-                  <select
-                    {...register(
-                      'niveau_instruction'
-                    )}
-                    style={inputStyle()}
-                  >
-
-                    <option value="">
-                      Sélectionner
-                    </option>
-
-                    <option value="Sans instruction">
-                      Sans instruction
-                    </option>
-
-                    <option value="Primaire">
-                      Primaire
-                    </option>
-
-                    <option value="Moyen">
-                      Moyen
-                    </option>
-
-                    <option value="Secondaire">
-                      Secondaire
-                    </option>
-
-                    <option value="Universitaire">
-                      Universitaire
-                    </option>
-
-                    <option value="Autre">
-                      Autre
-                    </option>
-
-                  </select>
-
-                </Field>
-
-
-                {/* PROFESSION */}
-
-                <Field
-                  label="Profession"
-                >
-
-                  <input
-                    type="text"
-                    {...register(
-                      'profession'
-                    )}
-                    style={inputStyle()}
-                  />
-
-                </Field>
-
-
-                {/* SITUATION FAMILIALE */}
-
-                <Field
-                  label="Situation familiale"
-                >
-
-                  <select
-                    {...register(
-                      'situation_familiale'
-                    )}
-                    style={inputStyle()}
-                  >
-
-                    <option value="">
-                      Sélectionner
-                    </option>
-
-                    <option value="Célibataire">
-                      Célibataire
-                    </option>
-
-                    <option value="Marié(e)">
-                      Marié(e)
-                    </option>
-
-                    <option value="Divorcé(e)">
-                      Divorcé(e)
-                    </option>
-
-                    <option value="Veuf / Veuve">
-                      Veuf / Veuve
-                    </option>
-
-                  </select>
-
-                </Field>
-
-
-                {/* NOMBRE ENFANTS */}
-
-                <Field
-                  label="Nombre d'enfants"
-                  error={
-                    errors.nombre_enfants
-                      ?.message
-                  }
-                >
-
-                  <input
-                    type="number"
-                    min="0"
-                    {...register(
-                      'nombre_enfants',
-                      {
-                        valueAsNumber:
-                          true,
-                        min: {
-                          value: 0,
-                          message:
-                            'Le nombre doit être positif',
-                        },
-                      }
-                    )}
-                    style={inputStyle(
-                      errors.nombre_enfants
-                    )}
-                  />
-
-                </Field>
-
-
-                {/* ÉTABLISSEMENT */}
-
-                <Field
-                  label="Établissement de prise en charge"
-                >
-
-                  <input
-                    type="text"
-                    {...register(
-                      'etablissement_pec'
-                    )}
-                    placeholder="CHU, CAC, EPH..."
-                    style={inputStyle()}
-                  />
-
-                </Field>
-
-
-                {/* STATUT DOSSIER */}
-
-                <Field
-                  label="Statut du dossier"
-                >
-
-                  <select
-                    {...register(
-                      'statut_dossier'
-                    )}
-                    style={inputStyle()}
-                  >
-
-                    <option value="">
-                      Sélectionner
-                    </option>
-
-                    <option value="En cours">
-                      En cours
-                    </option>
-
-                    <option value="Complet">
-                      Complet
-                    </option>
-
-                    <option value="À compléter">
-                      À compléter
-                    </option>
-
-                    <option value="Clôturé">
-                      Clôturé
-                    </option>
-
-                  </select>
-
-                </Field>
-
-
-                {/* STATUT VITAL */}
-
-                <Field
-                  label="Statut vital"
-                >
-
-                  <select
-                    {...register(
-                      'statut_vital'
-                    )}
-                    style={inputStyle()}
-                  >
-
-                    <option value="">
-                      Sélectionner
-                    </option>
-
-                    <option value="Vivant">
-                      Vivant
-                    </option>
-
-                    <option value="Décédé">
-                      Décédé
-                    </option>
-
-                    <option value="Inconnu">
-                      Inconnu
-                    </option>
-
-                  </select>
-
-                </Field>
-
-
-                {/* NOTES */}
-
-                <Field
-                  label="Notes"
-                >
-
-                  <textarea
-                    {...register('notes')}
-                    rows={4}
-                    placeholder="Informations complémentaires..."
-                    style={{
-                      ...inputStyle(),
-                      resize: 'vertical',
-                    }}
-                  />
-
-                </Field>
-
-              </div>
-
-
-              {/* CUSTOM FIELDS */}
-
-              {customFields?.length > 0 && (
-
-                <div
-                  style={{
-                    marginTop: '30px',
+            )}
+
+            {/* ══ STEP 1 : Coordonnées ═══════════════════════════════ */}
+            {step === 1 && (
+              <div style={{ animation: 'fadeUp 0.3s ease' }}>
+                <SectionTitle>Coordonnees et Adresse</SectionTitle>
+
+                <VoiceDictation
+                  formType="patient"
+                  onFieldsExtracted={(fields) => {
+                    Object.entries(fields).forEach(([key, value]) => {
+                      setValue(key, value, { shouldValidate: true });
+                    });
                   }}
-                >
+                />
+                <div style={{ margin: '12px 0', height: 1, background: 'rgba(37,99,235,0.12)' }} />
 
-                  <CustomFieldsSection
-                    fields={customFields}
-                    register={register}
-                    errors={errors}
-                    watch={watch}
-                    setValue={setValue}
+                <Field label="Adresse complete">
+                  <textarea {...register('adresse')} placeholder="Rue, N, quartier..." rows={2} style={{ ...inputStyle(), resize: 'vertical', lineHeight: 1.5 }} />
+                </Field>
+                <Row>
+                  <Field label="Wilaya *" error={errors.wilaya?.message}>
+                    <select
+                      {...register('wilaya', { validate: validateWilaya })}
+                      style={selectStyle(errors.wilaya)}
+                      onChange={e => { setValue('wilaya', e.target.value, { shouldValidate: true }); setValue('commune', ''); }}
+                    >
+                      <option value="">Selectionner une wilaya</option>
+                      {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Commune *" error={errors.commune?.message}>
+                    {communesDispo.length > 0 ? (
+                      <select {...register('commune', { validate: validateCommune })} style={selectStyle(errors.commune)}>
+                        <option value="">Selectionner une commune</option>
+                        {communesDispo.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    ) : (
+                      <div style={{ ...inputStyle(errors.commune), display: 'flex', alignItems: 'center', color: '#64748b', fontSize: 12.5 }}>
+                        Choisir d'abord une wilaya
+                      </div>
+                    )}
+                  </Field>
+                </Row>
+                <Row>
+                  <Field label="Code postal" error={errors.code_postal?.message}>
+                    <input
+                      {...register('code_postal', { validate: validateCodePostal })}
+                      placeholder="31000 (5 chiffres)"
+                      maxLength={5}
+                      style={inputStyle(errors.code_postal)}
+                    />
+                  </Field>
+                  <Field label="Téléphone principal *" error={errors.telephone?.message}>
+                    <input
+                      {...register('telephone', { validate: validatePhoneRequired })}
+                      placeholder="0551234567 ou +213551234567"
+                      maxLength={17}
+                      style={inputStyle(errors.telephone)}
+                    />
+                  </Field>
+                </Row>
+
+                {/* Hint sous les champs téléphone */}
+                {!errors.telephone && (
+                  <p style={{ marginTop: -10, marginBottom: 12, fontSize: 11, color: '#94a3b8' }}>
+                    Formats acceptés : 05XXXXXXXX · 06XXXXXXXX · 07XXXXXXXX · +213XXXXXXXXX
+                  </p>
+                )}
+
+                <Row>
+                  <Field label="Téléphone secondaire" error={errors.telephone2?.message}>
+                    <input
+                      {...register('telephone2', { validate: validatePhone })}
+                      placeholder="0661234567"
+                      maxLength={17}
+                      style={inputStyle(errors.telephone2)}
+                    />
+                  </Field>
+                  <Field label="Email" error={errors.email?.message}>
+                    <input
+                      type="email"
+                      {...register('email', { validate: validateEmail })}
+                      placeholder="patient@email.com"
+                      style={inputStyle(errors.email)}
+                    />
+                  </Field>
+                </Row>
+
+                <SectionTitle style={{ marginTop: 24 }}>Contact d'urgence</SectionTitle>
+                <Row>
+                  <Field label="Nom du contact"><input {...register('contact_nom')} placeholder="Benali" style={inputStyle()} /></Field>
+                  <Field label="Prenom"><input {...register('contact_prenom')} placeholder="Ali" style={inputStyle()} /></Field>
+                </Row>
+                <Row>
+                  <Field label="Lien de parente"><input {...register('contact_lien')} placeholder="Ex: Epoux, Fils, Soeur" style={inputStyle()} /></Field>
+                  <Field label="Téléphone contact" error={errors.contact_telephone?.message}>
+                    <input
+                      {...register('contact_telephone', { validate: validatePhone })}
+                      placeholder="0771234567"
+                      maxLength={17}
+                      style={inputStyle(errors.contact_telephone)}
+                    />
+                  </Field>
+                </Row>
+              </div>
+            )}
+
+            {/* ══ STEP 2 : Profil ════════════════════════════════════ */}
+            {step === 2 && (
+              <div style={{ animation: 'fadeUp 0.3s ease' }}>
+                <SectionTitle>Profil socio-demographique</SectionTitle>
+                <Row>
+                  <Field label="Niveau d'instruction">
+                    <select {...register('niveau_instruction')} style={selectStyle()}>
+                      <option value="9">Inconnu</option><option value="0">Aucun</option>
+                      <option value="1">Primaire</option><option value="2">Moyen</option>
+                      <option value="3">Secondaire</option><option value="4">Superieur</option>
+                    </select>
+                  </Field>
+                  <Field label="Profession">
+                    <select {...register('profession')} style={selectStyle()}>
+                      <option value="INC">Inconnu</option><option value="AGR">Agriculteur</option>
+                      <option value="FON">Fonctionnaire</option><option value="COM">Commercant</option>
+                      <option value="ART">Artisan</option><option value="ETU">Etudiant</option>
+                      <option value="RET">Retraite</option><option value="SEM">Sans emploi</option>
+                      <option value="FFO">Femme au foyer</option><option value="PSA">Professionnel de sante</option>
+                      <option value="AUT">Autre</option>
+                    </select>
+                  </Field>
+                </Row>
+                <Row>
+                  <Field label="Situation familiale">
+                    <select {...register('situation_familiale')} style={selectStyle()}>
+                      <option value="inconnu">Inconnu</option><option value="celibataire">Celibataire</option>
+                      <option value="marie">Marie(e)</option><option value="divorce">Divorce(e)</option>
+                      <option value="veuf">Veuf/Veuve</option>
+                    </select>
+                  </Field>
+                  <Field label="Nombre d'enfants">
+                    <input type="number" {...register('nombre_enfants')} placeholder="0" min="0" style={inputStyle()} />
+                  </Field>
+                </Row>
+                <SectionTitle style={{ marginTop: 24 }}>Prise en charge</SectionTitle>
+                <Field label="Etablissement de prise en charge">
+                  <input {...register('etablissement_pec')} placeholder="CHU Oran" style={inputStyle()} />
+                </Field>
+                <Row>
+                  <Field label="Statut du dossier">
+                    <select {...register('statut_dossier')} style={selectStyle()}>
+                      <option value="nouveau">Nouveau</option><option value="traitement">En traitement</option>
+                      <option value="remission">Remission</option><option value="perdu">Perdu de vue</option>
+                    </select>
+                  </Field>
+                  <Field label="Statut vital">
+                    <select {...register('statut_vital')} style={selectStyle()}>
+                      <option value="inconnu">Inconnu</option><option value="vivant">Vivant</option>
+                      <option value="decede">Decede</option><option value="perdu">Perdu de vue</option>
+                    </select>
+                  </Field>
+                </Row>
+                <Field label="Notes">
+                  <textarea {...register('notes')} placeholder="Notes complementaires..." rows={3} style={{ ...inputStyle(), resize: 'vertical', lineHeight: 1.5 }} />
+                </Field>
+              </div>
+            )}
+
+            {/* ══ STEP 3 : Antécédents ═══════════════════════════════ */}
+            {step === 3 && (
+              <div style={{ animation: 'fadeUp 0.3s ease' }}>
+                <SectionTitle>Antecedents medicaux</SectionTitle>
+
+                <ChoiceGroup
+                  label="Antecedents personnels"
+                  options={ANTECEDENTS_PERSONNELS_OPTIONS}
+                  selected={antecedentsPersonnelsList}
+                  onToggle={toggleAntecedentPersonnel}
+                />
+                <Field label="Précisions (antécédents personnels)">
+                  <textarea
+                    {...register('antecedents_personnels_autre')}
+                    rows={2}
+                    placeholder="Détails complémentaires si nécessaire..."
+                    style={{ ...inputStyle(), resize: 'vertical', lineHeight: 1.5 }}
                   />
+                </Field>
 
+                <ChoiceGroup
+                  label="Antecedents familiaux (cancer)"
+                  options={ANTECEDENTS_FAMILIAUX_OPTIONS}
+                  selected={antecedentsFamiliauxList}
+                  onToggle={toggleAntecedentFamilial}
+                />
+                <Field label="Lien de parenté / précisions">
+                  <textarea
+                    {...register('antecedents_familiaux_autre')}
+                    rows={2}
+                    placeholder="Ex: mère (cancer du sein à 55 ans), frère (cancer du côlon)..."
+                    style={{ ...inputStyle(), resize: 'vertical', lineHeight: 1.5 }}
+                  />
+                </Field>
+
+                <SectionTitle style={{ marginTop: 20 }}>Habitudes de vie</SectionTitle>
+                <Row>
+                  <Field label="Tabagisme">
+                    <select {...register('tabagisme')} style={selectStyle()}>
+                      <option value="inconnu">Inconnu</option><option value="non">Non-fumeur</option>
+                      <option value="ex">Ex-fumeur</option><option value="actif">Fumeur actif</option>
+                    </select>
+                  </Field>
+                  <Field label="Consommation d'alcool">
+                    <select {...register('alcool')} style={selectStyle()}>
+                      <option value="inconnu">Inconnu</option><option value="non">Non</option><option value="oui">Oui</option>
+                    </select>
+                  </Field>
+                </Row>
+                <Row>
+                  <Field label="Activite physique">
+                    <select {...register('activite_physique')} style={selectStyle()}>
+                      <option value="inconnu">Inconnu</option><option value="sedentaire">Sedentaire</option>
+                      <option value="moderee">Moderee</option><option value="active">Active</option>
+                    </select>
+                  </Field>
+                  <Field label="Alimentation">
+                    <select {...register('alimentation')} style={selectStyle()}>
+                      <option value="inconnu">Inconnu</option><option value="equilibree">Equilibree</option>
+                      <option value="grasse">Riche en graisses</option><option value="sucree">Riche en sucres</option>
+                      <option value="vegetarienne">Vegetarienne/Vegane</option>
+                    </select>
+                  </Field>
+                </Row>
+
+                {/* ✅ CHAMPS PERSONNALISÉS */}
+                <CustomFieldsSection
+                  module="patient"
+                  champs={champsCustom}
+                  valeurs={valeursCustom}
+                  onChange={setValeur}
+                  loading={loadingCustom}
+                />
+
+                {/* Récapitulatif */}
+                <div style={{ marginTop: 20, padding: '14px 16px', background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.16)', borderRadius: '12px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#2563eb', marginBottom: 8 }}>Recapitulatif du dossier</div>
+                  <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.8 }}>
+                    <strong style={{ color: '#0f172a' }}>Patient :</strong> {watch('prenom')} {watch('nom')}<br />
+                    <strong style={{ color: '#0f172a' }}>Sexe :</strong> {watch('sexe') === 'M' ? 'Masculin' : watch('sexe') === 'F' ? 'Feminin' : '—'} · <strong style={{ color: '#0f172a' }}>Age :</strong> {watch('age_diagnostic') || '—'} ans<br />
+                    <strong style={{ color: '#0f172a' }}>Wilaya :</strong> {watchedWilaya || '—'} · <strong style={{ color: '#0f172a' }}>Tel :</strong> {watch('telephone') || '—'}<br />
+                    <strong style={{ color: '#0f172a' }}>Antécédents perso :</strong> {antecedentsPersonnelsList.length ? antecedentsPersonnelsList.join(', ') : '—'}<br />
+                    <strong style={{ color: '#0f172a' }}>Antécédents familiaux :</strong> {antecedentsFamiliauxList.length ? antecedentsFamiliauxList.join(', ') : '—'}
+                  </div>
                 </div>
+              </div>
+            )}
 
+            {/* Navigation */}
+            <div style={{ display: 'flex', gap: 10, marginTop: 28, paddingTop: 20, borderTop: '1px solid rgba(37,99,235,0.12)' }}>
+              {step > 0 && (
+                <button type="button" onClick={handlePrev} style={{
+                  flex: '0 0 110px', padding: '12px', background: '#f1f5f9',
+                  border: '1px solid rgba(37,99,235,0.12)', borderRadius: '12px',
+                  color: '#334155', fontSize: 13.5, cursor: 'pointer',
+                }}>Retour</button>
               )}
-
-            </section>
-          )}
-
-
-          {/* =================================================
-              STEP 3 — ANTÉCÉDENTS
-          ================================================= */}
-
-          {step === 3 && (
-
-            <section>
-
-              <h2>
-                Antécédents et habitudes de vie
-              </h2>
-
-              <div
+              <button
+                type={step === 3 ? 'submit' : 'button'}
+                onClick={step === 3 ? undefined : handleNext}
+                disabled={submitting}
                 style={{
-                  marginTop: '20px',
+                  flex: 1, padding: '12px',
+                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                  border: 'none', borderRadius: '12px',
+                  color: '#fff', fontSize: 13.5, fontWeight: 600,
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  opacity: submitting ? 0.7 : 1,
                 }}
               >
-
-                {/* ANTÉCÉDENTS PERSONNELS */}
-
-                <Field
-                  label="Antécédents personnels"
-                >
-
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns:
-                        'repeat(2, minmax(0, 1fr))',
-                      gap: '10px',
-                    }}
-                  >
-
-                    {ANTECEDENTS_PERSONNELS_OPTIONS.map(
-                      (item) => (
-
-                        <label
-                          key={item}
-                          style={{
-                            display: 'flex',
-                            gap: '8px',
-                            alignItems:
-                              'center',
-                          }}
-                        >
-
-                          <input
-                            type="checkbox"
-                            value={item}
-                            {...register(
-                              'antecedents_personnels_liste'
-                            )}
-                          />
-
-                          {item}
-
-                        </label>
-
-                      )
-                    )}
-
-                  </div>
-
-                </Field>
-
-
-                {/* AUTRE ANTÉCÉDENT PERSONNEL */}
-
-                <Field
-                  label="Autre antécédent personnel"
-                >
-
-                  <textarea
-                    {...register(
-                      'antecedents_personnels_autre'
-                    )}
-                    rows={3}
-                    style={{
-                      ...inputStyle(),
-                      resize: 'vertical',
-                    }}
-                  />
-
-                </Field>
-
-
-                {/* ANTÉCÉDENTS FAMILIAUX */}
-
-                <Field
-                  label="Antécédents familiaux"
-                >
-
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns:
-                        'repeat(2, minmax(0, 1fr))',
-                      gap: '10px',
-                    }}
-                  >
-
-                    {ANTECEDENTS_FAMILIAUX_OPTIONS.map(
-                      (item) => (
-
-                        <label
-                          key={item}
-                          style={{
-                            display: 'flex',
-                            gap: '8px',
-                            alignItems:
-                              'center',
-                          }}
-                        >
-
-                          <input
-                            type="checkbox"
-                            value={item}
-                            {...register(
-                              'antecedents_familiaux_liste'
-                            )}
-                          />
-
-                          {item}
-
-                        </label>
-
-                      )
-                    )}
-
-                  </div>
-
-                </Field>
-
-
-                {/* AUTRE ANTÉCÉDENT FAMILIAL */}
-
-                <Field
-                  label="Autre antécédent familial"
-                >
-
-                  <textarea
-                    {...register(
-                      'antecedents_familiaux_autre'
-                    )}
-                    rows={3}
-                    style={{
-                      ...inputStyle(),
-                      resize: 'vertical',
-                    }}
-                  />
-
-                </Field>
-
-
-                {/* TABAGISME */}
-
-                <Field
-                  label="Tabagisme"
-                >
-
-                  <select
-                    {...register(
-                      'tabagisme'
-                    )}
-                    style={inputStyle()}
-                  >
-
-                    <option value="">
-                      Sélectionner
-                    </option>
-
-                    <option value="Jamais">
-                      Jamais
-                    </option>
-
-                    <option value="Ancien fumeur">
-                      Ancien fumeur
-                    </option>
-
-                    <option value="Fumeur actuel">
-                      Fumeur actuel
-                    </option>
-
-                  </select>
-
-                </Field>
-
-
-                {/* ALCOOL */}
-
-                <Field
-                  label="Consommation d'alcool"
-                >
-
-                  <select
-                    {...register('alcool')}
-                    style={inputStyle()}
-                  >
-
-                    <option value="">
-                      Sélectionner
-                    </option>
-
-                    <option value="Jamais">
-                      Jamais
-                    </option>
-
-                    <option value="Occasionnelle">
-                      Occasionnelle
-                    </option>
-
-                    <option value="Régulière">
-                      Régulière
-                    </option>
-
-                  </select>
-
-                </Field>
-
-
-                {/* ACTIVITÉ PHYSIQUE */}
-
-                <Field
-                  label="Activité physique"
-                >
-
-                  <select
-                    {...register(
-                      'activite_physique'
-                    )}
-                    style={inputStyle()}
-                  >
-
-                    <option value="">
-                      Sélectionner
-                    </option>
-
-                    <option value="Aucune">
-                      Aucune
-                    </option>
-
-                    <option value="Faible">
-                      Faible
-                    </option>
-
-                    <option value="Modérée">
-                      Modérée
-                    </option>
-
-                    <option value="Régulière">
-                      Régulière
-                    </option>
-
-                  </select>
-
-                </Field>
-
-
-                {/* ALIMENTATION */}
-
-                <Field
-                  label="Alimentation"
-                >
-
-                  <textarea
-                    {...register(
-                      'alimentation'
-                    )}
-                    rows={3}
-                    placeholder="Informations sur les habitudes alimentaires..."
-                    style={{
-                      ...inputStyle(),
-                      resize: 'vertical',
-                    }}
-                  />
-
-                </Field>
-
-              </div>
-
-            </section>
-          )}
-
-
-          {/* =================================================
-              RÉCAPITULATIF
-          ================================================= */}
-
-          <div
-            style={{
-              marginTop: '30px',
-              padding: '20px',
-              background: '#f8fafc',
-              borderRadius: '12px',
-              border:
-                '1px solid #e2e8f0',
-            }}
-          >
-
-            <h3>
-              Récapitulatif
-            </h3>
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns:
-                  'repeat(3, minmax(0, 1fr))',
-                gap: '12px',
-                marginTop: '15px',
-              }}
-            >
-
-              <div>
-                <strong>Nom :</strong>{' '}
-                {watch('nom') || '—'}
-              </div>
-
-              <div>
-                <strong>Prénom :</strong>{' '}
-                {watch('prenom') || '—'}
-              </div>
-
-              <div>
-                <strong>Sexe :</strong>{' '}
-                {watch('sexe') || '—'}
-              </div>
-
-              <div>
-                <strong>
-                  Date de naissance :
-                </strong>{' '}
-                {watch(
-                  'date_naissance'
-                ) || '—'}
-              </div>
-
-              <div>
-                <strong>
-                  Âge actuel :
-                </strong>{' '}
-                {ageActuel !== null
-                  ? `${ageActuel} ans`
-                  : '—'}
-              </div>
-
-              <div>
-                <strong>
-                  Téléphone :
-                </strong>{' '}
-                {watch('telephone') || '—'}
-              </div>
-
-              <div>
-                <strong>
-                  Wilaya :
-                </strong>{' '}
-                {watch('wilaya') || '—'}
-              </div>
-
-              <div>
-                <strong>
-                  Commune :
-                </strong>{' '}
-                {watch('commune') || '—'}
-              </div>
-
+                {submitting
+                  ? <><Spinner /> Verification...</>
+                  : step === 3 ? 'Enregistrer le patient' : 'Continuer'}
+              </button>
             </div>
 
-          </div>
-
-
-          {/* =================================================
-              BUTTONS
-          ================================================= */}
-
-          <div
-            style={{
-              display: 'flex',
-              justifyContent:
-                'space-between',
-              marginTop: '30px',
-              gap: '12px',
-            }}
-          >
-
-            {/* ANNULER */}
-
-            <button
-              type="button"
-              onClick={() =>
-                navigate('/patients')
-              }
-              style={{
-                padding:
-                  '10px 18px',
-                borderRadius: '8px',
-                border:
-                  '1px solid #cbd5e1',
-                background:
-                  '#ffffff',
-                cursor: 'pointer',
-              }}
-            >
-              Annuler
-            </button>
-
-
-            {/* PREVIOUS */}
-
-            <div
-              style={{
-                display: 'flex',
-                gap: '10px',
-                marginLeft: 'auto',
-              }}
-            >
-
-              {step > 0 && (
-
-                <button
-                  type="button"
-                  onClick={handlePrev}
-                  style={{
-                    padding:
-                      '10px 18px',
-                    borderRadius: '8px',
-                    border:
-                      '1px solid #cbd5e1',
-                    background:
-                      '#ffffff',
-                    cursor:
-                      'pointer',
-                  }}
-                >
-                  Précédent
-                </button>
-
-              )}
-
-
-              {/* NEXT */}
-
-              {step < STEPS.length - 1 ? (
-
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  style={{
-                    padding:
-                      '10px 18px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background:
-                      '#4f46e5',
-                    color: '#ffffff',
-                    cursor:
-                      'pointer',
-                    fontWeight: 600,
-                  }}
-                >
-                  Suivant
-                </button>
-
-              ) : (
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  style={{
-                    padding:
-                      '10px 18px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background:
-                      submitting
-                        ? '#94a3b8'
-                        : '#16a34a',
-                    color: '#ffffff',
-                    cursor:
-                      submitting
-                        ? 'not-allowed'
-                        : 'pointer',
-                    fontWeight: 600,
-                  }}
-                >
-
-                  {submitting
-                    ? 'Création...'
-                    : 'Créer le patient'}
-
-                </button>
-
-              )}
-
-            </div>
-
-          </div>
-
-        </form>
-
+          </form>
+        </div>
       </div>
 
-
-      {/* =====================================================
-          MODAL DOUBLON
-      ===================================================== */}
-
-      {showModal && suspect && (
-
+      {showModal && suspect && donneesForm && (
         <ComparaisonFusionModal
+          donneesNouveauPatient={donneesForm}
           suspect={suspect}
-          donneesForm={donneesForm}
-          onClose={() =>
-            setShowModal(false)
-          }
-          onFusionner={
-            handleFusionner
-          }
-          onForcerCreation={
-            handleForcerCreation
-          }
+          titre="Doublon detecte — Dossier similaire existant"
+          onClose={() => setShowModal(false)}
+          onFusionner={handleFusionner}
+          onForcerCreation={handleForcerCreation}
         />
-
       )}
-
     </AppLayout>
   );
 }
 
-
-/* =========================================================
-   FIELD COMPONENT
-========================================================= */
-
-function Field({
-  label,
-  error,
-  children,
-}) {
-
+// ── Helpers ───────────────────────────────────────────────────
+function SectionTitle({ children, style: s }) {
+  return <h3 style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 18, fontFamily: 'var(--font-display)', ...s }}>{children}</h3>;
+}
+function Row({ children }) {
+  return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>{children}</div>;
+}
+function Field({ label, error, children }) {
   return (
-
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '7px',
-      }}
-    >
-
-      <label
-        style={{
-          fontWeight: 600,
-          color: '#334155',
-        }}
-      >
-        {label}
-      </label>
-
+    <div style={{ marginBottom: 16 }}>
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#334155', marginBottom: 6, letterSpacing: 0.3 }}>{label}</label>
       {children}
-
-      {error && (
-
-        <span
-          style={{
-            color: '#dc2626',
-            fontSize: '13px',
-          }}
-        >
-          {error}
-        </span>
-
-      )}
-
+      {error && <p style={{ marginTop: 4, fontSize: 11.5, color: '#dc2626' }}>{error}</p>}
     </div>
   );
 }
+function ChoiceGroup({ label, options, selected, onToggle }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#334155', marginBottom: 8, letterSpacing: 0.3 }}>
+        {label}
+      </label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {options.map(opt => {
+          const active = selected.includes(opt);
+          return (
+            <button
+              type="button"
+              key={opt}
+              onClick={() => onToggle(opt)}
+              style={{
+                padding: '7px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer',
+                border: `1px solid ${active ? '#2563eb50' : 'rgba(37,99,235,0.14)'}`,
+                background: active ? 'rgba(37,99,235,0.1)' : '#f8fafc',
+                color: active ? '#1d4ed8' : '#64748b',
+                transition: 'all .12s',
+              }}
+            >
+              {active && <span style={{ marginRight: 5 }}>✓</span>}
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+function Spinner() {
+  return <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />;
+}
+const inputStyle  = (err) => ({
+  width: '100%', padding: '10px 12px', background: '#f1f5f9',
+  border: '1px solid ' + (err ? '#dc2626' : 'rgba(37,99,235,0.08)'),
+  borderRadius: '12px', color: '#0f172a', fontSize: 13.5,
+  outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box',
+});
+const selectStyle = (err) => ({ ...inputStyle(err), cursor: 'pointer' });

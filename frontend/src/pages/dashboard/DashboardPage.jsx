@@ -407,30 +407,31 @@ function MyAgendaCalendar({ year, month, rdvByDay, selectedDate, onSelectDay }) 
   while (cells.length % 7 !== 0) cells.push(null);
 
   return (
-    <div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:4, marginBottom:6 }}>
+    <div className="agenda-calendar-wrap">
+      <div className="agenda-month-grid" style={{ marginBottom:6 }}>
         {JOURS_LABELS.map(j => (
           <div key={j} style={{ textAlign:'center', fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:0.6, padding:'4px 0' }}>
             {j}
           </div>
         ))}
       </div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:4 }}>
+      <div className="agenda-month-grid">
         {cells.map((d, i) => {
           if (d === null) return <div key={i} />;
           const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
           const dayRdv = rdvByDay[dateStr] || [];
           const isToday = dateStr === todayStr;
           const isSelected = dateStr === selectedDate;
-          const visible = dayRdv.slice(0, 3);
+          const visible = dayRdv.slice(0, 2);
           const overflow = dayRdv.length - visible.length;
 
           return (
             <div
               key={dateStr}
               onClick={() => onSelectDay(dateStr)}
+              className="agenda-day-cell"
               style={{
-                minHeight:72, borderRadius:10, padding:'6px 6px',
+                borderRadius:10, padding:'6px 6px',
                 cursor:'pointer',
                 background: isSelected ? '#eff6ff' : '#fff',
                 border: isSelected ? '1.5px solid #2563eb' : '1px solid rgba(37,99,235,0.08)',
@@ -442,13 +443,13 @@ function MyAgendaCalendar({ year, month, rdvByDay, selectedDate, onSelectDay }) 
               <div style={{
                 display:'inline-flex', alignItems:'center', justifyContent:'center',
                 width:20, height:20, borderRadius:'50%',
-                fontSize:11, fontWeight:700, marginBottom:4,
+                fontSize:11, fontWeight:700, marginBottom:4, flexShrink:0,
                 background: isToday ? '#2563eb' : 'transparent',
                 color: isToday ? '#fff' : '#334155',
               }}>
                 {d}
               </div>
-              <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+              <div style={{ display:'flex', flexDirection:'column', gap:2, overflow:'hidden' }}>
                 {visible.map(r => (
                   <div
                     key={r.id}
@@ -695,6 +696,29 @@ export default function DashboardPage() {
   return (
     <AppLayout title="Tableau de bord">
 
+      <style>{`
+        .rc-kpi-grid-5 { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:20px; }
+        .rc-kpi-grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+        .rc-pie-row    { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
+        .rc-two-col    { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+        .agenda-grid   { display:grid; grid-template-columns:1.6fr 1fr; gap:20px; align-items:start; }
+        .agenda-calendar-wrap { overflow-x:auto; }
+        .agenda-month-grid    { display:grid; grid-template-columns:repeat(7,minmax(84px,1fr)); gap:4px; min-width:610px; }
+        .agenda-day-cell      { min-height:72px; max-height:96px; overflow:hidden; }
+        @media (max-width: 1100px) {
+          .rc-kpi-grid-5 { grid-template-columns:repeat(3,1fr); }
+          .rc-kpi-grid-4 { grid-template-columns:repeat(2,1fr); }
+        }
+        @media (max-width: 900px) {
+          .rc-pie-row  { grid-template-columns:1fr; }
+          .rc-two-col  { grid-template-columns:1fr; }
+          .agenda-grid { grid-template-columns:1fr; }
+        }
+        @media (max-width: 560px) {
+          .rc-kpi-grid-5 { grid-template-columns:repeat(2,1fr); }
+        }
+      `}</style>
+
       {/* ── Header ── */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
         <div>
@@ -756,7 +780,7 @@ export default function DashboardPage() {
                 Chargement de votre agenda...
               </div>
             ) : (
-              <div style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr', gap:20, alignItems:'start' }}>
+              <div className="agenda-grid">
                 <MyAgendaCalendar
                   year={agendaYear}
                   month={agendaMonth}
@@ -787,7 +811,7 @@ export default function DashboardPage() {
       {/* ── KPIs — Patients ── */}
       <div style={{ marginBottom:8 }}>
         <div style={{ fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1.2, marginBottom:10 }}>Patients</div>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12, marginBottom:20 }}>
+        <div className="rc-kpi-grid-5">
           <KPICard label="Total patients"  value={kpis.total_patients} color="#2563eb" trend={kpis.nouveaux_ce_mois} sub={`+${kpis.nouveaux_annee} en ${kpis.annee_courante}`} link="/patients" />
           <KPICard label="En traitement"   value={kpis.en_traitement}  color="#7c3aed" link="/patients" />
           <KPICard label="En rémission"    value={kpis.en_remission}   color="#16a34a" link="/patients" />
@@ -799,7 +823,7 @@ export default function DashboardPage() {
       {/* ── KPIs — Activité clinique ── */}
       <div style={{ marginBottom:24 }}>
         <div style={{ fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1.2, marginBottom:10 }}>Activité clinique</div>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
+        <div className="rc-kpi-grid-4">
           <KPICard label="Total diagnostics"              value={kpis.total_diagnostics}  color="#0891b2" sub={`+${kpis.diagnostics_annee} en ${kpis.annee_courante}`} link="/diagnostics" />
           <KPICard label="Total traitements"              value={kpis.total_traitements}   color="#0d9488" link="/traitements" />
           <KPICard label="Nouveaux ce mois"               value={kpis.nouveaux_ce_mois}    color="#ea580c" link="/patients" />
@@ -835,7 +859,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Pie row ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16, marginBottom:16 }}>
+      <div className="rc-pie-row">
 
         {/* Sexe */}
         <ChartCard title="Répartition par sexe">
@@ -906,7 +930,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Top cancers + Âge ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+      <div className="rc-two-col">
         <ChartCard title="Top 10 localisations tumorales" sub="Topographie ICD-O-3 la plus fréquente">
           {top_cancers.length === 0 ? (
             <div style={{ padding:32, textAlign:'center', color:'#94a3b8', fontSize:12 }}>Aucun diagnostic enregistré</div>
@@ -939,7 +963,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Traitements + Wilayas ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+      <div className="rc-two-col">
         <ChartCard title="Répartition des traitements" sub="Par type de traitement administré">
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={traitements_types} layout="vertical" margin={{ top:0, right:20, bottom:0, left:10 }}>
@@ -983,7 +1007,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Activité + Réponses chimio ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:24 }}>
+      <div className="rc-two-col" style={{ marginBottom:24 }}>
         <ChartCard title="Activité — 30 derniers jours">
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginTop:4 }}>
             {[
