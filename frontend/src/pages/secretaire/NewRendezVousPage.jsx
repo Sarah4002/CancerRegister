@@ -15,6 +15,21 @@ const ROLE_MEDECIN_LABELS = {
   doctor:      'Médecin Oncologue',
 };
 
+// ── Horaires de travail autorisés pour la prise de rendez-vous ──
+// Ajustez ces bornes si les horaires réels de la structure diffèrent.
+const WORK_START = '08:00';
+const WORK_END   = '17:00';
+
+function todayStr() {
+  const d = new Date();
+  const tz = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - tz).toISOString().slice(0, 10);
+}
+function nowHHMM() {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 export default function NewRendezVousPage() {
   const navigate = useNavigate();
   const location = useRouterLocation();
@@ -46,6 +61,7 @@ export default function NewRendezVousPage() {
   const patientIdWatch = watch('patient');
   const typeWatch = watch('type');
   const premiereVisite = watch('premiere_visite');
+  const dateWatch = watch('date');
 
   useEffect(() => {
     patientService.list({ page_size: 200 }).then(({ data }) => {
@@ -165,10 +181,38 @@ export default function NewRendezVousPage() {
             <Section title="Date & Heure">
               <Row3>
                 <Field label="Date *" error={errors.date?.message}>
-                  <input type="date" {...register('date', { required: 'Champ requis' })} style={inputSt} />
+                  <input
+                    type="date"
+                    min={todayStr()}
+                    {...register('date', {
+                      required: 'Champ requis',
+                      validate: v => v >= todayStr() || 'La date ne peut pas être dans le passé',
+                    })}
+                    style={inputSt}
+                  />
                 </Field>
                 <Field label="Heure *" error={errors.heure?.message}>
-                  <input type="time" {...register('heure', { required: 'Champ requis' })} style={inputSt} />
+                  <input
+                    type="time"
+                    min={WORK_START}
+                    max={WORK_END}
+                    {...register('heure', {
+                      required: 'Champ requis',
+                      validate: v => {
+                        if (v < WORK_START || v > WORK_END) {
+                          return `L'heure doit être comprise entre ${WORK_START} et ${WORK_END}`;
+                        }
+                        if (dateWatch === todayStr() && v < nowHHMM()) {
+                          return "L'heure ne peut pas être dans le passé";
+                        }
+                        return true;
+                      },
+                    })}
+                    style={inputSt}
+                  />
+                  <p style={{ marginTop:4, fontSize:11, color:'#94a3b8' }}>
+                    Horaires de travail : {WORK_START} – {WORK_END}
+                  </p>
                 </Field>
                 <Field label="Durée (minutes)">
                   <select {...register('duree_minutes')} style={selSt}>

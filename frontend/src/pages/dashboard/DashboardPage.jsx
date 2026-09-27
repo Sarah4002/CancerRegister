@@ -6,9 +6,11 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { dashboardService } from '../../services/dashboardService';
+import { secretaryService } from '../../services/secretaryService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import AlgeriaHeatmap from '../../components/dashboard/AlgeriaHeatmap';
 import usePermissions from '../../hooks/usePermissions';
+import useAuthStore from '../../hooks/useAuth';
 
 /* ── Color Palette ── */
 const STADE_COLORS = {
@@ -30,6 +32,41 @@ const STATUT_LABELS = {
   nouveau:'Nouveau', traitement:'Traitement', remission:'Rémission',
   perdu:'Perdu de vue', decede:'Décédé', archive:'Archivé',
 };
+
+/* ── Palette / labels RDV (agenda médecin) ── */
+const STATUT_RDV_COLORS = {
+  confirme:   '#2563eb',
+  en_attente: '#d97706',
+  annule:     '#dc2626',
+  termine:    '#16a34a',
+  absent:     '#64748b',
+};
+const STATUT_RDV_LABELS = {
+  confirme:   'Confirmé',
+  en_attente: 'En attente',
+  annule:     'Annulé',
+  termine:    'Terminé',
+  absent:     'Absent',
+};
+const TYPE_RDV_LABELS = {
+  consultation: 'Consultation',
+  rcp:          'RCP',
+  suivi:        'Suivi',
+  chimio:       'Chimiothérapie',
+  radiotherapie:'Radiothérapie',
+  examen:       'Examen',
+  chirurgie:    'Chirurgie',
+  urgence:      'Urgence',
+  autre:        'Autre',
+};
+
+const MOIS_LABELS = [
+  'Janvier','Février','Mars','Avril','Mai','Juin',
+  'Juillet','Août','Septembre','Octobre','Novembre','Décembre',
+];
+const JOURS_LABELS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const FILTER_TAG_LABELS = {
   annee:    v => `Année : ${v}`,
@@ -110,7 +147,7 @@ function KPICard({ label, value, sub, color, icon, trend, link }) {
 }
 
 /* ── Chart Card ── */
-function ChartCard({ title, sub, children, span = 1 }) {
+function ChartCard({ title, sub, children, span = 1, actions }) {
   return (
     <div style={{
       background:'#fff', border:'1px solid rgba(37,99,235,0.08)',
@@ -118,9 +155,12 @@ function ChartCard({ title, sub, children, span = 1 }) {
       boxShadow:'0 2px 8px rgba(15,23,42,0.06)',
       gridColumn: span === 2 ? '1 / -1' : 'auto',
     }}>
-      <div style={{ marginBottom:16 }}>
-        <div style={{ fontSize:14, fontWeight:700, color:'#0f172a', fontFamily:'var(--font-display)' }}>{title}</div>
-        {sub && <div style={{ fontSize:11, color:'#94a3b8', marginTop:3 }}>{sub}</div>}
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:16, flexWrap:'wrap', gap:10 }}>
+        <div>
+          <div style={{ fontSize:14, fontWeight:700, color:'#0f172a', fontFamily:'var(--font-display)' }}>{title}</div>
+          {sub && <div style={{ fontSize:11, color:'#94a3b8', marginTop:3 }}>{sub}</div>}
+        </div>
+        {actions}
       </div>
       {children}
     </div>
@@ -350,10 +390,149 @@ function FilterBar({ filters, draft, setDraft, onApply, onReset, wilayas = [] })
 }
 
 /* ══════════════════════════════════════════════
+   Agenda personnel — visible uniquement pour les
+   rôles "doctor" / "doctor_chef". Affiche un mini
+   calendrier mensuel + la liste des RDV du jour
+   sélectionné, filtrés sur le médecin connecté.
+   ══════════════════════════════════════════════ */
+function MyAgendaCalendar({ year, month, rdvByDay, selectedDate, onSelectDay }) {
+  const firstOfMonth = new Date(year, month, 1);
+  const startOffset = (firstOfMonth.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayStr = todayISO();
+
+  const cells = [];
+  for (let i = 0; i < startOffset; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  return (
+    <div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:4, marginBottom:6 }}>
+        {JOURS_LABELS.map(j => (
+          <div key={j} style={{ textAlign:'center', fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:0.6, padding:'4px 0' }}>
+            {j}
+          </div>
+        ))}
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:4 }}>
+        {cells.map((d, i) => {
+          if (d === null) return <div key={i} />;
+          const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const dayRdv = rdvByDay[dateStr] || [];
+          const isToday = dateStr === todayStr;
+          const isSelected = dateStr === selectedDate;
+          const visible = dayRdv.slice(0, 3);
+          const overflow = dayRdv.length - visible.length;
+
+          return (
+            <div
+              key={dateStr}
+              onClick={() => onSelectDay(dateStr)}
+              style={{
+                minHeight:72, borderRadius:10, padding:'6px 6px',
+                cursor:'pointer',
+                background: isSelected ? '#eff6ff' : '#fff',
+                border: isSelected ? '1.5px solid #2563eb' : '1px solid rgba(37,99,235,0.08)',
+                transition:'all 0.12s',
+              }}
+              onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#f8fafc'; }}
+              onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = '#fff'; }}
+            >
+              <div style={{
+                display:'inline-flex', alignItems:'center', justifyContent:'center',
+                width:20, height:20, borderRadius:'50%',
+                fontSize:11, fontWeight:700, marginBottom:4,
+                background: isToday ? '#2563eb' : 'transparent',
+                color: isToday ? '#fff' : '#334155',
+              }}>
+                {d}
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+                {visible.map(r => (
+                  <div
+                    key={r.id}
+                    style={{
+                      fontSize:9, padding:'1px 5px', borderRadius:5,
+                      background: `${STATUT_RDV_COLORS[r.statut] || '#94a3b8'}16`,
+                      color: STATUT_RDV_COLORS[r.statut] || '#64748b',
+                      whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+                      fontWeight:600,
+                    }}
+                  >
+                    {r.heure} {r.patient_nom}
+                  </div>
+                ))}
+                {overflow > 0 && (
+                  <div style={{ fontSize:9, color:'#94a3b8', fontWeight:600, paddingLeft:5 }}>+{overflow} autre(s)</div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function MyAgendaDayPanel({ date, rdvs }) {
+  const dateObj = date ? new Date(`${date}T00:00:00`) : null;
+  const dateLabel = dateObj
+    ? dateObj.toLocaleDateString('fr-DZ', { weekday:'long', day:'numeric', month:'long' })
+    : '';
+
+  return (
+    <div>
+      <div style={{ fontSize:12, fontWeight:700, color:'#0f172a', marginBottom:12 }}>
+        {date ? dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1) : 'Sélectionnez un jour'}
+      </div>
+      {rdvs.length === 0 ? (
+        <div style={{ padding:'20px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>
+          Aucun rendez-vous ce jour-là.
+        </div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:8, maxHeight:300, overflowY:'auto' }}>
+          {rdvs
+            .slice()
+            .sort((a, b) => a.heure.localeCompare(b.heure))
+            .map(r => (
+              <div key={r.id} style={{
+                display:'flex', alignItems:'center', gap:10,
+                padding:'8px 10px', borderRadius:10,
+                border:'1px solid rgba(37,99,235,0.08)', background:'#fbfcfe',
+              }}>
+                <div style={{ fontFamily:'var(--font-mono)', fontSize:12.5, fontWeight:700, color:'#2563eb', minWidth:42 }}>
+                  {r.heure}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:12.5, fontWeight:700, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                    {r.patient_nom}
+                  </div>
+                  <div style={{ fontSize:10.5, color:'#64748b' }}>{TYPE_RDV_LABELS[r.type] || r.type}</div>
+                </div>
+                <span style={{
+                  fontSize:9.5, fontWeight:700, padding:'3px 8px', borderRadius:99,
+                  background:`${STATUT_RDV_COLORS[r.statut] || '#94a3b8'}14`,
+                  color: STATUT_RDV_COLORS[r.statut] || '#64748b',
+                }}>
+                  {STATUT_RDV_LABELS[r.statut] || r.statut}
+                </span>
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
    MAIN — DashboardPage
    ══════════════════════════════════════════════ */
 export default function DashboardPage() {
   const { can } = usePermissions();
+  const { user } = useAuthStore();
+  const isMedecin = user?.role === 'doctor' || user?.role === 'doctor_chef';
+
   const [data,       setData]       = useState(null);
   const [alertes,    setAlertes]    = useState(null);
   const [loading,    setLoading]    = useState(true);
@@ -393,6 +572,60 @@ export default function DashboardPage() {
     setDraft(DEFAULT_FILTERS);
     setFilters(DEFAULT_FILTERS);
   }, []);
+
+  /* ── Agenda personnel (médecin / médecin chef uniquement) ── */
+  const now = new Date();
+  const [agendaYear, setAgendaYear]   = useState(now.getFullYear());
+  const [agendaMonth, setAgendaMonth] = useState(now.getMonth());
+  const [agendaSelectedDate, setAgendaSelectedDate] = useState(todayISO());
+  const [myRdvs, setMyRdvs]           = useState([]);
+  const [myRdvsLoading, setMyRdvsLoading] = useState(false);
+
+  const fetchMyRdvs = useCallback(async () => {
+    if (!isMedecin || !user?.id) return;
+    setMyRdvsLoading(true);
+    try {
+      // NOTE : adapter le nom du paramètre `medecin` si l'API du service
+      // secrétariat filtre différemment (ex: medecin_id).
+      const { data: r } = await secretaryService.getRendezVous({
+        mois: agendaMonth + 1,
+        annee: agendaYear,
+        medecin: user.id,
+      });
+      // Filtre défensif côté client, au cas où l'API ne filtrerait pas déjà par médecin.
+      const onlyMine = (r || []).filter(
+        rdv => !rdv.medecin || String(rdv.medecin) === String(user.id) || rdv.medecin_nom === (user.full_name || user.username)
+      );
+      setMyRdvs(onlyMine);
+    } catch (err) {
+      console.error('Erreur chargement de mon agenda:', err);
+    } finally {
+      setMyRdvsLoading(false);
+    }
+  }, [isMedecin, user?.id, user?.full_name, user?.username, agendaMonth, agendaYear]);
+
+  useEffect(() => { fetchMyRdvs(); }, [fetchMyRdvs]);
+
+  const myRdvByDay = useMemo(() => {
+    const map = {};
+    myRdvs.forEach(r => {
+      if (!map[r.date]) map[r.date] = [];
+      map[r.date].push(r);
+    });
+    return map;
+  }, [myRdvs]);
+
+  const handleAgendaPrevMonth = () => {
+    if (agendaMonth === 0) { setAgendaMonth(11); setAgendaYear(y => y - 1); } else { setAgendaMonth(m => m - 1); }
+  };
+  const handleAgendaNextMonth = () => {
+    if (agendaMonth === 11) { setAgendaMonth(0); setAgendaYear(y => y + 1); } else { setAgendaMonth(m => m + 1); }
+  };
+  const handleAgendaToday = () => {
+    const t = todayISO();
+    setAgendaYear(now.getFullYear()); setAgendaMonth(now.getMonth());
+    setAgendaSelectedDate(t);
+  };
 
   /* ── Loading ── */
   if (loading) return (
@@ -490,6 +723,56 @@ export default function DashboardPage() {
           Actualiser
         </button>
       </div>
+
+      {/* ── Agenda personnel — médecin / médecin chef uniquement ── */}
+      {isMedecin && (
+        <div style={{ marginBottom:20 }}>
+          <ChartCard
+            title="Mon agenda"
+            sub="Vos rendez-vous à venir"
+            actions={
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                <button onClick={handleAgendaPrevMonth} style={agendaNavBtnStyle}>‹</button>
+                <span style={{ fontSize:12, fontWeight:700, color:'#334155', minWidth:110, textAlign:'center' }}>
+                  {MOIS_LABELS[agendaMonth]} {agendaYear}
+                </span>
+                <button onClick={handleAgendaNextMonth} style={agendaNavBtnStyle}>›</button>
+                <button onClick={handleAgendaToday} style={{ ...agendaNavBtnStyle, width:'auto', padding:'0 12px', fontSize:11, fontWeight:700 }}>
+                  Aujourd'hui
+                </button>
+                <Link to="/secretaire/rendezvous/nouveau" style={{ textDecoration:'none' }}>
+                  <span style={{
+                    display:'inline-block', padding:'7px 14px', background:'linear-gradient(135deg,#3b82f6,#2563eb)',
+                    borderRadius:9, color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer',
+                  }}>
+                    + Nouveau RDV
+                  </span>
+                </Link>
+              </div>
+            }
+          >
+            {myRdvsLoading && myRdvs.length === 0 ? (
+              <div style={{ padding:'30px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>
+                Chargement de votre agenda...
+              </div>
+            ) : (
+              <div style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr', gap:20, alignItems:'start' }}>
+                <MyAgendaCalendar
+                  year={agendaYear}
+                  month={agendaMonth}
+                  rdvByDay={myRdvByDay}
+                  selectedDate={agendaSelectedDate}
+                  onSelectDay={setAgendaSelectedDate}
+                />
+                <MyAgendaDayPanel
+                  date={agendaSelectedDate}
+                  rdvs={myRdvByDay[agendaSelectedDate] || []}
+                />
+              </div>
+            )}
+          </ChartCard>
+        </div>
+      )}
 
       {/* ── Filter Bar ── */}
       <FilterBar
@@ -765,3 +1048,10 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
+
+const agendaNavBtnStyle = {
+  width:28, height:28, display:'flex', alignItems:'center', justifyContent:'center',
+  background:'#fff', border:'1px solid rgba(37,99,235,0.18)', borderRadius:8,
+  color:'#2563eb', fontSize:15, fontWeight:700, cursor:'pointer',
+  boxShadow:'0 1px 4px rgba(15,23,42,0.05)',
+};
