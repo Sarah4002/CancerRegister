@@ -180,11 +180,12 @@ export const secretaryService = {
    * un seul champ. Si votre serializer accepte un champ `heure` distinct,
    * il sera transmis tel quel (voir normalizeRdv qui sait déjà le relire).
    */
-  createRendezVous: async ({ patient, date, heure, type, statut, medecin, salle }) => {
+  createRendezVous: async ({ patient, date, heure, type, statut, medecin, salle, duree_minutes }) => {
     const payload = {
       patient,
       date_consultation: date,
       heure: heure || '09:00',
+      duree_minutes: Number(duree_minutes) || 30,
       type_consultation: normalizeTypeForCreate(type),
       statut: normalizeStatutForCreate(statut),
       etablissement: salle || undefined,
@@ -201,6 +202,27 @@ export const secretaryService = {
     const { data } = await api.post('/suivi/consultations/', payload);
     return { data: normalizeRdv(data) };
   },
+
+  createRendezVousSeries: (data) => api.post('/suivi/consultations/series/', {
+    patient: data.patient,
+    date_consultation: data.date,
+    heure: data.heure,
+    duree_minutes: Number(data.duree_minutes) || 30,
+    type_consultation: normalizeTypeForCreate(data.type),
+    statut: normalizeStatutForCreate(data.statut),
+    medecin: data.medecin || null,
+    etablissement: data.salle || '',
+    recurrence_count: Number(data.recurrence_count),
+    recurrence_interval: Number(data.recurrence_interval) || 1,
+  }),
+
+  getWaitlist: () => api.get('/suivi/consultations/liste-attente/'),
+  addToWaitlist: (data) => api.post('/suivi/consultations/liste-attente/', {
+    patient: data.patient, medecin: data.medecin || null,
+    etablissement: data.etablissement || '',
+    type_consultation: normalizeTypeForCreate(data.type),
+  }),
+  closeWaitlistEntry: (id, status = 'cancelled') => api.post(`/suivi/consultations/liste-attente/${id}/clore/`, { status }),
 
   /**
    * Supprime / annule un rendez-vous.

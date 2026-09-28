@@ -77,6 +77,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff        = models.BooleanField(default=False)
     is_verified     = models.BooleanField(default=False)
     must_change_password = models.BooleanField(default=False)
+    consultation_schedule = models.JSONField(default=dict, blank=True)
+    consultation_leave_days = models.JSONField(default=list, blank=True)
 
     # Timestamps
     date_joined     = models.DateTimeField(default=timezone.now)

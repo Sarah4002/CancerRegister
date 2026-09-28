@@ -44,4 +44,5 @@ urlpatterns = [
 
     # Liste des médecins (pour formulaires)
     path('medecins/',                  MedecinsListView.as_view(),    name='medecins-list'),
+    path('medecins/<int:pk>/disponibilites/', views.doctor_availability_view, name='doctor-availability'),
 ]

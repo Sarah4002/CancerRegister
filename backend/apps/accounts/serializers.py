@@ -123,6 +123,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'first_name', 'last_name', 'phone', 'avatar',
             'role', 'role_display', 'speciality', 'registration_number',
             'institution', 'wilaya', 'department',
+            'consultation_schedule', 'consultation_leave_days',
             'can_view_patients', 'can_edit_patients',
             'can_export_data', 'can_manage_users', 'can_view_statistics',
             'is_active', 'is_verified', 'date_joined', 'last_login',
@@ -133,6 +134,35 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'can_view_patients', 'can_edit_patients',
             'can_export_data', 'can_manage_users',
         ]
+
+    def validate(self, attrs):
+        if ('consultation_schedule' in attrs or 'consultation_leave_days' in attrs) and self.context['request'].user.role not in ['doctor', 'doctor_chef']:
+            raise serializers.ValidationError('Seuls les médecins peuvent modifier leurs disponibilités.')
+        schedule = attrs.get('consultation_schedule')
+        if schedule is not None:
+            from datetime import datetime
+            if not isinstance(schedule, dict) or any(key not in [str(i) for i in range(1, 8)] or not isinstance(value, dict) for key, value in schedule.items()):
+                raise serializers.ValidationError({'consultation_schedule': 'Planning hebdomadaire invalide.'})
+            for value in schedule.values():
+                if value.get('active'):
+                    try:
+                        start = datetime.strptime(value.get('start', ''), '%H:%M')
+                        end = datetime.strptime(value.get('end', ''), '%H:%M')
+                    except ValueError:
+                        raise serializers.ValidationError({'consultation_schedule': 'Les heures doivent être au format HH:MM.'})
+                    if start >= end:
+                        raise serializers.ValidationError({'consultation_schedule': 'L’heure de fin doit être après l’heure de début.'})
+        leave_days = attrs.get('consultation_leave_days')
+        if leave_days is not None:
+            from datetime import date
+            try:
+                if not isinstance(leave_days, list):
+                    raise ValueError
+                for leave_day in leave_days:
+                    date.fromisoformat(leave_day)
+            except (ValueError, TypeError):
+                raise serializers.ValidationError({'consultation_leave_days': 'Les congés doivent être une liste de dates AAAA-MM-JJ.'})
+        return attrs
 
 
 class ChangePasswordSerializer(serializers.Serializer):

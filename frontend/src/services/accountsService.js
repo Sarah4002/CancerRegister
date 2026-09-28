@@ -20,6 +20,7 @@ export const accountsService = {
  */
 export const medecinService = {
   list: (params) => api.get('/auth/medecins/', { params }),
+  availability: (id, date, salle) => api.get(`/auth/medecins/${id}/disponibilites/`, { params: { ...(date ? { date } : {}), ...(salle ? { salle } : {}) } }),
 };
 
 export default accountsService;

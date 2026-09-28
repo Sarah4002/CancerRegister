@@ -741,6 +741,27 @@ function useRealtimeUpcoming(fetchUpcoming) {
   return live;
 }
 
+function RoomAgenda({ date, rdvs = [], conflictIds = new Set() }) {
+  const rooms = useMemo(() => {
+    const groups = new Map();
+    rdvs.slice().sort((a, b) => (a.heure || '').localeCompare(b.heure || '')).forEach(rdv => {
+      const room = (rdv.etablissement || '').trim() || 'Salle / cabinet non précisé';
+      if (!groups.has(room)) groups.set(room, []);
+      groups.get(room).push(rdv);
+    });
+    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [rdvs]);
+  if (!rooms.length) return <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Aucun rendez-vous pour ce jour.</div>;
+  return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 12, paddingTop: 8 }}>
+    {rooms.map(([room, items]) => <section key={room} style={{ border: '1px solid rgba(37,99,235,.14)', borderRadius: 12, overflow: 'hidden' }}>
+      <header style={{ padding: '12px 14px', background: '#eff6ff', display: 'flex', justifyContent: 'space-between', color: '#1e3a8a', fontWeight: 700, fontSize: 13 }}><span>{room}</span><span>{items.length}</span></header>
+      {items.map(item => <Link key={item.id} to={`/secretaire/rendezvous/${item.id}`} style={{ display: 'flex', gap: 10, padding: 11, textDecoration: 'none', color: '#334155', borderTop: '1px solid #f1f5f9', background: conflictIds.has(item.id) ? '#fef2f2' : '#fff' }}>
+        <strong style={{ color: '#2563eb', minWidth: 46 }}>{item.heure || '--:--'}</strong><span><b style={{ display: 'block', fontSize: 12 }}>{item.patient_nom || 'Patient'}</b><small style={{ color: '#64748b' }}>{item.medecin_nom ? `Dr. ${item.medecin_nom}` : 'Médecin non attribué'} · {item.duree_minutes || 30} min</small></span>
+      </Link>)}
+    </section>)}
+  </div>;
+}
+
 /* ══════════════════════════════════════════════
    MAIN — SecretairePage
    ══════════════════════════════════════════════ */
@@ -765,6 +786,8 @@ export default function SecretairePage() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [pendingPatients, setPendingPatients] = useState([]);
   const [reminderState, setReminderState] = useState({}); // { [rdvId]: 'sending'|'sent'|'error' }
+  const [waitlist, setWaitlist] = useState([]);
+  const [waitlistActionId, setWaitlistActionId] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -783,6 +806,16 @@ export default function SecretairePage() {
   }, [month, year]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const refreshWaitlist = useCallback(async () => {
+    try {
+      const { data } = await secretaryService.getWaitlist();
+      const entries = data.results || [];
+      setWaitlist(entries);
+      return entries;
+    } catch (error) { console.error('Erreur de chargement de la liste d’attente:', error); return []; }
+  }, []);
+  useEffect(() => { refreshWaitlist(); }, [refreshWaitlist]);
 
   /* ── Passage automatique en "Absent" ──
      Si l'heure du RDV est dépassée et que ni le médecin ni la secrétaire
@@ -953,6 +986,18 @@ export default function SecretairePage() {
   const handlePrevMonth = () => {
     if (month === 0) { setMonth(11); setYear(y => y - 1); } else { setMonth(m => m - 1); }
   };
+  const handlePrevDay = () => {
+    const nextDate = addDaysISO(selectedDate, -1);
+    setSelectedDate(nextDate);
+    const parsed = new Date(`${nextDate}T00:00:00`);
+    setYear(parsed.getFullYear()); setMonth(parsed.getMonth());
+  };
+  const handleNextDay = () => {
+    const nextDate = addDaysISO(selectedDate, 1);
+    setSelectedDate(nextDate);
+    const parsed = new Date(`${nextDate}T00:00:00`);
+    setYear(parsed.getFullYear()); setMonth(parsed.getMonth());
+  };
   const handleNextMonth = () => {
     if (month === 11) { setMonth(0); setYear(y => y + 1); } else { setMonth(m => m + 1); }
   };
@@ -979,10 +1024,27 @@ export default function SecretairePage() {
     if (viewMode === 'semaine') setWeekStart(getWeekStart(dateStr));
   };
 
+  const handleWaitlistEntryClose = async (entry) => {
+    setWaitlistActionId(entry.id);
+    try {
+      await secretaryService.closeWaitlistEntry(entry.id, entry.statut === 'offered' ? 'booked' : 'cancelled');
+      await refreshWaitlist();
+    } catch (error) {
+      window.alert(error.response?.data?.detail || 'Impossible de mettre à jour la liste d’attente.');
+    } finally { setWaitlistActionId(null); }
+  };
+
   const handleStatusChange = async (id, statut) => {
+    const oldOffered = new Set(waitlist.filter(item => item.statut === 'offered').map(item => item.id));
     setRdvs(prev => prev.map(r => r.id === id ? { ...r, statut } : r));
     try {
       await secretaryService.updateStatut(id, statut);
+      if (statut === 'annule') {
+        const target = rdvs.find(r => String(r.id) === String(id));
+        const entries = await refreshWaitlist();
+        const offered = entries.find(item => item.statut === 'offered' && !oldOffered.has(item.id) && item.date_proposee === target?.date);
+        if (offered) window.alert(`Créneau proposé au patient suivant en liste d’attente : ${offered.patient_nom}, ${offered.date_proposee} à ${offered.heure_proposee}. Pensez à le contacter.`);
+      }
     } catch (err) {
       console.error('Erreur mise à jour statut:', err);
       fetchData();
@@ -1061,10 +1123,11 @@ export default function SecretairePage() {
   );
 
   const k = stats || {};
-  const printLabel = viewMode === 'semaine' ? `Semaine du ${weekLabel}` : `${MOIS_LABELS[month]} ${year}`;
+  const cabinetDateLabel = new Date(`${selectedDate}T00:00:00`).toLocaleDateString('fr-DZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const printLabel = viewMode === 'semaine' ? `Semaine du ${weekLabel}` : viewMode === 'cabinet' ? cabinetDateLabel : `${MOIS_LABELS[month]} ${year}`;
   const printRdvs = viewMode === 'semaine'
     ? filteredRdvs.filter(r => weekDates.includes(r.date))
-    : filteredRdvs;
+    : viewMode === 'cabinet' ? (rdvByDay[selectedDate] || []) : filteredRdvs;
 
   return (
     <AppLayout title="Secrétariat">
@@ -1135,6 +1198,16 @@ export default function SecretairePage() {
           <KPICard label="Annulés (ce mois)"    value={k.rdv_annules}     color="#dc2626" icon="" />
         </div>
 
+        {waitlist.length > 0 && <div style={{ marginTop: 14, marginBottom: 14, padding: '14px 18px', borderRadius: 12, border: '1px solid #fed7aa', background: '#fff7ed' }}>
+          <div style={{ fontWeight: 800, fontSize: 13, color: '#9a3412', marginBottom: 8 }}>Liste d’attente · {waitlist.length}</div>
+          <div style={{ display: 'grid', gap: 6 }}>
+            {waitlist.slice(0, 5).map(item => <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12, color: '#7c2d12' }}>
+              <span>{item.patient_nom} · {item.medecin_nom}{item.etablissement ? ` · ${item.etablissement}` : ''}<strong style={{ display: 'block' }}>{item.statut === 'offered' ? `Créneau proposé : ${item.date_proposee} à ${item.heure_proposee}` : 'En attente'}</strong></span>
+              <button disabled={waitlistActionId === item.id} onClick={() => handleWaitlistEntryClose(item)} style={{ border: '1px solid #fdba74', borderRadius: 7, background: '#fff', color: '#9a3412', padding: '5px 8px', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' }}>{item.statut === 'offered' ? 'Traité' : 'Retirer'}</button>
+            </div>)}
+          </div>
+        </div>}
+
         {conflictCount > 0 && (
           <div style={{
             display:'flex', alignItems:'center', gap:10,
@@ -1196,12 +1269,12 @@ export default function SecretairePage() {
         <div className="agenda-grid" style={{ marginBottom:16 }}>
 
           <ChartCard
-            title={viewMode === 'semaine' ? `Semaine du ${weekLabel}` : `${MOIS_LABELS[month]} ${year}`}
-            sub={viewMode === 'semaine' ? 'Glissez-déposez un RDV pour changer son jour' : 'Cliquez sur un jour pour voir le détail des rendez-vous'}
+            title={viewMode === 'semaine' ? `Semaine du ${weekLabel}` : viewMode === 'cabinet' ? cabinetDateLabel : `${MOIS_LABELS[month]} ${year}`}
+            sub={viewMode === 'semaine' ? 'Glissez-déposez un RDV pour changer son jour' : viewMode === 'cabinet' ? 'Rendez-vous regroupés par salle ou cabinet' : 'Cliquez sur un jour dans le calendrier pour voir le détail des rendez-vous'}
             actions={
               <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
                 <div style={{ display:'flex', border:'1px solid rgba(37,99,235,0.18)', borderRadius:9, overflow:'hidden' }}>
-                  {['mois','semaine'].map(mode => (
+          {['mois','semaine','cabinet'].map(mode => (
                     <button
                       key={mode}
                       onClick={() => setViewMode(mode)}
@@ -1211,19 +1284,22 @@ export default function SecretairePage() {
                         color: viewMode === mode ? '#fff' : '#2563eb',
                       }}
                     >
-                      {mode === 'mois' ? 'Mois' : 'Semaine'}
+                      {mode === 'mois' ? 'Mois' : mode === 'semaine' ? 'Semaine' : 'Salle / cabinet'}
                     </button>
                   ))}
                 </div>
+                {viewMode === 'cabinet' && <input aria-label="Date de la vue par salle" type="date" value={selectedDate} onChange={e => handleSelectDay(e.target.value)} style={{ padding:'6px 8px', border:'1px solid rgba(37,99,235,0.18)', borderRadius:8, color:'#334155', fontSize:11 }} />}
                 <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                  <button onClick={viewMode === 'semaine' ? handlePrevWeek : handlePrevMonth} style={navBtnStyle}>‹</button>
+                  <button onClick={viewMode === 'semaine' ? handlePrevWeek : viewMode === 'cabinet' ? handlePrevDay : handlePrevMonth} style={navBtnStyle}>‹</button>
                   <button onClick={handleToday} style={{ ...navBtnStyle, width:'auto', padding:'0 12px', fontSize:11, fontWeight:700 }}>Aujourd'hui</button>
-                  <button onClick={viewMode === 'semaine' ? handleNextWeek : handleNextMonth} style={navBtnStyle}>›</button>
+                  <button onClick={viewMode === 'semaine' ? handleNextWeek : viewMode === 'cabinet' ? handleNextDay : handleNextMonth} style={navBtnStyle}>›</button>
                 </div>
               </div>
             }
           >
-            {viewMode === 'semaine' ? (
+            {viewMode === 'cabinet' ? (
+              <RoomAgenda date={selectedDate} rdvs={rdvByDay[selectedDate] || []} conflictIds={conflictIds} />
+            ) : viewMode === 'semaine' ? (
               <WeekGrid
                 weekDates={weekDates}
                 rdvByDay={rdvByDay}

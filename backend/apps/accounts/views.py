@@ -16,7 +16,7 @@ from .serializers import (
     ChangePasswordSerializer,
 )
 from .models import AccessLog
-from .permissions import CanManageUsers
+from .permissions import CanManageUsers, can_manage_appointments
 
 User = get_user_model()
 
@@ -232,6 +232,58 @@ def _device_name(user_agent):
         os_name = 'iOS'
 
     return f'{browser} - {os_name}'
+
+
+@api_view(['GET', 'PUT', 'PATCH'])
+@permission_classes([IsAuthenticated])
+def doctor_availability_view(request, pk):
+    try:
+        doctor = User.objects.get(pk=pk, is_active=True, role__in=['doctor', 'doctor_chef'])
+    except User.DoesNotExist:
+        return Response({'detail': 'Médecin introuvable.'}, status=404)
+    if not can_manage_appointments(request.user):
+        return Response({'detail': 'Accès non autorisé.'}, status=403)
+    if request.method != 'GET':
+        if request.user.pk != doctor.pk:
+            return Response({'detail': 'Seul le médecin peut modifier ses disponibilités.'}, status=403)
+        schedule = request.data.get('schedule', doctor.consultation_schedule)
+        leave_days = request.data.get('leave_days', doctor.consultation_leave_days)
+        if not isinstance(schedule, dict) or not isinstance(leave_days, list):
+            return Response({'detail': 'Format des disponibilités invalide.'}, status=400)
+        for day, hours in schedule.items():
+            if day not in [str(i) for i in range(7)] or not isinstance(hours, dict):
+                return Response({'detail': 'Planning hebdomadaire invalide.'}, status=400)
+            if hours.get('active') and (not hours.get('start') or not hours.get('end') or hours['start'] >= hours['end']):
+                return Response({'detail': 'Les horaires de chaque jour doivent être valides.'}, status=400)
+        if any(not isinstance(day, str) or len(day) != 10 for day in leave_days):
+            return Response({'detail': 'Les jours de congé doivent être des dates AAAA-MM-JJ.'}, status=400)
+        doctor.consultation_schedule = schedule
+        doctor.consultation_leave_days = sorted(set(leave_days))
+        doctor.save(update_fields=['consultation_schedule', 'consultation_leave_days'])
+    schedule = doctor.consultation_schedule or {
+        str(day): {'active': day in [1, 2, 3, 4, 5], 'start': '08:00', 'end': '17:00'}
+        for day in range(7)
+    }
+    result = {'doctor_id': doctor.pk, 'schedule': schedule, 'leave_days': doctor.consultation_leave_days or []}
+    date_value = request.query_params.get('date')
+    if date_value:
+        from datetime import date
+        from apps.suivi.models import ConsultationSuivi
+        try:
+            selected_date = date.fromisoformat(date_value)
+        except ValueError:
+            return Response({'detail': 'Date invalide.'}, status=400)
+        # Python: lundi=0; planning API: lundi=1 et dimanche=7.
+        day_schedule = schedule.get(str(selected_date.isoweekday()), {})
+        appointments = ConsultationSuivi.objects.filter(medecin=doctor, date_consultation=selected_date).exclude(statut__in=['annulee', 'reportee']).exclude(heure__isnull=True).values('heure', 'duree_minutes')
+        result.update({'date': date_value, 'hours': day_schedule, 'on_leave': date_value in result['leave_days'], 'booked': [{'heure': item['heure'].strftime('%H:%M'), 'duree_minutes': item['duree_minutes']} for item in appointments]})
+        room = request.query_params.get('salle', '').strip()
+        if room:
+            room_bookings = ConsultationSuivi.objects.filter(etablissement__iexact=room, date_consultation=selected_date).exclude(statut__in=['annulee', 'reportee']).exclude(heure__isnull=True).values('heure', 'duree_minutes', 'medecin__first_name', 'medecin__last_name')
+            result['room_booked'] = [{'heure': item['heure'].strftime('%H:%M'), 'duree_minutes': item['duree_minutes'], 'medecin_nom': f"{item['medecin__first_name'] or ''} {item['medecin__last_name'] or ''}".strip()} for item in room_bookings]
+        else:
+            result['room_booked'] = []
+    return Response(result)
 
 
 @api_view(['POST'])

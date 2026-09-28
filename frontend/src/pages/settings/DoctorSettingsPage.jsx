@@ -568,6 +568,9 @@ export default function DoctorSettingsPage() {
   const [devices, setDevices] = useState([]);
   const [activity, setActivity] = useState([]);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [savingAvailability, setSavingAvailability] = useState(false);
+  const [newLeaveDate, setNewLeaveDate] = useState('');
+  const [availability, setAvailability] = useState({ schedule: Object.fromEntries(Array.from({ length: 7 }, (_, i) => [String(i + 1), { active: i < 5, start: '08:00', end: '17:00' }])), leave_days: [] });
   const [savingPassword, setSavingPassword] = useState(false);
   const [loadingSecurity, setLoadingSecurity] = useState(false);
   const [notifications, setNotifications] = useState(() => {
@@ -605,6 +608,10 @@ export default function DoctorSettingsPage() {
     try {
       const { data } = await authService.getProfile();
       setProfile(data);
+      setAvailability({
+        schedule: { ...Object.fromEntries(Array.from({ length: 7 }, (_, i) => [String(i + 1), { active: i < 5, start: '08:00', end: '17:00' }])), ...(data.consultation_schedule || {}) },
+        leave_days: data.consultation_leave_days || [],
+      });
       setProfileForm({
         first_name: data.first_name || '',
         last_name: data.last_name || '',
@@ -664,6 +671,18 @@ export default function DoctorSettingsPage() {
     }
   }
 
+  async function saveAvailability() {
+    setSavingAvailability(true);
+    try {
+      const payload = { consultation_schedule: availability.schedule, consultation_leave_days: availability.leave_days };
+      const { data } = await authService.updateProfile(payload);
+      setProfile(data);
+      toast.success('Disponibilités enregistrées.');
+    } catch (error) {
+      toast.error(readApiError(error, 'Erreur lors de l’enregistrement des disponibilités.'));
+    } finally { setSavingAvailability(false); }
+  }
+
   async function uploadPhoto(event) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -721,6 +740,7 @@ export default function DoctorSettingsPage() {
   const TABS = [
     { key: 'profile', label: 'Profil' },
     { key: 'security', label: 'Sécurité' },
+    ...(['doctor', 'doctor_chef'].includes(role) ? [{ key: 'availability', label: 'Disponibilités' }] : []),
     { key: 'preferences', label: 'Préférences' },
     { key: 'proposals', label: role === 'doctor_chef' ? 'Propositions & médecins' : 'Propositions' },
     ...(role === 'doctor_chef' ? [{ key: 'medical', label: 'Configuration médicale' }] : []),
@@ -754,6 +774,33 @@ export default function DoctorSettingsPage() {
       )}
       {activeTab === 'preferences' && (
         <PreferencesTab theme={theme} language={language} dateFormat={dateFormat} interfaceSize={interfaceSize} updatePreference={updatePreference} />
+      )}
+      {activeTab === 'availability' && (
+        <div style={{ ...cardSt, padding: 22 }}>
+          <SectionTitle sub="Définissez vos jours et horaires de consultation. Le secrétariat verra ces informations lors de la prise de rendez-vous.">Horaires hebdomadaires</SectionTitle>
+          <div style={{ display: 'grid', gap: 10 }}>
+            {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].map((label, index) => {
+              const key = String(index + 1);
+              const day = availability.schedule[key] || { active: false, start: '08:00', end: '17:00' };
+              return <div key={key} style={{ display: 'grid', gridTemplateColumns: '120px 90px 1fr 1fr', alignItems: 'center', gap: 10 }}>
+                <strong style={{ fontSize: 13, color: '#334155' }}>{label}</strong>
+                <label style={{ fontSize: 12, color: '#64748b' }}><input type="checkbox" checked={!!day.active} onChange={e => setAvailability(current => ({ ...current, schedule: { ...current.schedule, [key]: { ...day, active: e.target.checked } } }))} /> Consultation</label>
+                <input aria-label={`${label} début`} type="time" disabled={!day.active} value={day.start || '08:00'} onChange={e => setAvailability(current => ({ ...current, schedule: { ...current.schedule, [key]: { ...day, start: e.target.value } } }))} style={inputSt} />
+                <input aria-label={`${label} fin`} type="time" disabled={!day.active} value={day.end || '17:00'} onChange={e => setAvailability(current => ({ ...current, schedule: { ...current.schedule, [key]: { ...day, end: e.target.value } } }))} style={inputSt} />
+              </div>;
+            })}
+          </div>
+          <SectionTitle sub="Les jours de congé bloquent automatiquement la prise de rendez-vous." >Jours de congé</SectionTitle>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <input type="date" value={newLeaveDate} onChange={e => setNewLeaveDate(e.target.value)} style={inputSt} />
+            <PrimaryButton disabled={!newLeaveDate} onClick={() => { setAvailability(current => ({ ...current, leave_days: [...new Set([...current.leave_days, newLeaveDate])].sort() })); setNewLeaveDate(''); }}>Ajouter</PrimaryButton>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
+            {availability.leave_days.map(date => <button type="button" key={date} onClick={() => setAvailability(current => ({ ...current, leave_days: current.leave_days.filter(item => item !== date) }))} style={{ padding: '6px 10px', border: '1px solid #fed7aa', borderRadius: 8, background: '#fff7ed', color: '#9a3412', cursor: 'pointer' }}>{date} ×</button>)}
+            {availability.leave_days.length === 0 && <span style={{ color: '#94a3b8', fontSize: 12 }}>Aucun congé enregistré.</span>}
+          </div>
+          <PrimaryButton onClick={saveAvailability} disabled={savingAvailability}>{savingAvailability ? 'Enregistrement…' : 'Enregistrer les disponibilités'}</PrimaryButton>
+        </div>
       )}
       {activeTab === 'proposals' && <MedicalProposalsTab isChief={role === 'doctor_chef'} />}
       

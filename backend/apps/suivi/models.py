@@ -42,6 +42,7 @@ class ConsultationSuivi(models.Model):
     statut            = models.CharField(max_length=20, choices=StatutConsultation.choices, default='planifiee')
     date_consultation = models.DateField()
     heure             = models.TimeField(null=True, blank=True)
+    duree_minutes     = models.PositiveSmallIntegerField(default=30)
     medecin           = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='consultations_realisees')
     etablissement     = models.CharField(max_length=200, blank=True)
 
@@ -149,6 +150,29 @@ class ConsultationSuivi(models.Model):
             h = self.taille_cm / 100
             self.imc = round(float(self.poids_kg) / (h * h), 1)
         super().save(*args, **kwargs)
+
+
+class RendezVousWaitlist(models.Model):
+    class Status(models.TextChoices):
+        WAITING = 'waiting', 'En attente'
+        OFFERED = 'offered', 'Créneau proposé'
+        BOOKED = 'booked', 'Rendez-vous créé'
+        CANCELLED = 'cancelled', 'Retiré'
+
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='rendezvous_waitlist')
+    medecin = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='rendezvous_waitlist')
+    etablissement = models.CharField(max_length=200, blank=True)
+    type_consultation = models.CharField(max_length=20, default='suivi')
+    statut = models.CharField(max_length=20, choices=Status.choices, default=Status.WAITING)
+    date_proposee = models.DateField(null=True, blank=True)
+    heure_proposee = models.TimeField(null=True, blank=True)
+    cree_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='rendezvous_waitlist_crees')
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_proposition = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'rendezvous_waitlist'
+        ordering = ['date_creation']
 
 
 # ─────────────────────────────────────────────────────────────────

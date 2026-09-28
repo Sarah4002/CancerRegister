@@ -39,6 +39,9 @@ export default function NewRendezVousPage() {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [medecins, setMedecins] = useState([]);
   const [medecinsLoading, setMedecinsLoading] = useState(true);
+  const [availability, setAvailability] = useState(null);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [addingWaitlist, setAddingWaitlist] = useState(false);
   const initialPatient = searchParams.get('patient') || location.state?.patientContext?.id || '';
   const initialDate = searchParams.get('date') || '';
 
@@ -55,6 +58,9 @@ export default function NewRendezVousPage() {
       rappel_sms: true,
       rappel_email: false,
       premiere_visite: false,
+      recurrent: false,
+      recurrence_count: 3,
+      recurrence_interval: 1,
     }
   });
 
@@ -62,12 +68,26 @@ export default function NewRendezVousPage() {
   const typeWatch = watch('type');
   const premiereVisite = watch('premiere_visite');
   const dateWatch = watch('date');
+  const doctorWatch = watch('medecin');
+  const roomWatch = watch('salle');
 
   useEffect(() => {
     patientService.list({ page_size: 200 }).then(({ data }) => {
       setPatients(data.results || data);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!doctorWatch || !dateWatch) { setAvailability(null); return; }
+    let active = true;
+    setAvailability(null);
+    setAvailabilityLoading(true);
+    medecinService.availability(doctorWatch, dateWatch, roomWatch)
+      .then(({ data }) => { if (active) setAvailability(data); })
+      .catch(() => { if (active) setAvailability(null); })
+      .finally(() => { if (active) setAvailabilityLoading(false); });
+    return () => { active = false; };
+  }, [doctorWatch, dateWatch, roomWatch]);
 
   // Médecins & médecins chef disponibles pour la sélection du praticien.
   useEffect(() => {
@@ -106,17 +126,56 @@ export default function NewRendezVousPage() {
   }, [patientIdWatch, patients]);
 
   const onSubmit = async (data) => {
+    if (data.medecin && availability) {
+      const hours = availability.hours || {};
+      if (availability.on_leave) { toast.error('Ce médecin est en congé à cette date.'); return; }
+      if (!hours.active) { toast.error('Ce médecin ne consulte pas le jour sélectionné.'); return; }
+      const [hour, minute] = data.heure.split(':').map(Number);
+      const start = hour * 60 + minute;
+      const duration = Number(data.duree_minutes) || 30;
+      const toMinutes = (value) => { const [h, m] = (value || '08:00').split(':').map(Number); return h * 60 + m; };
+      if (start < toMinutes(hours.start) || start + duration > toMinutes(hours.end)) { toast.error(`Choisissez un horaire entre ${hours.start} et ${hours.end}.`); return; }
+      const conflict = (availability.booked || []).some((item) => {
+        const [h, m] = item.heure.split(':').map(Number);
+        const bookedStart = h * 60 + m;
+        return start < bookedStart + Number(item.duree_minutes || 30) && bookedStart < start + duration;
+      });
+      if (conflict) { toast.error('Ce créneau est déjà pris pour ce médecin.'); return; }
+      const roomConflict = (availability.room_booked || []).some((item) => {
+        const [h, m] = item.heure.split(':').map(Number);
+        const bookedStart = h * 60 + m;
+        return start < bookedStart + Number(item.duree_minutes || 30) && bookedStart < start + duration;
+      });
+      if (roomConflict) { toast.error('Cette salle est déjà réservée à cette heure.'); return; }
+    }
     setSubmitting(true);
     try {
       const payload = { ...data };
       Object.keys(payload).forEach(k => { if (payload[k] === '') delete payload[k]; });
 
-      await secretaryService.createRendezVous(payload);
-      toast.success('Rendez-vous ajouté au calendrier !');
+      if (data.recurrent) {
+        if (data.statut === 'annule') { toast.error('Une série ne peut pas être créée avec le statut annulé.'); return; }
+        const { data: result } = await secretaryService.createRendezVousSeries(payload);
+        toast.success(`${result.count} rendez-vous récurrents ajoutés au calendrier.`);
+      } else {
+        await secretaryService.createRendezVous(payload);
+        toast.success('Rendez-vous ajouté au calendrier !');
+      }
       navigate('/secretaire');
     } catch (err) {
       toast.error(err.response?.data ? Object.values(err.response.data).flat().join(' ') : 'Erreur');
     } finally { setSubmitting(false); }
+  };
+
+  const addToWaitlist = async () => {
+    if (!patientIdWatch) { toast.error('Sélectionnez un patient pour la liste d’attente.'); return; }
+    setAddingWaitlist(true);
+    try {
+      await secretaryService.addToWaitlist({ patient: patientIdWatch, medecin: doctorWatch, etablissement: roomWatch, type: typeWatch });
+      toast.success('Patient ajouté à la liste d’attente. Il sera proposé si un créneau se libère.');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Impossible d’ajouter le patient à la liste d’attente.');
+    } finally { setAddingWaitlist(false); }
   };
 
   return (
@@ -170,6 +229,11 @@ export default function NewRendezVousPage() {
                       Aucun médecin actif trouvé (rôle Médecin ou Médecin Chef).
                     </p>
                   )}
+                  {doctorWatch && dateWatch && (
+                    <div style={{ marginTop: 8, padding: 10, borderRadius: 8, background: availability?.on_leave || (availability && !availability.hours?.active) ? '#fff7ed' : '#f0f9ff', color: availability?.on_leave || (availability && !availability.hours?.active) ? '#9a3412' : '#075985', fontSize: 11.5 }}>
+                      {availabilityLoading ? 'Chargement des disponibilités…' : !availability ? 'Disponibilités non chargées; la vérification sera faite lors de l’enregistrement.' : availability.on_leave ? 'Médecin en congé ce jour.' : !availability.hours?.active ? 'Aucune consultation prévue ce jour.' : <><div>Consultations {availability.hours.start}–{availability.hours.end}</div>{availability.booked?.length ? <div style={{ marginTop: 4 }}>Médecin : {availability.booked.map(item => `${item.heure} (${item.duree_minutes || 30} min)`).join(', ')}</div> : null}{availability.room_booked?.length ? <div style={{ marginTop: 4 }}>Salle : {availability.room_booked.map(item => `${item.heure}${item.medecin_nom ? ` avec ${item.medecin_nom}` : ''}`).join(', ')}</div> : null}{!availability.booked?.length && !availability.room_booked?.length ? <div style={{ marginTop: 4 }}>Aucun rendez-vous réservé.</div> : null}</>}
+                    </div>
+                  )}
                 </Field>
                 <Field label="Établissement / Salle">
                   <input {...register('salle')} placeholder="CHU Oran – Salle de consultation 2" style={inputSt} />
@@ -194,12 +258,12 @@ export default function NewRendezVousPage() {
                 <Field label="Heure *" error={errors.heure?.message}>
                   <input
                     type="time"
-                    min={WORK_START}
-                    max={WORK_END}
+                    min={availability?.hours?.start || (doctorWatch ? undefined : WORK_START)}
+                    max={availability?.hours?.end || (doctorWatch ? undefined : WORK_END)}
                     {...register('heure', {
                       required: 'Champ requis',
                       validate: v => {
-                        if (v < WORK_START || v > WORK_END) {
+                        if (!doctorWatch && (v < WORK_START || v > WORK_END)) {
                           return `L'heure doit être comprise entre ${WORK_START} et ${WORK_END}`;
                         }
                         if (dateWatch === todayStr() && v < nowHHMM()) {
@@ -215,7 +279,7 @@ export default function NewRendezVousPage() {
                   </p>
                 </Field>
                 <Field label="Durée (minutes)">
-                  <select {...register('duree_minutes')} style={selSt}>
+                    <select {...register('duree_minutes')} style={selSt}>
                     <option value="15">15 min</option>
                     <option value="30">30 min</option>
                     <option value="45">45 min</option>
@@ -256,6 +320,21 @@ export default function NewRendezVousPage() {
               )}
             </Section>
 
+            <Section title="Rendez-vous récurrents">
+              <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, color:'#334155' }}>
+                <input type="checkbox" {...register('recurrent')} /> Créer une série de suivis
+              </label>
+              {watch('recurrent') && <Row2>
+                <Field label="Nombre de rendez-vous">
+                  <select {...register('recurrence_count')} style={selSt}>{[2,3,4,5,6,9,12,18,24].map(count => <option key={count} value={count}>{count} rendez-vous</option>)}</select>
+                </Field>
+                <Field label="Répéter tous les">
+                  <select {...register('recurrence_interval')} style={selSt}><option value="1">1 mois</option><option value="2">2 mois</option><option value="3">3 mois</option><option value="6">6 mois</option></select>
+                </Field>
+                <p style={{ gridColumn:'1 / -1', fontSize:11, color:'#64748b', marginTop:0 }}>La série est créée en une seule opération. Si une date tombe sur un congé ou un créneau déjà pris, toute la série est refusée afin d’éviter une série incomplète.</p>
+              </Row2>}
+            </Section>
+
             {/* ── Rappels ── */}
             <Section title="Rappels au patient">
               <Row2>
@@ -293,6 +372,7 @@ export default function NewRendezVousPage() {
 
             <div style={{ display:'flex', gap:10, paddingTop:20, borderTop:'1px solid rgba(37,99,235,0.12)' }}>
               <button type="button" onClick={() => navigate('/secretaire')} style={{ flex:'0 0 110px', padding:'12px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:'12px', color:'#334155', fontSize:13, cursor:'pointer' }}>← Annuler</button>
+              <button type="button" disabled={addingWaitlist || !patientIdWatch} onClick={addToWaitlist} style={{ padding:'12px 14px', background:'#fff7ed', border:'1px solid #fed7aa', borderRadius:'12px', color:'#9a3412', fontSize:12, fontWeight:700, cursor:addingWaitlist?'wait':'pointer' }}>{addingWaitlist ? 'Ajout…' : 'Liste d’attente'}</button>
               <button type="submit" disabled={submitting} style={{ flex:1, padding:'12px', background:'linear-gradient(135deg, #2563eb, #1d4ed8)', border:'none', borderRadius:'12px', color:'#fff', fontSize:13.5, fontWeight:600, fontFamily:'var(--font-display)', cursor:submitting?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:submitting?0.7:1 }}>
                 {submitting ? <><Spin/> Enregistrement...</> : 'Ajouter le rendez-vous'}
               </button>
