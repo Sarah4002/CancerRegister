@@ -408,9 +408,9 @@ function MyAgendaCalendar({ year, month, rdvByDay, selectedDate, onSelectDay }) 
 
   return (
     <div className="agenda-calendar-wrap">
-      <div className="agenda-month-grid" style={{ marginBottom:6 }}>
+      <div className="agenda-month-grid" style={{ marginBottom:8 }}>
         {JOURS_LABELS.map(j => (
-          <div key={j} style={{ textAlign:'center', fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:0.6, padding:'4px 0' }}>
+          <div key={j} style={{ textAlign:'center', fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:0.6, padding:'4px 0' }}>
             {j}
           </div>
         ))}
@@ -422,7 +422,7 @@ function MyAgendaCalendar({ year, month, rdvByDay, selectedDate, onSelectDay }) 
           const dayRdv = rdvByDay[dateStr] || [];
           const isToday = dateStr === todayStr;
           const isSelected = dateStr === selectedDate;
-          const visible = dayRdv.slice(0, 2);
+          const visible = dayRdv.slice(0, 4);
           const overflow = dayRdv.length - visible.length;
 
           return (
@@ -431,7 +431,7 @@ function MyAgendaCalendar({ year, month, rdvByDay, selectedDate, onSelectDay }) 
               onClick={() => onSelectDay(dateStr)}
               className="agenda-day-cell"
               style={{
-                borderRadius:10, padding:'6px 6px',
+                borderRadius:10, padding:'8px 8px',
                 cursor:'pointer',
                 background: isSelected ? '#eff6ff' : '#fff',
                 border: isSelected ? '1.5px solid #2563eb' : '1px solid rgba(37,99,235,0.08)',
@@ -442,19 +442,19 @@ function MyAgendaCalendar({ year, month, rdvByDay, selectedDate, onSelectDay }) 
             >
               <div style={{
                 display:'inline-flex', alignItems:'center', justifyContent:'center',
-                width:20, height:20, borderRadius:'50%',
-                fontSize:11, fontWeight:700, marginBottom:4, flexShrink:0,
+                width:24, height:24, borderRadius:'50%',
+                fontSize:12.5, fontWeight:700, marginBottom:6, flexShrink:0,
                 background: isToday ? '#2563eb' : 'transparent',
                 color: isToday ? '#fff' : '#334155',
               }}>
                 {d}
               </div>
-              <div style={{ display:'flex', flexDirection:'column', gap:2, overflow:'hidden' }}>
+              <div style={{ display:'flex', flexDirection:'column', gap:3, overflow:'hidden' }}>
                 {visible.map(r => (
                   <div
                     key={r.id}
                     style={{
-                      fontSize:9, padding:'1px 5px', borderRadius:5,
+                      fontSize:10.5, padding:'2px 6px', borderRadius:5,
                       background: `${STATUT_RDV_COLORS[r.statut] || '#94a3b8'}16`,
                       color: STATUT_RDV_COLORS[r.statut] || '#64748b',
                       whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
@@ -465,7 +465,7 @@ function MyAgendaCalendar({ year, month, rdvByDay, selectedDate, onSelectDay }) 
                   </div>
                 ))}
                 {overflow > 0 && (
-                  <div style={{ fontSize:9, color:'#94a3b8', fontWeight:600, paddingLeft:5 }}>+{overflow} autre(s)</div>
+                  <div style={{ fontSize:10, color:'#94a3b8', fontWeight:600, paddingLeft:6 }}>+{overflow} autre(s)</div>
                 )}
               </div>
             </div>
@@ -701,10 +701,10 @@ export default function DashboardPage() {
         .rc-kpi-grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
         .rc-pie-row    { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
         .rc-two-col    { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
-        .agenda-grid   { display:grid; grid-template-columns:1.6fr 1fr; gap:20px; align-items:start; }
+        .agenda-grid   { display:grid; grid-template-columns:2fr 1fr; gap:20px; align-items:start; }
         .agenda-calendar-wrap { overflow-x:auto; }
-        .agenda-month-grid    { display:grid; grid-template-columns:repeat(7,minmax(84px,1fr)); gap:4px; min-width:610px; }
-        .agenda-day-cell      { min-height:72px; max-height:96px; overflow:hidden; }
+        .agenda-month-grid    { display:grid; grid-template-columns:repeat(7,minmax(120px,1fr)); gap:6px; min-width:840px; }
+        .agenda-day-cell      { min-height:110px; max-height:150px; overflow:hidden; }
         @media (max-width: 1100px) {
           .rc-kpi-grid-5 { grid-template-columns:repeat(3,1fr); }
           .rc-kpi-grid-4 { grid-template-columns:repeat(2,1fr); }
