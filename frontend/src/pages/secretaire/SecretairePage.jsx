@@ -219,6 +219,8 @@ function DuplicatePatientFlag({ title = 'Ce patient a déjà un autre rendez-vou
 
 /* ══════════════════════════════════════════════
    Calendrier mensuel (avec drag & drop + conflits)
+   Même design responsive que l'agenda du dashboard :
+   défilement horizontal sur petit écran, cellules homogènes.
    ══════════════════════════════════════════════ */
 function CalendarGrid({ year, month, rdvByDay, selectedDate, onSelectDay, conflictIds, patientDuplicateIds, onDropRdv, searchActive }) {
   const firstOfMonth = new Date(year, month, 1);
@@ -233,19 +235,19 @@ function CalendarGrid({ year, month, rdvByDay, selectedDate, onSelectDay, confli
   while (cells.length % 7 !== 0) cells.push(null);
 
   return (
-    <div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:4, marginBottom:6 }}>
+    <div className="agenda-calendar-wrap">
+      <div className="agenda-month-grid" style={{ marginBottom:6 }}>
         {JOURS_LABELS.map(j => (
           <div key={j} style={{ textAlign:'center', fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:0.6, padding:'4px 0' }}>
             {j}
           </div>
         ))}
       </div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:4 }}>
+      <div className="agenda-month-grid">
         {cells.map((d, i) => {
           if (d === null) return <div key={i} />;
           const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-          const dayRdv = rdvByDay[dateStr] || [];
+          const dayRdv = (rdvByDay[dateStr] || []).slice().sort((a, b) => (a.heure || '').localeCompare(b.heure || ''));
           const isToday = dateStr === todayStr;
           const isSelected = dateStr === selectedDate;
           const isDragOver = dateStr === dragOverDate;
@@ -255,6 +257,7 @@ function CalendarGrid({ year, month, rdvByDay, selectedDate, onSelectDay, confli
           return (
             <div
               key={dateStr}
+              className="agenda-day-cell"
               onClick={() => onSelectDay(dateStr)}
               onDragOver={e => { e.preventDefault(); setDragOverDate(dateStr); }}
               onDragLeave={() => setDragOverDate(prev => (prev === dateStr ? null : prev))}
@@ -265,7 +268,7 @@ function CalendarGrid({ year, month, rdvByDay, selectedDate, onSelectDay, confli
                 if (rdvId) onDropRdv(rdvId, dateStr);
               }}
               style={{
-                minHeight:78, borderRadius:10, padding:'6px 6px',
+                borderRadius:10, padding:'6px 6px',
                 cursor:'pointer',
                 background: isDragOver ? '#dbeafe' : isSelected ? '#eff6ff' : '#fff',
                 border: isDragOver ? '1.5px dashed #2563eb' : isSelected ? '1.5px solid #2563eb' : '1px solid rgba(37,99,235,0.08)',
@@ -300,7 +303,7 @@ function CalendarGrid({ year, month, rdvByDay, selectedDate, onSelectDay, confli
                       title={isConflict ? 'Conflit de planning pour ce médecin' : isDuplicate ? 'Ce patient a déjà un autre rendez-vous actif' : undefined}
                       style={{
                         display:'flex', alignItems:'center', gap:3,
-                        fontSize:9, padding:'1px 5px', borderRadius:5,
+                        fontSize:9.5, padding:'1px 5px', borderRadius:5,
                         background: `${STATUT_RDV_COLORS[r.statut] || '#94a3b8'}16`,
                         color: STATUT_RDV_COLORS[r.statut] || '#64748b',
                         whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
@@ -334,91 +337,93 @@ function WeekGrid({ weekDates, rdvByDay, selectedDate, onSelectDay, conflictIds,
   const [dragOverDate, setDragOverDate] = useState(null);
 
   return (
-    <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:6 }}>
-      {weekDates.map((dateStr, idx) => {
-        const dayRdv = (rdvByDay[dateStr] || []).slice().sort((a, b) => a.heure.localeCompare(b.heure));
-        const isToday = dateStr === todayStr;
-        const isSelected = dateStr === selectedDate;
-        const isDragOver = dateStr === dragOverDate;
-        const dayNum = Number(dateStr.slice(8, 10));
+    <div className="agenda-calendar-wrap">
+      <div className="agenda-week-grid">
+        {weekDates.map((dateStr, idx) => {
+          const dayRdv = (rdvByDay[dateStr] || []).slice().sort((a, b) => (a.heure || '').localeCompare(b.heure || ''));
+          const isToday = dateStr === todayStr;
+          const isSelected = dateStr === selectedDate;
+          const isDragOver = dateStr === dragOverDate;
+          const dayNum = Number(dateStr.slice(8, 10));
 
-        return (
-          <div
-            key={dateStr}
-            onClick={() => onSelectDay(dateStr)}
-            onDragOver={e => { e.preventDefault(); setDragOverDate(dateStr); }}
-            onDragLeave={() => setDragOverDate(prev => (prev === dateStr ? null : prev))}
-            onDrop={e => {
-              e.preventDefault();
-              setDragOverDate(null);
-              const rdvId = e.dataTransfer.getData('text/rdv-id');
-              if (rdvId) onDropRdv(rdvId, dateStr);
-            }}
-            style={{
-              minHeight:260, borderRadius:10, padding:'8px 6px',
-              cursor:'pointer', display:'flex', flexDirection:'column', gap:6,
-              background: isDragOver ? '#dbeafe' : isSelected ? '#eff6ff' : '#fff',
-              border: isDragOver ? '1.5px dashed #2563eb' : isSelected ? '1.5px solid #2563eb' : '1px solid rgba(37,99,235,0.08)',
-              transition:'all 0.12s',
-            }}
-          >
-            <div style={{ textAlign:'center' }}>
-              <div style={{ fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:0.5 }}>
-                {JOURS_LABELS[idx]}
+          return (
+            <div
+              key={dateStr}
+              onClick={() => onSelectDay(dateStr)}
+              onDragOver={e => { e.preventDefault(); setDragOverDate(dateStr); }}
+              onDragLeave={() => setDragOverDate(prev => (prev === dateStr ? null : prev))}
+              onDrop={e => {
+                e.preventDefault();
+                setDragOverDate(null);
+                const rdvId = e.dataTransfer.getData('text/rdv-id');
+                if (rdvId) onDropRdv(rdvId, dateStr);
+              }}
+              style={{
+                minHeight:260, borderRadius:10, padding:'8px 6px',
+                cursor:'pointer', display:'flex', flexDirection:'column', gap:6,
+                background: isDragOver ? '#dbeafe' : isSelected ? '#eff6ff' : '#fff',
+                border: isDragOver ? '1.5px dashed #2563eb' : isSelected ? '1.5px solid #2563eb' : '1px solid rgba(37,99,235,0.08)',
+                transition:'all 0.12s',
+              }}
+            >
+              <div style={{ textAlign:'center' }}>
+                <div style={{ fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:0.5 }}>
+                  {JOURS_LABELS[idx]}
+                </div>
+                <div style={{
+                  display:'inline-flex', alignItems:'center', justifyContent:'center',
+                  width:22, height:22, borderRadius:'50%', marginTop:2,
+                  fontSize:12, fontWeight:700,
+                  background: isToday ? '#2563eb' : 'transparent',
+                  color: isToday ? '#fff' : '#334155',
+                }}>
+                  {dayNum}
+                </div>
               </div>
-              <div style={{
-                display:'inline-flex', alignItems:'center', justifyContent:'center',
-                width:22, height:22, borderRadius:'50%', marginTop:2,
-                fontSize:12, fontWeight:700,
-                background: isToday ? '#2563eb' : 'transparent',
-                color: isToday ? '#fff' : '#334155',
-              }}>
-                {dayNum}
+
+              <div style={{ display:'flex', flexDirection:'column', gap:4, overflowY:'auto', flex:1 }}>
+                {dayRdv.length === 0 && (
+                  <div style={{ fontSize:10, color:'#cbd5e1', textAlign:'center', marginTop:10 }}>—</div>
+                )}
+                {dayRdv.map(r => {
+                  const isConflict = conflictIds.has(r.id);
+                  const isDuplicate = patientDuplicateIds.has(r.id);
+                  const isMatch = searchActive && searchActive(r);
+                  return (
+                    <div
+                      key={r.id}
+                      draggable
+                      onDragStart={e => {
+                        e.dataTransfer.setData('text/rdv-id', String(r.id));
+                        e.stopPropagation();
+                      }}
+                      onClick={e => e.stopPropagation()}
+                      title={isConflict ? 'Conflit de planning pour ce médecin' : isDuplicate ? 'Ce patient a déjà un autre rendez-vous actif' : undefined}
+                      style={{
+                        display:'flex', flexDirection:'column', gap:1,
+                        fontSize:10, padding:'4px 6px', borderRadius:7,
+                        background: `${STATUT_RDV_COLORS[r.statut] || '#94a3b8'}14`,
+                        border: isMatch ? '1.5px solid #7c3aed' : isConflict ? '1.5px solid #dc2626' : isDuplicate ? '1.5px solid #d97706' : `1px solid ${STATUT_RDV_COLORS[r.statut] || '#94a3b8'}30`,
+                        cursor:'grab',
+                      }}
+                    >
+                      <div style={{ display:'flex', alignItems:'center', gap:4, fontWeight:700, color: STATUT_RDV_COLORS[r.statut] || '#64748b' }}>
+                        {isConflict && <ConflictFlag />}
+                        {!isConflict && isDuplicate && <DuplicatePatientFlag />}
+                        {r.heure}
+                      </div>
+                      <div style={{ color:'#0f172a', fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {r.patient_nom}
+                      </div>
+                      <div style={{ color:'#94a3b8', fontSize:9 }}>Dr. {r.medecin_nom}</div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-
-            <div style={{ display:'flex', flexDirection:'column', gap:4, overflowY:'auto', flex:1 }}>
-              {dayRdv.length === 0 && (
-                <div style={{ fontSize:10, color:'#cbd5e1', textAlign:'center', marginTop:10 }}>—</div>
-              )}
-              {dayRdv.map(r => {
-                const isConflict = conflictIds.has(r.id);
-                const isDuplicate = patientDuplicateIds.has(r.id);
-                const isMatch = searchActive && searchActive(r);
-                return (
-                  <div
-                    key={r.id}
-                    draggable
-                    onDragStart={e => {
-                      e.dataTransfer.setData('text/rdv-id', String(r.id));
-                      e.stopPropagation();
-                    }}
-                    onClick={e => e.stopPropagation()}
-                    title={isConflict ? 'Conflit de planning pour ce médecin' : isDuplicate ? 'Ce patient a déjà un autre rendez-vous actif' : undefined}
-                    style={{
-                      display:'flex', flexDirection:'column', gap:1,
-                      fontSize:10, padding:'4px 6px', borderRadius:7,
-                      background: `${STATUT_RDV_COLORS[r.statut] || '#94a3b8'}14`,
-                      border: isMatch ? '1.5px solid #7c3aed' : isConflict ? '1.5px solid #dc2626' : isDuplicate ? '1.5px solid #d97706' : `1px solid ${STATUT_RDV_COLORS[r.statut] || '#94a3b8'}30`,
-                      cursor:'grab',
-                    }}
-                  >
-                    <div style={{ display:'flex', alignItems:'center', gap:4, fontWeight:700, color: STATUT_RDV_COLORS[r.statut] || '#64748b' }}>
-                      {isConflict && <ConflictFlag />}
-                      {!isConflict && isDuplicate && <DuplicatePatientFlag />}
-                      {r.heure}
-                    </div>
-                    <div style={{ color:'#0f172a', fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                      {r.patient_nom}
-                    </div>
-                    <div style={{ color:'#94a3b8', fontSize:9 }}>Dr. {r.medecin_nom}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -476,7 +481,7 @@ function RdvListPanel({ date, rdvs, onStatusChange, conflictIds, patientDuplicat
         <div style={{ display:'flex', flexDirection:'column', gap:8, maxHeight:420, overflowY:'auto' }}>
           {rdvs
             .slice()
-            .sort((a, b) => a.heure.localeCompare(b.heure))
+            .sort((a, b) => (a.heure || '').localeCompare(b.heure || ''))
             .map(r => {
               const isConflict = conflictIds.has(r.id);
               const isDuplicate = patientDuplicateIds.has(r.id);
@@ -1070,6 +1075,23 @@ export default function SecretairePage() {
           .print-area { display: block !important; }
         }
         .print-area { display: none; }
+
+        /* ── Design calendrier (identique au dashboard) ── */
+        .rc-kpi-grid-5        { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:20px; }
+        .agenda-grid          { display:grid; grid-template-columns:1.5fr 1fr; gap:16px; align-items:start; }
+        .agenda-calendar-wrap { overflow-x:auto; }
+        .agenda-month-grid    { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; min-width:520px; }
+        .agenda-week-grid     { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; min-width:640px; }
+        .agenda-day-cell      { min-height:78px; }
+        @media (max-width: 1100px) {
+          .rc-kpi-grid-5 { grid-template-columns:repeat(3,1fr); }
+        }
+        @media (max-width: 900px) {
+          .agenda-grid { grid-template-columns:1fr; }
+        }
+        @media (max-width: 560px) {
+          .rc-kpi-grid-5 { grid-template-columns:repeat(2,1fr); }
+        }
       `}</style>
 
       <div className="no-print">
@@ -1105,7 +1127,7 @@ export default function SecretairePage() {
         </div>
 
         {/* ── KPIs ── */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12, marginBottom:20 }}>
+        <div className="rc-kpi-grid-5">
           <KPICard label="RDV aujourd'hui"     value={k.rdv_aujourdhui}   color="#2563eb" icon="" />
           <KPICard label="Cette semaine"        value={k.rdv_semaine}     color="#7c3aed" icon="" />
           <KPICard label="En attente"           value={k.rdv_en_attente}  color="#d97706" icon="" />
@@ -1171,7 +1193,7 @@ export default function SecretairePage() {
         </div>
 
         {/* ── Calendrier + Panneau du jour ── */}
-        <div style={{ display:'grid', gridTemplateColumns:'1.5fr 1fr', gap:16, marginBottom:16, alignItems:'start' }}>
+        <div className="agenda-grid" style={{ marginBottom:16 }}>
 
           <ChartCard
             title={viewMode === 'semaine' ? `Semaine du ${weekLabel}` : `${MOIS_LABELS[month]} ${year}`}
