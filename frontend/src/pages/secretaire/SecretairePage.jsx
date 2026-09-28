@@ -786,8 +786,6 @@ export default function SecretairePage() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [pendingPatients, setPendingPatients] = useState([]);
   const [reminderState, setReminderState] = useState({}); // { [rdvId]: 'sending'|'sent'|'error' }
-  const [waitlist, setWaitlist] = useState([]);
-  const [waitlistActionId, setWaitlistActionId] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -806,16 +804,6 @@ export default function SecretairePage() {
   }, [month, year]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const refreshWaitlist = useCallback(async () => {
-    try {
-      const { data } = await secretaryService.getWaitlist();
-      const entries = data.results || [];
-      setWaitlist(entries);
-      return entries;
-    } catch (error) { console.error('Erreur de chargement de la liste d’attente:', error); return []; }
-  }, []);
-  useEffect(() => { refreshWaitlist(); }, [refreshWaitlist]);
 
   /* ── Passage automatique en "Absent" ──
      Si l'heure du RDV est dépassée et que ni le médecin ni la secrétaire
@@ -1024,27 +1012,10 @@ export default function SecretairePage() {
     if (viewMode === 'semaine') setWeekStart(getWeekStart(dateStr));
   };
 
-  const handleWaitlistEntryClose = async (entry) => {
-    setWaitlistActionId(entry.id);
-    try {
-      await secretaryService.closeWaitlistEntry(entry.id, entry.statut === 'offered' ? 'booked' : 'cancelled');
-      await refreshWaitlist();
-    } catch (error) {
-      window.alert(error.response?.data?.detail || 'Impossible de mettre à jour la liste d’attente.');
-    } finally { setWaitlistActionId(null); }
-  };
-
   const handleStatusChange = async (id, statut) => {
-    const oldOffered = new Set(waitlist.filter(item => item.statut === 'offered').map(item => item.id));
     setRdvs(prev => prev.map(r => r.id === id ? { ...r, statut } : r));
     try {
       await secretaryService.updateStatut(id, statut);
-      if (statut === 'annule') {
-        const target = rdvs.find(r => String(r.id) === String(id));
-        const entries = await refreshWaitlist();
-        const offered = entries.find(item => item.statut === 'offered' && !oldOffered.has(item.id) && item.date_proposee === target?.date);
-        if (offered) window.alert(`Créneau proposé au patient suivant en liste d’attente : ${offered.patient_nom}, ${offered.date_proposee} à ${offered.heure_proposee}. Pensez à le contacter.`);
-      }
     } catch (err) {
       console.error('Erreur mise à jour statut:', err);
       fetchData();
@@ -1197,16 +1168,6 @@ export default function SecretairePage() {
           <KPICard label="Confirmés"            value={k.rdv_confirmes}   color="#16a34a" icon="" />
           <KPICard label="Annulés (ce mois)"    value={k.rdv_annules}     color="#dc2626" icon="" />
         </div>
-
-        {waitlist.length > 0 && <div style={{ marginTop: 14, marginBottom: 14, padding: '14px 18px', borderRadius: 12, border: '1px solid #fed7aa', background: '#fff7ed' }}>
-          <div style={{ fontWeight: 800, fontSize: 13, color: '#9a3412', marginBottom: 8 }}>Liste d’attente · {waitlist.length}</div>
-          <div style={{ display: 'grid', gap: 6 }}>
-            {waitlist.slice(0, 5).map(item => <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12, color: '#7c2d12' }}>
-              <span>{item.patient_nom} · {item.medecin_nom}{item.etablissement ? ` · ${item.etablissement}` : ''}<strong style={{ display: 'block' }}>{item.statut === 'offered' ? `Créneau proposé : ${item.date_proposee} à ${item.heure_proposee}` : 'En attente'}</strong></span>
-              <button disabled={waitlistActionId === item.id} onClick={() => handleWaitlistEntryClose(item)} style={{ border: '1px solid #fdba74', borderRadius: 7, background: '#fff', color: '#9a3412', padding: '5px 8px', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' }}>{item.statut === 'offered' ? 'Traité' : 'Retirer'}</button>
-            </div>)}
-          </div>
-        </div>}
 
         {conflictCount > 0 && (
           <div style={{

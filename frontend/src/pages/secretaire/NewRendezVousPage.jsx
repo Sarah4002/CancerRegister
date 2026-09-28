@@ -41,7 +41,6 @@ export default function NewRendezVousPage() {
   const [medecinsLoading, setMedecinsLoading] = useState(true);
   const [availability, setAvailability] = useState(null);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
-  const [addingWaitlist, setAddingWaitlist] = useState(false);
   const initialPatient = searchParams.get('patient') || location.state?.patientContext?.id || '';
   const initialDate = searchParams.get('date') || '';
 
@@ -165,17 +164,6 @@ export default function NewRendezVousPage() {
     } catch (err) {
       toast.error(err.response?.data ? Object.values(err.response.data).flat().join(' ') : 'Erreur');
     } finally { setSubmitting(false); }
-  };
-
-  const addToWaitlist = async () => {
-    if (!patientIdWatch) { toast.error('Sélectionnez un patient pour la liste d’attente.'); return; }
-    setAddingWaitlist(true);
-    try {
-      await secretaryService.addToWaitlist({ patient: patientIdWatch, medecin: doctorWatch, etablissement: roomWatch, type: typeWatch });
-      toast.success('Patient ajouté à la liste d’attente. Il sera proposé si un créneau se libère.');
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Impossible d’ajouter le patient à la liste d’attente.');
-    } finally { setAddingWaitlist(false); }
   };
 
   return (
@@ -372,7 +360,6 @@ export default function NewRendezVousPage() {
 
             <div style={{ display:'flex', gap:10, paddingTop:20, borderTop:'1px solid rgba(37,99,235,0.12)' }}>
               <button type="button" onClick={() => navigate('/secretaire')} style={{ flex:'0 0 110px', padding:'12px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:'12px', color:'#334155', fontSize:13, cursor:'pointer' }}>← Annuler</button>
-              <button type="button" disabled={addingWaitlist || !patientIdWatch} onClick={addToWaitlist} style={{ padding:'12px 14px', background:'#fff7ed', border:'1px solid #fed7aa', borderRadius:'12px', color:'#9a3412', fontSize:12, fontWeight:700, cursor:addingWaitlist?'wait':'pointer' }}>{addingWaitlist ? 'Ajout…' : 'Liste d’attente'}</button>
               <button type="submit" disabled={submitting} style={{ flex:1, padding:'12px', background:'linear-gradient(135deg, #2563eb, #1d4ed8)', border:'none', borderRadius:'12px', color:'#fff', fontSize:13.5, fontWeight:600, fontFamily:'var(--font-display)', cursor:submitting?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity:submitting?0.7:1 }}>
                 {submitting ? <><Spin/> Enregistrement...</> : 'Ajouter le rendez-vous'}
               </button>

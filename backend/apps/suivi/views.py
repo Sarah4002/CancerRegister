@@ -5,12 +5,10 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count, Avg
 from django.db import transaction
-from django.utils import timezone
-from django.contrib.auth import get_user_model
 from calendar import monthrange
 from datetime import date
 
-from .models import ConsultationSuivi, QualiteVie, EffetIndesirable, RendezVousWaitlist
+from .models import ConsultationSuivi, QualiteVie, EffetIndesirable
 from .serializers import (
     ConsultationSuiviListSerializer, ConsultationSuiviDetailSerializer,
     ConsultationSuiviCreateSerializer,
@@ -21,48 +19,6 @@ from apps.accounts.permissions import (
     CanAccessClinicalFollowup,
     CanManageAppointmentsOrClinicalFollowup,
 )
-
-User = get_user_model()
-
-
-@transaction.atomic
-def offer_next_waiting_patient(cancelled_rdv):
-    """Assign a released slot to the next eligible waitlist entry and notify staff."""
-    from django.db.models import Q
-    from apps.notifications.models import Notification
-    if not cancelled_rdv.medecin or not cancelled_rdv.date_consultation or not cancelled_rdv.heure:
-        return None
-    queue = RendezVousWaitlist.objects.filter(statut=RendezVousWaitlist.Status.WAITING)
-    queue = queue.filter(Q(medecin=cancelled_rdv.medecin) | Q(medecin__isnull=True))
-    if cancelled_rdv.etablissement:
-        queue = queue.filter(Q(etablissement__iexact=cancelled_rdv.etablissement) | Q(etablissement=''))
-    else:
-        queue = queue.filter(etablissement='')
-    candidates = list(queue.select_for_update().select_related('patient').order_by('date_creation', 'id'))
-    candidates.sort(key=lambda item: (
-        item.medecin_id != cancelled_rdv.medecin_id,
-        bool(cancelled_rdv.etablissement) and item.etablissement.casefold() != cancelled_rdv.etablissement.casefold(),
-        item.date_creation,
-    ))
-    entry = candidates[0] if candidates else None
-    if not entry:
-        return None
-    entry.statut = RendezVousWaitlist.Status.OFFERED
-    entry.medecin = cancelled_rdv.medecin
-    if not entry.etablissement:
-        entry.etablissement = cancelled_rdv.etablissement
-    entry.date_proposee = cancelled_rdv.date_consultation
-    entry.heure_proposee = cancelled_rdv.heure
-    entry.date_proposition = timezone.now()
-    entry.save(update_fields=['statut', 'medecin', 'etablissement', 'date_proposee', 'heure_proposee', 'date_proposition'])
-    patient_name = entry.patient.get_full_name() or entry.patient.registration_number
-    message = f"Un créneau s'est libéré le {cancelled_rdv.date_consultation} à {cancelled_rdv.heure.strftime('%H:%M')} avec Dr. {cancelled_rdv.medecin.get_full_name()}. Patient à contacter : {patient_name}."
-    Notification.objects.bulk_create([
-        Notification(destinataire=user, type='rdv_waitlist', titre='Créneau proposé à la liste d’attente', message=message)
-        for user in User.objects.filter(role='secretaire', is_active=True)
-    ])
-    return entry
-
 
 def ensure_rdv_slot_is_free(values, instance=None):
     from rest_framework.exceptions import ValidationError
@@ -137,16 +93,7 @@ class ConsultationSuiviViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         ensure_rdv_slot_is_free(serializer.validated_data, serializer.instance)
-        was_cancelled = serializer.instance.statut == 'annulee'
-        obj = serializer.save()
-        if not was_cancelled and obj.statut == 'annulee':
-            offer_next_waiting_patient(obj)
-
-    def perform_destroy(self, instance):
-        was_active = instance.statut != 'annulee'
-        super().perform_destroy(instance)
-        if was_active:
-            offer_next_waiting_patient(instance)
+        serializer.save()
 
     @action(detail=False, methods=['post'], url_path='series')
     def create_series(self, request):
@@ -185,47 +132,6 @@ class ConsultationSuiviViewSet(viewsets.ModelViewSet):
                 ip_address=request.META.get('REMOTE_ADDR'), details={'count': len(created), 'interval_months': interval})
         from .serializers import RendezVousSerializer
         return Response({'count': len(created), 'results': [RendezVousSerializer(item).data for item in created]}, status=201)
-
-    @action(detail=False, methods=['get', 'post'], url_path='liste-attente')
-    def waitlist(self, request):
-        if request.user.role != 'secretaire' and not request.user.is_superuser:
-            return Response({'detail': 'Accès réservé au secrétariat.'}, status=403)
-        if request.method == 'GET':
-            entries = RendezVousWaitlist.objects.exclude(statut__in=['cancelled', 'booked']).select_related('patient', 'medecin')
-            return Response({'results': [{
-                'id': item.id, 'patient': item.patient_id,
-                'patient_nom': item.patient.get_full_name(),
-                'medecin': item.medecin_id,
-                'medecin_nom': item.medecin.get_display_name() if item.medecin else 'Premier médecin disponible',
-                'etablissement': item.etablissement, 'statut': item.statut,
-                'date_proposee': item.date_proposee,
-                'heure_proposee': item.heure_proposee.strftime('%H:%M') if item.heure_proposee else None,
-                'date_creation': item.date_creation,
-            } for item in entries]})
-        from apps.patients.models import Patient
-        try:
-            patient = Patient.objects.get(pk=request.data.get('patient'))
-            doctor_id = request.data.get('medecin') or None
-            doctor = User.objects.get(pk=doctor_id, is_active=True, role__in=['doctor', 'doctor_chef']) if doctor_id else None
-        except (Patient.DoesNotExist, User.DoesNotExist, ValueError, TypeError):
-            return Response({'detail': 'Patient ou médecin invalide.'}, status=400)
-        entry = RendezVousWaitlist.objects.create(patient=patient, medecin=doctor,
-            etablissement=str(request.data.get('etablissement', '')).strip()[:200],
-            type_consultation=request.data.get('type_consultation') or 'suivi', cree_par=request.user)
-        return Response({'id': entry.id, 'statut': entry.statut}, status=201)
-
-    @action(detail=False, methods=['post'], url_path=r'liste-attente/(?P<entry_id>[^/.]+)/clore')
-    def close_waitlist_entry(self, request, entry_id=None):
-        if request.user.role != 'secretaire' and not request.user.is_superuser:
-            return Response({'detail': 'Accès réservé au secrétariat.'}, status=403)
-        try:
-            entry = RendezVousWaitlist.objects.get(pk=entry_id, statut__in=['waiting', 'offered'])
-        except RendezVousWaitlist.DoesNotExist:
-            return Response({'detail': 'Entrée de liste d’attente introuvable.'}, status=404)
-        next_status = 'booked' if request.data.get('status') == 'booked' else 'cancelled'
-        entry.statut = next_status
-        entry.save(update_fields=['statut'])
-        return Response({'id': entry.pk, 'statut': entry.statut})
 
     @action(detail=False, methods=['get'])
     def par_patient(self, request):

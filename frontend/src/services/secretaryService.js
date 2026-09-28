@@ -216,14 +216,6 @@ export const secretaryService = {
     recurrence_interval: Number(data.recurrence_interval) || 1,
   }),
 
-  getWaitlist: () => api.get('/suivi/consultations/liste-attente/'),
-  addToWaitlist: (data) => api.post('/suivi/consultations/liste-attente/', {
-    patient: data.patient, medecin: data.medecin || null,
-    etablissement: data.etablissement || '',
-    type_consultation: normalizeTypeForCreate(data.type),
-  }),
-  closeWaitlistEntry: (id, status = 'cancelled') => api.post(`/suivi/consultations/liste-attente/${id}/clore/`, { status }),
-
   /**
    * Supprime / annule un rendez-vous.
    */

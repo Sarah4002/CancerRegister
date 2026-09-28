@@ -12,7 +12,6 @@ class Notification(models.Model):
         NOUVEAU_MESSAGE = 'nouveau_msg',  'Nouveau message'
         NOUVELLE_DECISION = 'new_decision', 'Nouvelle décision'
         DOSSIER_AJOUTE  = 'dossier_ajoute', 'Dossier ajouté'
-        RDV_WAITLIST    = 'rdv_waitlist', 'Créneau liste d’attente'
 
     destinataire = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='notifications'
