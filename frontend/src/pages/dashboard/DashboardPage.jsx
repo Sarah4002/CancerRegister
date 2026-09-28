@@ -390,12 +390,27 @@ function FilterBar({ filters, draft, setDraft, onApply, onReset, wilayas = [] })
 }
 
 /* ══════════════════════════════════════════════
-   Agenda personnel — visible uniquement pour les
-   rôles "doctor" / "doctor_chef". Affiche un mini
-   calendrier mensuel + la liste des RDV du jour
-   sélectionné, filtrés sur le médecin connecté.
+   Agenda personnel (médecin / médecin chef) — même
+   principe que le calendrier du secrétariat, mais
+   limité aux RDV du médecin connecté.
    ══════════════════════════════════════════════ */
-function MyAgendaCalendar({ year, month, rdvByDay, selectedDate, onSelectDay }) {
+function getWeekStart(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  const offset = (d.getDay() + 6) % 7; // 0 = lundi
+  d.setDate(d.getDate() - offset);
+  return d.toISOString().slice(0, 10);
+}
+function addDaysISO(dateStr, n) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+function getWeekDates(weekStartStr) {
+  return Array.from({ length: 7 }, (_, i) => addDaysISO(weekStartStr, i));
+}
+
+/* ── Vue mois ── */
+function MyMonthGrid({ year, month, rdvByDay, selectedDate, onSelectDay }) {
   const firstOfMonth = new Date(year, month, 1);
   const startOffset = (firstOfMonth.getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -408,9 +423,9 @@ function MyAgendaCalendar({ year, month, rdvByDay, selectedDate, onSelectDay }) 
 
   return (
     <div className="agenda-calendar-wrap">
-      <div className="agenda-month-grid" style={{ marginBottom:8 }}>
+      <div className="agenda-month-grid" style={{ marginBottom:6 }}>
         {JOURS_LABELS.map(j => (
-          <div key={j} style={{ textAlign:'center', fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:0.6, padding:'4px 0' }}>
+          <div key={j} style={{ textAlign:'center', fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:0.6, padding:'4px 0' }}>
             {j}
           </div>
         ))}
@@ -419,10 +434,10 @@ function MyAgendaCalendar({ year, month, rdvByDay, selectedDate, onSelectDay }) 
         {cells.map((d, i) => {
           if (d === null) return <div key={i} />;
           const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-          const dayRdv = rdvByDay[dateStr] || [];
+          const dayRdv = (rdvByDay[dateStr] || []).slice().sort((a, b) => (a.heure || '').localeCompare(b.heure || ''));
           const isToday = dateStr === todayStr;
           const isSelected = dateStr === selectedDate;
-          const visible = dayRdv.slice(0, 4);
+          const visible = dayRdv.slice(0, 3);
           const overflow = dayRdv.length - visible.length;
 
           return (
@@ -431,8 +446,7 @@ function MyAgendaCalendar({ year, month, rdvByDay, selectedDate, onSelectDay }) 
               onClick={() => onSelectDay(dateStr)}
               className="agenda-day-cell"
               style={{
-                borderRadius:10, padding:'8px 8px',
-                cursor:'pointer',
+                borderRadius:10, padding:'6px 6px', cursor:'pointer',
                 background: isSelected ? '#eff6ff' : '#fff',
                 border: isSelected ? '1.5px solid #2563eb' : '1px solid rgba(37,99,235,0.08)',
                 transition:'all 0.12s',
@@ -442,19 +456,19 @@ function MyAgendaCalendar({ year, month, rdvByDay, selectedDate, onSelectDay }) 
             >
               <div style={{
                 display:'inline-flex', alignItems:'center', justifyContent:'center',
-                width:24, height:24, borderRadius:'50%',
-                fontSize:12.5, fontWeight:700, marginBottom:6, flexShrink:0,
+                width:20, height:20, borderRadius:'50%',
+                fontSize:11, fontWeight:700, marginBottom:4,
                 background: isToday ? '#2563eb' : 'transparent',
                 color: isToday ? '#fff' : '#334155',
               }}>
                 {d}
               </div>
-              <div style={{ display:'flex', flexDirection:'column', gap:3, overflow:'hidden' }}>
+              <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
                 {visible.map(r => (
                   <div
                     key={r.id}
                     style={{
-                      fontSize:10.5, padding:'2px 6px', borderRadius:5,
+                      fontSize:9.5, padding:'1px 5px', borderRadius:5,
                       background: `${STATUT_RDV_COLORS[r.statut] || '#94a3b8'}16`,
                       color: STATUT_RDV_COLORS[r.statut] || '#64748b',
                       whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
@@ -465,7 +479,7 @@ function MyAgendaCalendar({ year, month, rdvByDay, selectedDate, onSelectDay }) 
                   </div>
                 ))}
                 {overflow > 0 && (
-                  <div style={{ fontSize:10, color:'#94a3b8', fontWeight:600, paddingLeft:6 }}>+{overflow} autre(s)</div>
+                  <div style={{ fontSize:9, color:'#94a3b8', fontWeight:600, paddingLeft:5 }}>+{overflow} autre(s)</div>
                 )}
               </div>
             </div>
@@ -476,53 +490,145 @@ function MyAgendaCalendar({ year, month, rdvByDay, selectedDate, onSelectDay }) 
   );
 }
 
-function MyAgendaDayPanel({ date, rdvs }) {
+/* ── Vue semaine ── */
+function MyWeekGrid({ weekDates, rdvByDay, selectedDate, onSelectDay }) {
+  const todayStr = todayISO();
+
+  return (
+    <div className="agenda-calendar-wrap">
+      <div className="agenda-week-grid">
+        {weekDates.map((dateStr, idx) => {
+          const dayRdv = (rdvByDay[dateStr] || []).slice().sort((a, b) => (a.heure || '').localeCompare(b.heure || ''));
+          const isToday = dateStr === todayStr;
+          const isSelected = dateStr === selectedDate;
+          const dayNum = Number(dateStr.slice(8, 10));
+
+          return (
+            <div
+              key={dateStr}
+              onClick={() => onSelectDay(dateStr)}
+              style={{
+                minHeight:260, borderRadius:10, padding:'8px 6px',
+                cursor:'pointer', display:'flex', flexDirection:'column', gap:6,
+                background: isSelected ? '#eff6ff' : '#fff',
+                border: isSelected ? '1.5px solid #2563eb' : '1px solid rgba(37,99,235,0.08)',
+                transition:'all 0.12s',
+              }}
+            >
+              <div style={{ textAlign:'center' }}>
+                <div style={{ fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:0.5 }}>
+                  {JOURS_LABELS[idx]}
+                </div>
+                <div style={{
+                  display:'inline-flex', alignItems:'center', justifyContent:'center',
+                  width:22, height:22, borderRadius:'50%', marginTop:2,
+                  fontSize:12, fontWeight:700,
+                  background: isToday ? '#2563eb' : 'transparent',
+                  color: isToday ? '#fff' : '#334155',
+                }}>
+                  {dayNum}
+                </div>
+              </div>
+
+              <div style={{ display:'flex', flexDirection:'column', gap:4, overflowY:'auto', flex:1 }}>
+                {dayRdv.length === 0 && (
+                  <div style={{ fontSize:10, color:'#cbd5e1', textAlign:'center', marginTop:10 }}>—</div>
+                )}
+                {dayRdv.map(r => (
+                  <div
+                    key={r.id}
+                    style={{
+                      display:'flex', flexDirection:'column', gap:1,
+                      fontSize:10, padding:'4px 6px', borderRadius:7,
+                      background: `${STATUT_RDV_COLORS[r.statut] || '#94a3b8'}14`,
+                      border: `1px solid ${STATUT_RDV_COLORS[r.statut] || '#94a3b8'}30`,
+                    }}
+                  >
+                    <div style={{ fontWeight:700, color: STATUT_RDV_COLORS[r.statut] || '#64748b' }}>{r.heure}</div>
+                    <div style={{ color:'#0f172a', fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {r.patient_nom}
+                    </div>
+                    <div style={{ color:'#94a3b8', fontSize:9 }}>{TYPE_RDV_LABELS[r.type] || r.type}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Panneau : RDV du jour sélectionné ── */
+function MyDayPanel({ date, rdvs, onStatusChange }) {
   const dateObj = date ? new Date(`${date}T00:00:00`) : null;
   const dateLabel = dateObj
-    ? dateObj.toLocaleDateString('fr-DZ', { weekday:'long', day:'numeric', month:'long' })
+    ? dateObj.toLocaleDateString('fr-DZ', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
     : '';
 
   return (
-    <div>
-      <div style={{ fontSize:12, fontWeight:700, color:'#0f172a', marginBottom:12 }}>
-        {date ? dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1) : 'Sélectionnez un jour'}
-      </div>
-      {rdvs.length === 0 ? (
-        <div style={{ padding:'20px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>
-          Aucun rendez-vous ce jour-là.
-        </div>
+    <ChartCard
+      title={date ? dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1) : 'Sélectionnez un jour'}
+      sub={date ? `${rdvs.length} rendez-vous` : 'Cliquez sur une date dans le calendrier'}
+      actions={
+        date && (
+          <Link to={`/secretaire/rendezvous/nouveau?date=${date}`} style={{ textDecoration:'none' }}>
+            <div style={{
+              padding:'7px 14px', background:'linear-gradient(135deg,#3b82f6,#2563eb)',
+              borderRadius:9, color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer',
+              boxShadow:'0 2px 8px rgba(37,99,235,0.25)',
+            }}>
+              + Nouveau RDV
+            </div>
+          </Link>
+        )
+      }
+    >
+      {!date ? (
+        <div style={{ padding:'40px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>Aucune date sélectionnée.</div>
+      ) : rdvs.length === 0 ? (
+        <div style={{ padding:'40px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>Aucun rendez-vous ce jour-là.</div>
       ) : (
-        <div style={{ display:'flex', flexDirection:'column', gap:8, maxHeight:300, overflowY:'auto' }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:8, maxHeight:420, overflowY:'auto' }}>
           {rdvs
             .slice()
-            .sort((a, b) => a.heure.localeCompare(b.heure))
+            .sort((a, b) => (a.heure || '').localeCompare(b.heure || ''))
             .map(r => (
               <div key={r.id} style={{
-                display:'flex', alignItems:'center', gap:10,
-                padding:'8px 10px', borderRadius:10,
+                display:'flex', alignItems:'center', gap:12,
+                padding:'10px 12px', borderRadius:10,
                 border:'1px solid rgba(37,99,235,0.08)', background:'#fbfcfe',
               }}>
-                <div style={{ fontFamily:'var(--font-mono)', fontSize:12.5, fontWeight:700, color:'#2563eb', minWidth:42 }}>
+                <div style={{ fontFamily:'var(--font-mono)', fontSize:13, fontWeight:700, color:'#2563eb', minWidth:48, textAlign:'center' }}>
                   {r.heure}
                 </div>
+                <div style={{ width:1, alignSelf:'stretch', background:'rgba(37,99,235,0.08)' }} />
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:12.5, fontWeight:700, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                     {r.patient_nom}
                   </div>
-                  <div style={{ fontSize:10.5, color:'#64748b' }}>{TYPE_RDV_LABELS[r.type] || r.type}</div>
+                  <div style={{ fontSize:11, color:'#64748b' }}>{TYPE_RDV_LABELS[r.type] || r.type}</div>
                 </div>
-                <span style={{
-                  fontSize:9.5, fontWeight:700, padding:'3px 8px', borderRadius:99,
-                  background:`${STATUT_RDV_COLORS[r.statut] || '#94a3b8'}14`,
-                  color: STATUT_RDV_COLORS[r.statut] || '#64748b',
-                }}>
-                  {STATUT_RDV_LABELS[r.statut] || r.statut}
-                </span>
+                <select
+                  value={r.statut}
+                  onChange={e => onStatusChange(r.id, e.target.value)}
+                  style={{
+                    fontSize:10, fontWeight:700, padding:'4px 8px', borderRadius:99,
+                    border:`1px solid ${STATUT_RDV_COLORS[r.statut]}30`,
+                    background:`${STATUT_RDV_COLORS[r.statut]}10`,
+                    color: STATUT_RDV_COLORS[r.statut], cursor:'pointer', outline:'none',
+                  }}
+                >
+                  {Object.entries(STATUT_RDV_LABELS).map(([k, l]) => (
+                    <option key={k} value={k}>{l}</option>
+                  ))}
+                </select>
               </div>
             ))}
         </div>
       )}
-    </div>
+    </ChartCard>
   );
 }
 
@@ -581,6 +687,9 @@ export default function DashboardPage() {
   const [agendaSelectedDate, setAgendaSelectedDate] = useState(todayISO());
   const [myRdvs, setMyRdvs]           = useState([]);
   const [myRdvsLoading, setMyRdvsLoading] = useState(false);
+  const [viewMode, setViewMode]     = useState('mois'); // 'mois' | 'semaine'
+  const [weekStart, setWeekStart]   = useState(getWeekStart(todayISO()));
+
 
   const fetchMyRdvs = useCallback(async () => {
     if (!isMedecin || !user?.id) return;
@@ -616,16 +725,51 @@ export default function DashboardPage() {
     return map;
   }, [myRdvs]);
 
+  const weekDates = useMemo(() => getWeekDates(weekStart), [weekStart]);
+  const weekLabel = useMemo(() => {
+    const start = new Date(`${weekDates[0]}T00:00:00`);
+    const end = new Date(`${weekDates[6]}T00:00:00`);
+    const sameMonth = start.getMonth() === end.getMonth();
+    const startStr = start.toLocaleDateString('fr-DZ', { day:'numeric', month: sameMonth ? undefined : 'short' });
+    const endStr = end.toLocaleDateString('fr-DZ', { day:'numeric', month:'short', year:'numeric' });
+    return `${startStr} – ${endStr}`;
+  }, [weekDates]);
+
   const handleAgendaPrevMonth = () => {
     if (agendaMonth === 0) { setAgendaMonth(11); setAgendaYear(y => y - 1); } else { setAgendaMonth(m => m - 1); }
   };
   const handleAgendaNextMonth = () => {
     if (agendaMonth === 11) { setAgendaMonth(0); setAgendaYear(y => y + 1); } else { setAgendaMonth(m => m + 1); }
   };
+  const handleAgendaPrevWeek = () => {
+    const newStart = addDaysISO(weekStart, -7);
+    setWeekStart(newStart);
+    const d = new Date(`${newStart}T00:00:00`);
+    setAgendaYear(d.getFullYear()); setAgendaMonth(d.getMonth());
+  };
+  const handleAgendaNextWeek = () => {
+    const newStart = addDaysISO(weekStart, 7);
+    setWeekStart(newStart);
+    const d = new Date(`${newStart}T00:00:00`);
+    setAgendaYear(d.getFullYear()); setAgendaMonth(d.getMonth());
+  };
   const handleAgendaToday = () => {
     const t = todayISO();
     setAgendaYear(now.getFullYear()); setAgendaMonth(now.getMonth());
-    setAgendaSelectedDate(t);
+    setAgendaSelectedDate(t); setWeekStart(getWeekStart(t));
+  };
+  const handleAgendaSelectDay = (dateStr) => {
+    setAgendaSelectedDate(dateStr);
+    if (viewMode === 'semaine') setWeekStart(getWeekStart(dateStr));
+  };
+  const handleAgendaStatusChange = async (id, statut) => {
+    setMyRdvs(prev => prev.map(r => r.id === id ? { ...r, statut } : r));
+    try {
+      await secretaryService.updateStatut(id, statut);
+    } catch (err) {
+      console.error('Erreur mise à jour statut:', err);
+      fetchMyRdvs();
+    }
   };
 
   /* ── Loading ── */
@@ -701,10 +845,11 @@ export default function DashboardPage() {
         .rc-kpi-grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
         .rc-pie-row    { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
         .rc-two-col    { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
-        .agenda-grid   { display:grid; grid-template-columns:3fr 1fr; gap:20px; align-items:start; }
+        .agenda-grid   { display:grid; grid-template-columns:1.5fr 1fr; gap:16px; align-items:start; }
         .agenda-calendar-wrap { overflow-x:auto; }
-        .agenda-month-grid    { display:grid; grid-template-columns:repeat(7,minmax(100px,1fr)); gap:6px; min-width:720px; }
-        .agenda-day-cell      { min-height:110px; max-height:150px; overflow:hidden; }
+        .agenda-month-grid    { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; min-width:520px; }
+        .agenda-week-grid     { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; min-width:640px; }
+        .agenda-day-cell      { min-height:78px; }
         @media (max-width: 1100px) {
           .rc-kpi-grid-5 { grid-template-columns:repeat(3,1fr); }
           .rc-kpi-grid-4 { grid-template-columns:repeat(2,1fr); }
@@ -750,28 +895,32 @@ export default function DashboardPage() {
 
       {/* ── Agenda personnel — médecin / médecin chef uniquement ── */}
       {isMedecin && (
-        <div style={{ marginBottom:20 }}>
+        <div className="agenda-grid" style={{ marginBottom:20 }}>
           <ChartCard
-            title="Mon agenda"
-            sub="Vos rendez-vous à venir"
+            title={viewMode === 'semaine' ? `Semaine du ${weekLabel}` : `${MOIS_LABELS[agendaMonth]} ${agendaYear}`}
+            sub={viewMode === 'semaine' ? 'Mon agenda — vos rendez-vous de la semaine' : 'Mon agenda — cliquez sur un jour pour voir le détail'}
             actions={
-              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                <button onClick={handleAgendaPrevMonth} style={agendaNavBtnStyle}>‹</button>
-                <span style={{ fontSize:12, fontWeight:700, color:'#334155', minWidth:110, textAlign:'center' }}>
-                  {MOIS_LABELS[agendaMonth]} {agendaYear}
-                </span>
-                <button onClick={handleAgendaNextMonth} style={agendaNavBtnStyle}>›</button>
-                <button onClick={handleAgendaToday} style={{ ...agendaNavBtnStyle, width:'auto', padding:'0 12px', fontSize:11, fontWeight:700 }}>
-                  Aujourd'hui
-                </button>
-                <Link to="/secretaire/rendezvous/nouveau" style={{ textDecoration:'none' }}>
-                  <span style={{
-                    display:'inline-block', padding:'7px 14px', background:'linear-gradient(135deg,#3b82f6,#2563eb)',
-                    borderRadius:9, color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer',
-                  }}>
-                    + Nouveau RDV
-                  </span>
-                </Link>
+              <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                <div style={{ display:'flex', border:'1px solid rgba(37,99,235,0.18)', borderRadius:9, overflow:'hidden' }}>
+                  {['mois','semaine'].map(mode => (
+                    <button
+                      key={mode}
+                      onClick={() => setViewMode(mode)}
+                      style={{
+                        padding:'6px 12px', fontSize:11, fontWeight:700, border:'none', cursor:'pointer',
+                        background: viewMode === mode ? '#2563eb' : '#fff',
+                        color: viewMode === mode ? '#fff' : '#2563eb',
+                      }}
+                    >
+                      {mode === 'mois' ? 'Mois' : 'Semaine'}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                  <button onClick={viewMode === 'semaine' ? handleAgendaPrevWeek : handleAgendaPrevMonth} style={agendaNavBtnStyle}>‹</button>
+                  <button onClick={handleAgendaToday} style={{ ...agendaNavBtnStyle, width:'auto', padding:'0 12px', fontSize:11, fontWeight:700 }}>Aujourd'hui</button>
+                  <button onClick={viewMode === 'semaine' ? handleAgendaNextWeek : handleAgendaNextMonth} style={agendaNavBtnStyle}>›</button>
+                </div>
               </div>
             }
           >
@@ -779,22 +928,39 @@ export default function DashboardPage() {
               <div style={{ padding:'30px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>
                 Chargement de votre agenda...
               </div>
+            ) : viewMode === 'semaine' ? (
+              <MyWeekGrid
+                weekDates={weekDates}
+                rdvByDay={myRdvByDay}
+                selectedDate={agendaSelectedDate}
+                onSelectDay={handleAgendaSelectDay}
+              />
             ) : (
-              <div className="agenda-grid">
-                <MyAgendaCalendar
-                  year={agendaYear}
-                  month={agendaMonth}
-                  rdvByDay={myRdvByDay}
-                  selectedDate={agendaSelectedDate}
-                  onSelectDay={setAgendaSelectedDate}
-                />
-                <MyAgendaDayPanel
-                  date={agendaSelectedDate}
-                  rdvs={myRdvByDay[agendaSelectedDate] || []}
-                />
-              </div>
+              <MyMonthGrid
+                year={agendaYear}
+                month={agendaMonth}
+                rdvByDay={myRdvByDay}
+                selectedDate={agendaSelectedDate}
+                onSelectDay={handleAgendaSelectDay}
+              />
             )}
+
+            {/* Légende */}
+            <div style={{ display:'flex', flexWrap:'wrap', gap:'6px 14px', marginTop:16, paddingTop:14, borderTop:'1px solid rgba(37,99,235,0.08)' }}>
+              {Object.entries(STATUT_RDV_LABELS).map(([k2, l]) => (
+                <div key={k2} style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#64748b' }}>
+                  <div style={{ width:7, height:7, borderRadius:'50%', background:STATUT_RDV_COLORS[k2] }} />
+                  {l}
+                </div>
+              ))}
+            </div>
           </ChartCard>
+
+          <MyDayPanel
+            date={agendaSelectedDate}
+            rdvs={myRdvByDay[agendaSelectedDate] || []}
+            onStatusChange={handleAgendaStatusChange}
+          />
         </div>
       )}
 
