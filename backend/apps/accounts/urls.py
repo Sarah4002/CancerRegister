@@ -10,6 +10,9 @@ from .views_admin import (
     AdminAuditLogsView,
     AdminAuditStatsView,
     MedecinsListView,
+    AdminBackupListCreateView,
+    AdminBackupDetailView,
+    AdminBackupUploadView,
 )
 
 urlpatterns = [
@@ -30,8 +33,11 @@ urlpatterns = [
     path('admin/users/<int:pk>/',      AdminUserDetailView.as_view(), name='admin-user-detail'),
     path('admin/users/<int:pk>/logs/', AdminUserLogsView.as_view(),   name='admin-user-logs'),
     path('admin/users/<int:pk>/reset_password/', views.admin_reset_password_view, name='admin-reset-password'),
-    path('admin/users/<int:pk>/reset_password/', views.admin_reset_password_view, name='admin-reset-password'),
-
+    path('admin/backups/', AdminBackupListCreateView.as_view(), name='admin-backups'),
+    path('admin/backups/upload/', AdminBackupUploadView.as_view(), name='admin-backup-upload'),
+    path('admin/backups/<str:filename>/download/', AdminBackupDetailView.as_view(), name='admin-backup-download'),
+    path('admin/backups/<str:filename>/restore/', AdminBackupDetailView.as_view(), name='admin-backup-restore'),
+    path('admin/backups/<str:filename>/', AdminBackupDetailView.as_view(), name='admin-backup-detail'),
     # Audit logs (réservé role=admin)
     path('admin/audit-logs/',          AdminAuditLogsView.as_view(),  name='admin-audit-logs'),
     path('admin/audit-logs/stats/',    AdminAuditStatsView.as_view(), name='admin-audit-logs-stats'),

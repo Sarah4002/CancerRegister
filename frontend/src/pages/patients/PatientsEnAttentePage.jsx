@@ -16,6 +16,28 @@ const SEXE_COLORS = {
   U: { bg: 'rgba(100,116,139,0.08)', color: '#64748b' },
 };
 
+const SEXE_LABELS = { M: 'Masculin', F: 'Féminin', U: 'Inconnu' };
+
+/* Sexe : utilise sexe_label du backend, sinon le déduit du code sexe */
+function getSexe(p) {
+  const raw  = (p?.sexe || '').toString().trim().toUpperCase();
+  const code = raw === 'M' || raw === 'F' ? raw : 'U';
+  return { code, label: p?.sexe_label || SEXE_LABELS[code] };
+}
+
+/* Âge : utilise age du backend, sinon le calcule depuis date_naissance */
+function getAge(p) {
+  if (p?.age !== null && p?.age !== undefined && p.age !== '') return p.age;
+  if (!p?.date_naissance) return null;
+  const d = new Date(p.date_naissance);
+  if (Number.isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age >= 0 ? age : null;
+}
+
 function urgenceInfo(dateEnregistrement) {
   if (!dateEnregistrement) return { jours: 0, label: '—', color: '#64748b', bg: 'rgba(100,116,139,0.08)' };
   const jours = Math.floor((Date.now() - new Date(dateEnregistrement).getTime()) / 86400000);
@@ -266,6 +288,8 @@ export default function PatientsEnAttentePage() {
       const { data } = await patientService.getEnAttente();
       let results = data.results || data;
       if (!Array.isArray(results)) results = [];
+      // DEBUG TEMPORAIRE : vérifier que sexe / sexe_label / age / date_naissance arrivent
+      if (results[0]) console.log('[EnAttente] 1er patient reçu:', results[0]);
       setPatients(results);
     } catch {
       toast.error('Erreur lors du chargement des dossiers en attente');
@@ -425,7 +449,10 @@ export default function PatientsEnAttentePage() {
               </tr>
             </thead>
             <tbody>
-              {filteredPatients.map((p, i) => (
+              {filteredPatients.map((p, i) => {
+                const sexe = getSexe(p);
+                const age  = getAge(p);
+                return (
                 <tr key={p.id}
                   style={{
                     borderBottom:'1px solid rgba(37,99,235,0.06)', transition:'background .1s',
@@ -441,11 +468,13 @@ export default function PatientsEnAttentePage() {
                     <div style={{ fontWeight:600, fontSize:13, color:'#0f172a' }}>{p.full_name}</div>
                   </td>
                   <td style={{ padding:'12px 14px' }}>
-                    <span style={{ padding:'2px 8px', borderRadius:12, fontSize:11, fontWeight:600, ...(SEXE_COLORS[p.sexe]||SEXE_COLORS.U) }}>
-                      {p.sexe_label}
+                    <span style={{ padding:'2px 8px', borderRadius:12, fontSize:11, fontWeight:600, ...SEXE_COLORS[sexe.code] }}>
+                      {sexe.label}
                     </span>
                   </td>
-                  <td style={{ padding:'12px 14px', fontSize:13, color:'#334155' }}>{p.age??'—'} ans</td>
+                  <td style={{ padding:'12px 14px', fontSize:13, color:'#334155' }}>
+                    {age !== null ? `${age} ans` : '—'}
+                  </td>
                   <td style={{ padding:'12px 14px', fontSize:12.5, color:'#334155' }}>{p.secretaire_nom || '—'}</td>
                   <td style={{ padding:'12px 14px' }}>
                     <UrgenceBadge dateEnregistrement={p.date_enregistrement} />
@@ -476,7 +505,8 @@ export default function PatientsEnAttentePage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}

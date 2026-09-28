@@ -257,7 +257,7 @@ function BackupTab() {
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = b.filename || `backup-${b.id}.sql`;
+      a.download = b.filename || `backup-${b.id}.json`;
       document.body.appendChild(a); a.click(); a.remove();
       window.URL.revokeObjectURL(url);
     } catch {
@@ -312,8 +312,8 @@ function BackupTab() {
         </div>
 
         <div style={cardSt}>
-          <SectionTitle sub="Restaurer les données à partir d'un fichier de sauvegarde externe (.sql, .json)">Importer une sauvegarde</SectionTitle>
-          <input ref={fileInputRef} type="file" accept=".sql,.json,.gz" onChange={handleUploadFile} style={{ display:'none' }} />
+          <SectionTitle sub="Importer un fichier de sauvegarde JSON créé par cette application">Importer une sauvegarde</SectionTitle>
+          <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={handleUploadFile} style={{ display:'none' }} />
           <PrimaryButton onClick={() => fileInputRef.current?.click()} disabled={uploading} color="#2563eb" variant="outline">
             {uploading ? 'Import en cours...' : 'Choisir un fichier'}
           </PrimaryButton>
@@ -342,7 +342,7 @@ function BackupTab() {
             <tbody>
               {backups.map(b => (
                 <tr key={b.id} style={{ borderBottom:'1px solid rgba(37,99,235,0.06)' }}>
-                  <td style={{ padding:'10px', fontSize:12.5, color:'#0f172a', fontWeight:600, fontFamily:'var(--font-mono)' }}>{b.filename || `backup-${b.id}.sql`}</td>
+                  <td style={{ padding:'10px', fontSize:12.5, color:'#0f172a', fontWeight:600, fontFamily:'var(--font-mono)' }}>{b.filename || `backup-${b.id}.json`}</td>
                   <td style={{ padding:'10px', fontSize:12, color:'#64748b' }}>{b.size_display || '—'}</td>
                   <td style={{ padding:'10px', fontSize:11.5, color:'#64748b', fontFamily:'var(--font-mono)' }}>{b.created_at ? new Date(b.created_at).toLocaleString('fr-DZ') : '—'}</td>
                   <td style={{ padding:'10px' }}>
@@ -361,7 +361,7 @@ function BackupTab() {
       {confirmRestore && (
         <ConfirmModal
           title="Restaurer cette sauvegarde ?"
-          message={`Toutes les données actuelles seront remplacées par le contenu de "${confirmRestore.filename || `backup-${confirmRestore.id}.sql`}". Cette action est irréversible.`}
+          message={`Les données de cette sauvegarde seront chargées dans la base actuelle depuis "${confirmRestore.filename || `backup-${confirmRestore.id}.json`}".`}
           confirmLabel="Restaurer"
           color="#d97706"
           loading={restoring}

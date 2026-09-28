@@ -16,11 +16,96 @@ from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from datetime import datetime, timedelta
+from pathlib import Path
+from django.conf import settings
+from django.core.management import call_command
+from django.http import FileResponse
+from django.utils.text import get_valid_filename
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.decorators import api_view, permission_classes, parser_classes
 
 from .permissions import CanManageUsers
 from .models import AccessLog
 
 User = get_user_model()
+
+
+def _backup_dir():
+    path = Path(settings.BASE_DIR) / 'backups'
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+class AdminBackupListCreateView(APIView):
+    permission_classes = [CanManageUsers]
+
+    def get(self, request):
+        files = sorted(_backup_dir().glob('*.json'), key=lambda item: item.stat().st_mtime, reverse=True)
+        return Response({'count': len(files), 'results': [
+            {'id': item.name, 'filename': item.name, 'size_display': f"{item.stat().st_size / 1024:.1f} Ko",
+             'created_at': datetime.fromtimestamp(item.stat().st_mtime, tz=timezone.get_current_timezone()).isoformat()}
+            for item in files
+        ]})
+
+    def post(self, request):
+        filename = timezone.now().strftime('backup-%Y%m%d-%H%M%S.json')
+        target = _backup_dir() / filename
+        try:
+            with target.open('w', encoding='utf-8') as output:
+                call_command('dumpdata', format='json', indent=2, stdout=output, exclude=['contenttypes', 'auth.permission', 'sessions.session'])
+        except Exception as error:
+            target.unlink(missing_ok=True)
+            return Response({'error': f'Échec de la sauvegarde: {error}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'id': filename, 'filename': filename}, status=status.HTTP_201_CREATED)
+
+
+class AdminBackupDetailView(APIView):
+    permission_classes = [CanManageUsers]
+
+    def _file(self, filename):
+        safe_name = get_valid_filename(Path(filename).name)
+        target = _backup_dir() / safe_name
+        return target if target.is_file() and target.suffix in {'.json', '.sql', '.gz'} else None
+
+    def get(self, request, filename, action=None):
+        target = self._file(filename)
+        if not target:
+            return Response({'error': 'Sauvegarde introuvable.'}, status=404)
+        return FileResponse(target.open('rb'), as_attachment=True, filename=target.name)
+
+    def delete(self, request, filename):
+        target = self._file(filename)
+        if not target:
+            return Response({'error': 'Sauvegarde introuvable.'}, status=404)
+        target.unlink()
+        return Response(status=204)
+
+    def post(self, request, filename):
+        target = self._file(filename)
+        if not target or target.suffix != '.json':
+            return Response({'error': 'Seules les sauvegardes JSON peuvent être restaurées.'}, status=400)
+        try:
+            call_command('loaddata', str(target))
+        except Exception as error:
+            return Response({'error': f'Échec de la restauration: {error}'}, status=400)
+        return Response({'message': 'Sauvegarde restaurée.'})
+
+
+class AdminBackupUploadView(APIView):
+    permission_classes = [CanManageUsers]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        uploaded = request.FILES.get('file')
+        if not uploaded or Path(uploaded.name).suffix.lower() != '.json':
+            return Response({'error': 'Importez un fichier de sauvegarde JSON.'}, status=400)
+        filename = get_valid_filename(Path(uploaded.name).name)
+        if not filename.endswith('.json'):
+            filename += '.json'
+        with (_backup_dir() / filename).open('wb') as destination:
+            for chunk in uploaded.chunks():
+                destination.write(chunk)
+        return Response({'filename': filename}, status=201)
 
 # Labels lisibles par rôle (utilisés dans la réponse API)
 ROLE_LABELS = {

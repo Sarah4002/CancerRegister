@@ -415,14 +415,6 @@ export default function NewPatientPage() {
               <div style={{ animation: 'fadeUp 0.3s ease' }}>
                 <SectionTitle>Coordonnees et Adresse</SectionTitle>
 
-                <VoiceDictation
-                  formType="patient"
-                  onFieldsExtracted={(fields) => {
-                    Object.entries(fields).forEach(([key, value]) => {
-                      setValue(key, value, { shouldValidate: true });
-                    });
-                  }}
-                />
                 <div style={{ margin: '12px 0', height: 1, background: 'rgba(37,99,235,0.12)' }} />
 
                 <Field label="Adresse complete">
