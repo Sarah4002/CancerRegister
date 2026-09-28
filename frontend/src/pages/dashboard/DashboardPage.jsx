@@ -701,9 +701,9 @@ export default function DashboardPage() {
         .rc-kpi-grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
         .rc-pie-row    { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
         .rc-two-col    { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
-        .agenda-grid   { display:grid; grid-template-columns:2fr 1fr; gap:20px; align-items:start; }
+        .agenda-grid   { display:grid; grid-template-columns:3fr 1fr; gap:20px; align-items:start; }
         .agenda-calendar-wrap { overflow-x:auto; }
-        .agenda-month-grid    { display:grid; grid-template-columns:repeat(7,minmax(120px,1fr)); gap:6px; min-width:840px; }
+        .agenda-month-grid    { display:grid; grid-template-columns:repeat(7,minmax(100px,1fr)); gap:6px; min-width:720px; }
         .agenda-day-cell      { min-height:110px; max-height:150px; overflow:hidden; }
         @media (max-width: 1100px) {
           .rc-kpi-grid-5 { grid-template-columns:repeat(3,1fr); }
