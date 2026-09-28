@@ -37,7 +37,7 @@ export default function LoginPage() {
   useEffect(() => {
     setMounted(true);
     if (isAuthenticated) {
-      navigate(getHomeRouteForRole(user?.role));
+      navigate(user?.must_change_password ? '/change-password-required' : getHomeRouteForRole(user?.role));
     }
   }, [isAuthenticated, user?.role, navigate]);
 
@@ -48,7 +48,8 @@ export default function LoginPage() {
     if (result.success) {
       toast.success('Connexion réussie');
       const role = useAuthStore.getState().user?.role;
-      navigate(getHomeRouteForRole(role));
+      const currentUser = useAuthStore.getState().user;
+      navigate(currentUser?.must_change_password ? '/change-password-required' : getHomeRouteForRole(role));
     } else {
       toast.error(result.error);
     }

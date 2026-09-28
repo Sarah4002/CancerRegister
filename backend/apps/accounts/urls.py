@@ -29,6 +29,8 @@ urlpatterns = [
     path('admin/users/stats/',         AdminUserStatsView.as_view(),  name='admin-users-stats'),
     path('admin/users/<int:pk>/',      AdminUserDetailView.as_view(), name='admin-user-detail'),
     path('admin/users/<int:pk>/logs/', AdminUserLogsView.as_view(),   name='admin-user-logs'),
+    path('admin/users/<int:pk>/reset_password/', views.admin_reset_password_view, name='admin-reset-password'),
+    path('admin/users/<int:pk>/reset_password/', views.admin_reset_password_view, name='admin-reset-password'),
 
     # Audit logs (réservé role=admin)
     path('admin/audit-logs/',          AdminAuditLogsView.as_view(),  name='admin-audit-logs'),

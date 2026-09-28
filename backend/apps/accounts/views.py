@@ -128,7 +128,8 @@ def change_password_view(request):
     if not user.check_password(serializer.validated_data['old_password']):
         return Response({"error": "Ancien mot de passe incorrect."}, status=status.HTTP_400_BAD_REQUEST)
     user.set_password(serializer.validated_data['new_password'])
-    user.save()
+    user.must_change_password = False
+    user.save(update_fields=['password', 'must_change_password'])
     AccessLog.objects.create(
         user=user,
         action=AccessLog.Action.UPDATE,
@@ -231,3 +232,29 @@ def _device_name(user_agent):
         os_name = 'iOS'
 
     return f'{browser} - {os_name}'
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def admin_reset_password_view(request, pk):
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return Response({"detail": "Accès réservé aux administrateurs."}, status=status.HTTP_403_FORBIDDEN)
+    password = request.data.get('password', '')
+    from django.contrib.auth.password_validation import validate_password
+    try:
+        validate_password(password)
+    except Exception as error:
+        return Response({"password": [str(error)]}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        user = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response({"detail": "Utilisateur introuvable."}, status=status.HTTP_404_NOT_FOUND)
+    user.set_password(password)
+    user.must_change_password = True
+    user.save(update_fields=['password', 'must_change_password'])
+    for token in OutstandingToken.objects.filter(user=user):
+        BlacklistedToken.objects.get_or_create(token=token)
+    AccessLog.objects.create(user=request.user, action=AccessLog.Action.UPDATE,
+        resource='password_reset', resource_id=str(user.pk), ip_address=_get_ip(request),
+        details={'target_user_id': user.pk, 'must_change_password': True})
+    return Response({"message": "Réinitialisation effectuée; changement du mot de passe obligatoire à la prochaine connexion."})

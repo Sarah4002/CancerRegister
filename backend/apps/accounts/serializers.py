@@ -38,6 +38,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'username':     user.username,
             'full_name':    user.get_display_name(),
             'role':         user.role,
+            'must_change_password': user.must_change_password,
             'role_display': user.get_role_display(),
             'institution':  user.institution,
             'wilaya':       user.wilaya,

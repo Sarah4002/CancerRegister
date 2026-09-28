@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import ForcedPasswordChangePage from './pages/auth/ForcedPasswordChangePage';
 
 import DashboardPage from './pages/dashboard/DashboardPage';
 
@@ -58,8 +59,10 @@ import './styles/globals.css';
 // Route protégée : authentification
 // ─────────────────────────────────────────
 function ProtectedRoute({ children }) {
-  const { isAuthenticated } = useAuthStore();
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  const { isAuthenticated, user } = useAuthStore();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (user?.must_change_password) return <Navigate to="/change-password-required" replace />;
+  return children;
 }
 
 function RoleAwareDashboard() {
@@ -159,6 +162,7 @@ function App() {
 
         {/* ───────── Auth publique ───────── */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/change-password-required" element={<ForcedPasswordChangePage />} />
         <Route path="/register" element={<RegisterPage />} />
 
         {/* ───────── Dashboard ───────── */}
