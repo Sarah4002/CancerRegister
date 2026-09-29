@@ -3,7 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
 
 import LoginPage from './pages/auth/LoginPage';
-import LandingPage from './pages/auth/LandingPage';
+import LandingPage from './pages/auth/Landingpage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForcedPasswordChangePage from './pages/auth/ForcedPasswordChangePage';
 
