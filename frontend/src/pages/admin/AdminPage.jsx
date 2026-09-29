@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
+  LineChart, Line, Legend,
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer,
 } from 'recharts';
@@ -114,6 +115,66 @@ function ActionBadge({ action }) {
   );
 }
 
+/* ── Helpers pour les nouvelles statistiques (calculées côté client à partir
+   des logs d'audit déjà chargés, sans dépendre d'un nouvel endpoint) ── */
+
+/* Évolution sur 30 jours : nombre de connexions et de créations par jour */
+function buildTrendData(logs) {
+  const days = [];
+  const today = new Date();
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    days.push({
+      key,
+      label: d.toLocaleDateString('fr-DZ', { day: '2-digit', month: '2-digit' }),
+      connexions: 0,
+      creations: 0,
+    });
+  }
+  const byKey = Object.fromEntries(days.map(d => [d.key, d]));
+  (logs || []).forEach(log => {
+    if (!log.timestamp) return;
+    const key = new Date(log.timestamp).toISOString().slice(0, 10);
+    const bucket = byKey[key];
+    if (!bucket) return; // hors des 30 derniers jours
+    if (log.action === 'login') bucket.connexions += 1;
+    if (log.action === 'create') bucket.creations += 1;
+  });
+  return days;
+}
+
+/* Répartition des actions d'audit par type */
+function buildActionBreakdown(logs) {
+  const counts = {};
+  (logs || []).forEach(log => {
+    const a = log.action || 'autre';
+    counts[a] = (counts[a] || 0) + 1;
+  });
+  return Object.entries(counts)
+    .map(([action, count]) => ({
+      action,
+      count,
+      label: ACTION_CFG[action]?.label || action,
+      color: ACTION_CFG[action]?.color || '#94a3b8',
+    }))
+    .sort((a, b) => b.count - a.count);
+}
+
+/* Top 5 des utilisateurs les plus actifs (nombre d'événements d'audit) */
+function buildTopUsers(logs) {
+  const counts = {};
+  (logs || []).forEach(log => {
+    const key = log.user_display || log.user_email || 'Utilisateur inconnu';
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  return Object.entries(counts)
+    .map(([user, count]) => ({ user, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+}
+
 /* ══════════════════════════════════════════════
    MAIN — AdminPage (Utilisateurs + Audit uniquement)
    ══════════════════════════════════════════════ */
@@ -121,6 +182,7 @@ export default function AdminPage() {
   const [userStats,  setUserStats]  = useState(null);
   const [auditStats, setAuditStats] = useState(null);
   const [recentLogs, setRecentLogs] = useState([]);
+  const [allLogs,    setAllLogs]    = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [lastUpdate, setLastUpdate] = useState(null);
 
@@ -136,6 +198,7 @@ export default function AdminPage() {
       setAuditStats(aStats.data);
       const logs = logsRes.data.results || logsRes.data || [];
       setRecentLogs(logs.slice(0, 8));
+      setAllLogs(logs);
       setLastUpdate(new Date());
     } catch (err) {
       console.error('Admin overview error:', err);
@@ -180,6 +243,11 @@ export default function AdminPage() {
   }));
 
   const maxRole = Math.max(...parRoleData.map(r => r.value), 1);
+
+  const trendData      = buildTrendData(allLogs);
+  const actionBreakdown = buildActionBreakdown(allLogs);
+  const topUsers        = buildTopUsers(allLogs);
+  const maxUserCount    = Math.max(...topUsers.map(u => u.count), 1);
 
   return (
     <AppLayout title="Administration">
@@ -274,6 +342,89 @@ export default function AdminPage() {
               <Tooltip content={<CustomTooltip />} />
             </PieChart>
           </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      {/* ── Évolution sur 30 jours + Répartition des actions ── */}
+      <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr', gap:16, marginBottom:16 }}>
+
+        <ChartCard title="Évolution sur 30 jours" sub="Connexions et créations par jour">
+          {trendData.every(d => d.connexions === 0 && d.creations === 0) ? (
+            <div style={{ padding:32, textAlign:'center', color:'#94a3b8', fontSize:12 }}>Aucune donnée sur cette période</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={trendData} margin={{ top:6, right:16, bottom:0, left:-10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="label" tick={{ fill:'#94a3b8', fontSize:10 }} axisLine={false} tickLine={false} interval={3} />
+                <YAxis tick={{ fill:'#94a3b8', fontSize:11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ fontSize:11 }} />
+                <Line type="monotone" dataKey="connexions" name="Connexions" stroke="#0891b2" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="creations"  name="Créations"  stroke="#16a34a" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </ChartCard>
+
+        <ChartCard title="Répartition des actions" sub="Par type d'événement">
+          {actionBreakdown.length === 0 ? (
+            <div style={{ padding:32, textAlign:'center', color:'#94a3b8', fontSize:12 }}>Aucune donnée</div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {actionBreakdown.map(a => (
+                <div key={a.action}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+                    <ActionBadge action={a.action} />
+                    <span style={{ fontSize:12, fontWeight:700, color:'#0f172a' }}>{a.count}</span>
+                  </div>
+                  <div style={{ height:6, borderRadius:4, background:'#f1f5f9', overflow:'hidden' }}>
+                    <div style={{
+                      height:'100%', borderRadius:4, background:a.color,
+                      width:`${(a.count / actionBreakdown[0].count) * 100}%`,
+                    }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </ChartCard>
+      </div>
+
+      {/* ── Utilisateurs les plus actifs ── */}
+      <div style={{ marginBottom:16 }}>
+        <ChartCard title="Utilisateurs les plus actifs" sub="D'après le journal d'audit chargé" span={2}>
+          {topUsers.length === 0 ? (
+            <div style={{ padding:32, textAlign:'center', color:'#94a3b8', fontSize:12 }}>Aucune donnée</div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {topUsers.map((u, i) => (
+                <div key={u.user} style={{ display:'flex', alignItems:'center', gap:12 }}>
+                  <div style={{
+                    width:26, height:26, borderRadius:'50%', flexShrink:0,
+                    background:`${CHART_COLORS[i % CHART_COLORS.length]}18`,
+                    border:`1px solid ${CHART_COLORS[i % CHART_COLORS.length]}30`,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    fontSize:11, fontWeight:700, color:CHART_COLORS[i % CHART_COLORS.length],
+                  }}>
+                    {i + 1}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+                      <span style={{ fontSize:12.5, fontWeight:600, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{u.user}</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:'#2563eb', flexShrink:0, marginLeft:10 }}>{u.count} événement{u.count > 1 ? 's' : ''}</span>
+                    </div>
+                    <div style={{ height:6, borderRadius:4, background:'#f1f5f9', overflow:'hidden' }}>
+                      <div style={{
+                        height:'100%', borderRadius:4,
+                        background: CHART_COLORS[i % CHART_COLORS.length],
+                        width:`${(u.count / maxUserCount) * 100}%`,
+                      }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </ChartCard>
       </div>
 

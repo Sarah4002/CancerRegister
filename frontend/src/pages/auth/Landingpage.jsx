@@ -297,12 +297,12 @@ export default function LandingPage() {
       {/* ── Bandeau engagement ── */}
       <section style={{ padding: '0 56px 56px' }}>
         <div style={{
-          maxWidth: 1280, margin: '0 auto', background: 'linear-gradient(120deg, #0f2c52, #1e3a6a)',
+          maxWidth: 1280, margin: '0 auto', background: '#2563eb',
           borderRadius: 20, padding: '30px 36px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           flexWrap: 'wrap', gap: 24, color: '#fff',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 18, maxWidth: 480 }}>
-            <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#fff"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9.5 9.5l5 5M8 16l-2.5 2.5a2.121 2.121 0 01-3-3L5 13m9-9l2.5-2.5a2.121 2.121 0 013 3L17 7m-9 9l9-9" /></svg>
             </div>
             <div>
@@ -324,7 +324,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer style={{ padding: '22px 56px', background: '#0f2c52', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+      <footer style={{ padding: '22px 56px', background: '#2563eb', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <span style={{ fontSize: 12 }}>© 2026 Registre Oncologique. Tous droits réservés.</span>
         <div style={{ display: 'flex', gap: 20 }}>
           {['Mentions légales', 'Confidentialité', 'Contact'].map(l => (
