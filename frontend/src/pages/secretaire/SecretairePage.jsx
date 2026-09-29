@@ -1069,14 +1069,6 @@ export default function SecretairePage() {
             </div>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <NotificationBell
-              items={upcoming}
-              open={notifOpen}
-              onToggle={() => setNotifOpen(o => !o)}
-              onClose={() => setNotifOpen(false)}
-              onSelect={handleNotifSelect}
-              live={isLive}
-            />
             <Link to="/secretaire/rendezvous/nouveau" style={{ textDecoration:'none' }}>
               <button style={{
                 padding:'9px 18px', background:'linear-gradient(135deg,#3b82f6,#2563eb)',
