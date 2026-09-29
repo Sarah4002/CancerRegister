@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
 
 import LoginPage from './pages/auth/LoginPage';
+import LandingPage from './pages/auth/LandingPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForcedPasswordChangePage from './pages/auth/ForcedPasswordChangePage';
 
@@ -83,11 +84,13 @@ function RoleAwareDashboard() {
   return <DashboardPage />;
 }
 
+// Racine du site : les visiteurs non connectés voient la landing page publique,
+// les utilisateurs déjà authentifiés sont redirigés vers leur espace de travail.
 function HomeRedirect() {
   const { isAuthenticated, user } = useAuthStore();
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <LandingPage />;
   }
 
   return <Navigate to={getHomeRouteForRole(user?.role)} replace />;
@@ -159,6 +162,9 @@ function App() {
       />
 
       <Routes>
+
+        {/* ───────── Accueil public ───────── */}
+        <Route path="/accueil" element={<LandingPage />} />
 
         {/* ───────── Auth publique ───────── */}
         <Route path="/login" element={<LoginPage />} />
