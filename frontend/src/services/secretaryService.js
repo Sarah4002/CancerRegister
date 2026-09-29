@@ -113,6 +113,29 @@ function normalizeTypeForCreate(type) {
 const RDV_PAGE_SIZE = 1000;
 
 export const secretaryService = {
+  getUpcoming: async ({ jours = 3 } = {}) => {
+    const { data } = await api.get('/suivi/consultations/', {
+      params: { ordering: 'date_consultation', page_size: RDV_PAGE_SIZE },
+    });
+
+    const items = Array.isArray(data) ? data : (data?.results || []);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const lastDay = new Date(today);
+    lastDay.setDate(lastDay.getDate() + Number(jours));
+
+    return {
+      data: items
+        .map(normalizeRdv)
+        .filter((item) => {
+          if (!item.date || ['annule', 'termine', 'absent'].includes(item.statut)) return false;
+          const date = getDateOnly(item.date);
+          return date && date >= today && date <= lastDay;
+        })
+        .sort((a, b) => `${a.date}${a.heure}`.localeCompare(`${b.date}${b.heure}`)),
+    };
+  },
+
   getRendezVous: async ({ mois, annee, patient } = {}) => {
     const { data } = await api.get('/suivi/consultations/', {
       params: { ordering: '-date_consultation', page_size: RDV_PAGE_SIZE, patient },
