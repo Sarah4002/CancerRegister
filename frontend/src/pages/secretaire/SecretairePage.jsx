@@ -33,7 +33,6 @@ const MOIS_LABELS = [
   'Juillet','Août','Septembre','Octobre','Novembre','Décembre',
 ];
 const JOURS_LABELS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-const JOURS_LABELS_LONG = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -128,67 +127,6 @@ function ChartCard({ title, sub, children, span = 1, actions, className }) {
   );
 }
 
-function FilterSelect({ label, value, onChange, children }) {
-  return (
-    <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
-      <span style={{ fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1 }}>{label}</span>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        style={{
-          fontSize:12, padding:'7px 10px',
-          border:'1px solid rgba(37,99,235,0.18)', borderRadius:9,
-          background:'#fff', color:'#334155', cursor:'pointer',
-          minWidth:150, outline:'none',
-          boxShadow:'0 1px 4px rgba(15,23,42,0.05)',
-        }}
-      >
-        {children}
-      </select>
-    </div>
-  );
-}
-
-/* Champ de recherche rapide (patient / médecin) */
-function SearchField({ value, onChange }) {
-  return (
-    <div style={{ display:'flex', flexDirection:'column', gap:4, flex:1, minWidth:220 }}>
-      <span style={{ fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1 }}>Recherche</span>
-      <div style={{ position:'relative' }}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.4"
-          style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)' }}>
-          <circle cx="11" cy="11" r="7" />
-          <path d="M21 21l-4.3-4.3" />
-        </svg>
-        <input
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder="Nom du patient ou du médecin..."
-          style={{
-            width:'100%', fontSize:12, padding:'7px 10px 7px 30px',
-            border:'1px solid rgba(37,99,235,0.18)', borderRadius:9,
-            background:'#fff', color:'#334155', outline:'none',
-            boxShadow:'0 1px 4px rgba(15,23,42,0.05)',
-          }}
-        />
-        {value && (
-          <button
-            onClick={() => onChange('')}
-            style={{
-              position:'absolute', right:8, top:'50%', transform:'translateY(-50%)',
-              border:'none', background:'transparent', color:'#94a3b8', cursor:'pointer',
-              fontSize:13, lineHeight:1, padding:2,
-            }}
-            aria-label="Effacer la recherche"
-          >
-            ✕
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /* Petite pastille d'alerte générique (conflit médecin, doublon patient, etc.) */
 function AlertFlag({ title, color = '#dc2626' }) {
   return (
@@ -219,8 +157,6 @@ function DuplicatePatientFlag({ title = 'Ce patient a déjà un autre rendez-vou
 
 /* ══════════════════════════════════════════════
    Calendrier mensuel (avec drag & drop + conflits)
-   Même design responsive que l'agenda du dashboard :
-   défilement horizontal sur petit écran, cellules homogènes.
    ══════════════════════════════════════════════ */
 function CalendarGrid({ year, month, rdvByDay, selectedDate, onSelectDay, conflictIds, patientDuplicateIds, onDropRdv, searchActive }) {
   const firstOfMonth = new Date(year, month, 1);
@@ -564,10 +500,25 @@ function formatJourRelatif(dateStr) {
   return new Date(`${dateStr}T00:00:00`).toLocaleDateString('fr-DZ', { weekday:'short', day:'numeric', month:'short' });
 }
 
-function NotificationBell({ items, open, onToggle, onSelect, live }) {
+function NotificationBell({ items, open, onToggle, onClose, onSelect, live }) {
+  const wrapRef = useRef(null);
+
+  // Ferme le panneau au clic en dehors (c'est ce qui manquait : le bouton
+  // ouvrait bien le panneau mais rien ne le refermait au clic ailleurs,
+  // donc il fallait recliquer précisément sur la cloche).
+  useEffect(() => {
+    if (!open) return;
+    function handleOutside(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) onClose();
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [open, onClose]);
+
   return (
-    <div style={{ position:'relative' }}>
+    <div ref={wrapRef} style={{ position:'relative' }}>
       <button
+        type="button"
         onClick={onToggle}
         style={{
           width:38, height:38, display:'flex', alignItems:'center', justifyContent:'center',
@@ -706,8 +657,6 @@ function useRealtimeUpcoming(fetchUpcoming) {
     let interval;
     let cancelled = false;
 
-    // Si le service expose une URL de WebSocket, on tente une connexion
-    // temps réel ; sinon on retombe sur le polling classique (5 min).
     const wsUrlGetter = secretaryService.getRealtimeSocketUrl;
     const wsUrl = typeof wsUrlGetter === 'function' ? wsUrlGetter() : null;
 
@@ -721,7 +670,6 @@ function useRealtimeUpcoming(fetchUpcoming) {
         socket.onclose = () => {
           if (cancelled) return;
           setLive(false);
-          // repli sur le polling si le socket tombe
           interval = setInterval(fetchUpcoming, 5 * 60 * 1000);
         };
       } catch {
@@ -774,7 +722,7 @@ export default function SecretairePage() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(todayISO());
 
-  const [viewMode, setViewMode] = useState('mois'); // 'mois' | 'semaine'
+  const [viewMode, setViewMode] = useState('mois'); // 'mois' | 'semaine' | 'cabinet'
   const [weekStart, setWeekStart] = useState(getWeekStart(todayISO()));
 
   const [filterMedecin, setFilterMedecin] = useState('');
@@ -805,11 +753,6 @@ export default function SecretairePage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  /* ── Passage automatique en "Absent" ──
-     Si l'heure du RDV est dépassée et que ni le médecin ni la secrétaire
-     n'ont changé le statut (toujours "en_attente" ou "confirme"), le RDV
-     passe automatiquement à "absent". Vérifié au chargement puis toutes
-     les 60s, avec répercussion sur le backend en arrière-plan. */
   const checkNoShows = useCallback(() => {
     setRdvs(prev => {
       let changed = false;
@@ -833,8 +776,6 @@ export default function SecretairePage() {
     return () => clearInterval(interval);
   }, [checkNoShows, rdvs.length]);
 
-  /* Notifications : RDV secrétariat classiques + "prochaine_consultation"
-     saisies depuis NewConsultationPage, fusionnés et triés sur les 72h à venir. */
   const fetchUpcoming = useCallback(async () => {
     try {
       const [{ data: rdvUpcoming }, { data: consultUpcoming }] = await Promise.all([
@@ -865,7 +806,6 @@ export default function SecretairePage() {
   }, []);
 
   useEffect(() => { fetchUpcoming(); }, [fetchUpcoming]);
-  // Temps réel si le backend expose un WebSocket, sinon polling (5 min) en repli automatique.
   const isLive = useRealtimeUpcoming(fetchUpcoming);
 
   const handleNotifSelect = (dateStr) => {
@@ -895,7 +835,6 @@ export default function SecretairePage() {
     return map;
   }, [filteredRdvs]);
 
-  /* Détection de conflits : même médecin + même date + même heure */
   const conflictIds = useMemo(() => {
     const counts = {};
     filteredRdvs.forEach(r => {
@@ -920,11 +859,6 @@ export default function SecretairePage() {
     return n;
   }, [filteredRdvs, conflictIds]);
 
-  /* Détection de doublons patient : un même patient a déjà un autre RDV
-     actif (en_attente / confirme) à venir — sert à empêcher la création
-     ou le déplacement d'un rendez-vous en double. Le(s) rendez-vous déjà
-     existant(s) ne sont jamais modifiés automatiquement ; ils gardent
-     leur statut (par ex. "En attente") tel quel. */
   const patientDuplicateIds = useMemo(() => {
     const today = todayISO();
     const counts = {};
@@ -954,7 +888,6 @@ export default function SecretairePage() {
     return n;
   }, [rdvs, patientDuplicateIds]);
 
-  /* Recherche rapide : fonction de correspondance réutilisée pour le surlignage */
   const searchMatch = useMemo(() => {
     const q = normalize(searchQuery);
     if (!q) return null;
@@ -1022,10 +955,6 @@ export default function SecretairePage() {
     }
   };
 
-  /* Drag & drop : déplace un RDV vers une nouvelle date.
-     Empêche le déplacement si le patient a déjà un autre RDV actif
-     (en_attente / confirme) ce jour-là : le RDV existant garde son
-     statut ("En attente") et le déplacement est refusé. */
   const handleDropRdv = async (rdvIdRaw, newDate) => {
     const rdvId = /^\d+$/.test(rdvIdRaw) ? Number(rdvIdRaw) : rdvIdRaw;
     const target = rdvs.find(r => String(r.id) === String(rdvId));
@@ -1050,7 +979,6 @@ export default function SecretairePage() {
     setRdvs(prev => prev.map(r => (String(r.id) === String(rdvId) ? { ...r, date: newDate } : r)));
 
     try {
-      // NOTE : adapter le nom de méthode à votre secretaryService réel.
       if (typeof secretaryService.moveRendezVous === 'function') {
         await secretaryService.moveRendezVous(rdvId, newDate);
       } else if (typeof secretaryService.updateRendezVous === 'function') {
@@ -1064,7 +992,6 @@ export default function SecretairePage() {
     }
   };
 
-  /* Rappel SMS/email — nécessite un endpoint backend secretaryService.sendReminder */
   const handleSendReminder = async (rdv) => {
     setReminderState(prev => ({ ...prev, [rdv.id]: 'sending' }));
     try {
@@ -1099,6 +1026,8 @@ export default function SecretairePage() {
   const printRdvs = viewMode === 'semaine'
     ? filteredRdvs.filter(r => weekDates.includes(r.date))
     : viewMode === 'cabinet' ? (rdvByDay[selectedDate] || []) : filteredRdvs;
+
+  const hasActiveFilters = filterMedecin || filterType || filterStatut || searchQuery;
 
   return (
     <AppLayout title="Secrétariat">
@@ -1144,6 +1073,7 @@ export default function SecretairePage() {
               items={upcoming}
               open={notifOpen}
               onToggle={() => setNotifOpen(o => !o)}
+              onClose={() => setNotifOpen(false)}
               onSelect={handleNotifSelect}
               live={isLive}
             />
@@ -1191,37 +1121,59 @@ export default function SecretairePage() {
           </div>
         )}
 
-        {/* ── Filtres + recherche ── */}
+        {/* ── Filtres + recherche — même design que PatientsPage ── */}
         <div style={{
-          display:'flex', flexWrap:'wrap', gap:12, alignItems:'flex-end',
-          background:'#fff', border:'1px solid rgba(37,99,235,0.1)', borderRadius:14,
-          padding:'16px 20px', marginBottom:16,
-          boxShadow:'0 2px 8px rgba(15,23,42,0.06)',
+          background:'var(--bg-card)', border:'1px solid var(--border-light)',
+          borderRadius:'var(--radius-md)', padding:'14px 18px',
+          display:'flex', alignItems:'center', gap:12, marginBottom:16, flexWrap:'wrap',
         }}>
-          <SearchField value={searchQuery} onChange={setSearchQuery} />
-          <FilterSelect label="Médecin" value={filterMedecin} onChange={setFilterMedecin}>
-            <option value="">Tous les médecins</option>
-            {medecinsOptions.map(m => <option key={m} value={m}>Dr. {m}</option>)}
-          </FilterSelect>
-          <FilterSelect label="Type" value={filterType} onChange={setFilterType}>
-            <option value="">Tous les types</option>
-            {Object.entries(TYPE_RDV_LABELS).map(([k2, l]) => <option key={k2} value={k2}>{l}</option>)}
-          </FilterSelect>
-          <FilterSelect label="Statut" value={filterStatut} onChange={setFilterStatut}>
-            <option value="">Tous les statuts</option>
-            {Object.entries(STATUT_RDV_LABELS).map(([k2, l]) => <option key={k2} value={k2}>{l}</option>)}
-          </FilterSelect>
-          {(filterMedecin || filterType || filterStatut || searchQuery) && (
-            <button
-              onClick={() => { setFilterMedecin(''); setFilterType(''); setFilterStatut(''); setSearchQuery(''); }}
+          <div style={{
+            flex:1, minWidth:220,
+            display:'flex', alignItems:'center', gap:8,
+            background:'#f8fafc', border:'1px solid var(--border)',
+            borderRadius:'var(--radius-md)', padding:'8px 12px',
+          }}>
+            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="var(--text-muted)">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input
+              value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Nom du patient ou du médecin..."
+              style={{ background:'none', border:'none', outline:'none', flex:1, fontSize:13, color:'#0f172a', fontFamily:'var(--font-body)' }}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} style={{ background:'none', border:'none', cursor:'pointer', color:'#64748b' }}>✕</button>
+            )}
+          </div>
+
+          {[
+            { key:'medecin', label:'Médecin', value:filterMedecin, onChange:setFilterMedecin,
+              opts:[['','Tous'], ...medecinsOptions.map(m => [m, `Dr. ${m}`])] },
+            { key:'type', label:'Type', value:filterType, onChange:setFilterType,
+              opts:[['','Tous'], ...Object.entries(TYPE_RDV_LABELS)] },
+            { key:'statut', label:'Statut', value:filterStatut, onChange:setFilterStatut,
+              opts:[['','Tous'], ...Object.entries(STATUT_RDV_LABELS)] },
+          ].map(({ key, label, value, onChange, opts }) => (
+            <select key={key}
+              value={value}
+              onChange={e => onChange(e.target.value)}
               style={{
-                fontSize:11, padding:'7px 14px',
-                background:'transparent', color:'#94a3b8',
-                border:'1px solid rgba(148,163,184,0.3)', borderRadius:9,
-                cursor:'pointer',
+                padding:'8px 12px', background:'var(--bg-elevated)',
+                border:'1px solid var(--border)', borderRadius:'var(--radius-md)',
+                color:'#334155', fontSize:12.5, cursor:'pointer', outline:'none',
               }}
             >
-              Effacer les filtres
+              {opts.map(([v, l]) => <option key={v} value={v}>{l === 'Tous' ? `${label}: Tous` : l}</option>)}
+            </select>
+          ))}
+
+          {hasActiveFilters && (
+            <button
+              onClick={() => { setFilterMedecin(''); setFilterType(''); setFilterStatut(''); setSearchQuery(''); }}
+              title="Effacer les filtres"
+              style={{ fontSize:11, color:'#94a3b8', background:'none', border:'none', cursor:'pointer', padding:'4px 6px' }}
+            >
+              ✕ Filtres
             </button>
           )}
         </div>
