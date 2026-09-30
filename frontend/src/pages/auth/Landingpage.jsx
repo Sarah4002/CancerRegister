@@ -53,7 +53,15 @@ const PREVIEWS = [
   { title: 'Dossier patient',    desc: 'Informations médicales complètes',         src: '/images/screenshots/5.png' },
   { title: 'Réunion RCP',        desc: 'Suivi des décisions et recommandations',   src: '/images/screenshots/6.png' },
   { title: 'Cartographie',       desc: 'Analyse géographique des données',         src: '/images/screenshots/cartographie.png' },
+  /* ⬇ Autres captures : adapte titres, descriptions et noms de fichiers à tes images.
+     Si un fichier est introuvable, la maquette générée s'affiche à la place. */
+  { title: 'Rendez-vous',        desc: 'Planification des consultations',          src: '/images/screenshots/7.png' },
+  { title: 'Traitements',        desc: 'Protocoles et prescriptions',              src: '/images/screenshots/8.png' },
+  { title: 'Statistiques',       desc: 'Tableaux de bord et analyses',             src: '/images/screenshots/9.png' },
 ];
+
+/* Nombre de captures visibles en même temps dans le carrousel */
+const VISIBLE_PREVIEWS = 5;
 
 /* Capture utilisée dans la maquette "laptop" du hero */
 const HERO_SCREENSHOT = '/images/screenshots/0.png';
@@ -174,6 +182,36 @@ function InterfaceMock({ compact, src, alt }) {
   );
 }
 
+/* Bouton flèche rond du carrousel (même style de trait que PatientsPage) */
+function ArrowButton({ direction, onClick }) {
+  const [hovered, setHovered] = useState(false);
+  const isLeft = direction === 'left';
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      aria-label={isLeft ? 'Captures précédentes' : 'Captures suivantes'}
+      style={{
+        width: 42, height: 42, borderRadius: '50%', flexShrink: 0, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: hovered ? '#2563eb' : '#fff',
+        border: `1.5px solid ${hovered ? '#2563eb' : 'rgba(37,99,235,0.25)'}`,
+        boxShadow: hovered ? '0 8px 20px rgba(37,99,235,0.28)' : '0 2px 8px rgba(15,23,42,0.06)',
+        transition: 'all 0.2s ease',
+      }}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={hovered ? '#fff' : '#2563eb'}
+        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        {isLeft
+          ? <><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></>
+          : <><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></>}
+      </svg>
+    </button>
+  );
+}
+
 function PrimaryButton({ children, to, style: extra }) {
   const [hovered, setHovered] = useState(false);
   return (
@@ -227,6 +265,16 @@ function OutlineButton({ children, to, style: extra }) {
 export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+
+  /* Carrousel des captures : défilement circulaire (après la dernière, on revient à la première) */
+  const [start, setStart] = useState(0);
+  const total = PREVIEWS.length;
+  const canCycle = total > VISIBLE_PREVIEWS;
+  const visiblePreviews = canCycle
+    ? Array.from({ length: VISIBLE_PREVIEWS }, (_, i) => PREVIEWS[(start + i) % total])
+    : PREVIEWS;
+  const goPrev = () => setStart(s => (s - 1 + total) % total);
+  const goNext = () => setStart(s => (s + 1) % total);
 
   return (
     <div style={{ minHeight: '100vh', background: '#f0f4f9', position: 'relative', fontFamily: 'var(--font-body)' }}>
@@ -329,17 +377,40 @@ export default function LandingPage() {
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color: '#0f172a' }}>Découvrez notre interface</h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
-            {PREVIEWS.map(p => (
-              <div key={p.title}>
-                <div style={{ height: 130, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(37,99,235,0.1)', boxShadow: '0 4px 14px rgba(15,23,42,0.06)', marginBottom: 10 }}>
-                  <InterfaceMock compact src={p.src} alt={p.title} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {canCycle && <ArrowButton direction="left" onClick={goPrev} />}
+            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: `repeat(${VISIBLE_PREVIEWS}, 1fr)`, gap: 16 }}>
+              {visiblePreviews.map(p => (
+                <div key={p.title}>
+                  <div style={{ height: 130, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(37,99,235,0.1)', boxShadow: '0 4px 14px rgba(15,23,42,0.06)', marginBottom: 10 }}>
+                    <InterfaceMock compact src={p.src} alt={p.title} />
+                  </div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>{p.title}</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.4 }}>{p.desc}</div>
                 </div>
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>{p.title}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.4 }}>{p.desc}</div>
-              </div>
-            ))}
+              ))}
+            </div>
+            {canCycle && <ArrowButton direction="right" onClick={goNext} />}
           </div>
+
+          {/* Indicateurs de position */}
+          {canCycle && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 24 }}>
+              {PREVIEWS.map((p, i) => (
+                <button
+                  key={p.title}
+                  type="button"
+                  onClick={() => setStart(i)}
+                  aria-label={`Afficher à partir de ${p.title}`}
+                  style={{
+                    width: i === start ? 22 : 8, height: 8, borderRadius: 4, padding: 0, border: 'none', cursor: 'pointer',
+                    background: i === start ? '#2563eb' : 'rgba(37,99,235,0.2)',
+                    transition: 'all 0.2s ease',
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
