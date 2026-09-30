@@ -43,13 +43,20 @@ const FEATURES = [
   { key: 'rapports',    color: '#4338ca', title: 'Rapports & IA', desc: "Génération de rapports et recommandations basées sur l'intelligence artificielle." },
 ];
 
+/* ── Captures d'écran de l'application ──
+   Ajoute le champ `src` (chemin public, ex: '/images/screenshots/dashboard.png')
+   dès que tu as les fichiers. Tant que `src` est absent ou introuvable,
+   InterfaceMock retombe automatiquement sur la maquette générée. */
 const PREVIEWS = [
-  { title: 'Tableau de bord',  desc: 'Vue d’ensemble des données clés' },
-  { title: 'Liste des patients', desc: 'Recherche et gestion des dossiers' },
-  { title: 'Dossier patient',  desc: 'Informations médicales complètes' },
-  { title: 'Réunion RCP',      desc: 'Suivi des décisions et recommandations' },
-  { title: 'Cartographie',     desc: 'Analyse géographique des données' },
+  { title: 'Tableau de bord',    desc: 'Vue d’ensemble des données clés',          src: '/images/screenshots/3.png' },
+  { title: 'Liste des patients', desc: 'Recherche et gestion des dossiers',        src: '/images/screenshots/4.png' },
+  { title: 'Dossier patient',    desc: 'Informations médicales complètes',         src: '/images/screenshots/dossier-patient.png' },
+  { title: 'Réunion RCP',        desc: 'Suivi des décisions et recommandations',   src: '/images/screenshots/rcp.png' },
+  { title: 'Cartographie',       desc: 'Analyse géographique des données',         src: '/images/screenshots/cartographie.png' },
 ];
+
+/* Capture utilisée dans la maquette "laptop" du hero */
+const HERO_SCREENSHOT = '/images/screenshots/dashboard-hero.png';
 
 const TRUST_STATS = [
   { icon: '🛡', label: 'Données sécurisées' },
@@ -100,8 +107,25 @@ function FeatureCard({ icon, color, title, desc }) {
   );
 }
 
-/* Mini-maquette de l'interface (sans image externe) pour le hero et les vignettes */
-function InterfaceMock({ compact }) {
+/* Mini-maquette / capture réelle de l'interface.
+   - Si `src` est fourni ET se charge correctement → affiche la vraie capture.
+   - Sinon (pas de src, ou image introuvable/404) → retombe sur la maquette
+     générée en CSS, pour ne jamais laisser un trou visuel sur la page. */
+function InterfaceMock({ compact, src, alt }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const showImage = Boolean(src) && !imgFailed;
+
+  if (showImage) {
+    return (
+      <img
+        src={src}
+        alt={alt || "Capture d'écran de RegistreCancer.dz"}
+        onError={() => setImgFailed(true)}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
+      />
+    );
+  }
+
   const barW = compact ? 22 : 28;
   return (
     <div style={{ display: 'flex', height: '100%', width: '100%', background: '#fff' }}>
@@ -241,14 +265,14 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Maquette d'écran (laptop) */}
+          {/* Maquette d'écran (laptop) — capture réelle si HERO_SCREENSHOT existe, sinon fallback */}
           <div style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'translateY(12px)', transition: 'all 0.6s ease 0.12s', position: 'relative' }}>
             <div style={{ background: '#0f172a', borderRadius: '16px 16px 6px 6px', padding: '10px 10px 0', boxShadow: '0 24px 60px rgba(15,23,42,0.25)' }}>
               <div style={{ display: 'flex', gap: 5, padding: '4px 6px 8px' }}>
                 {['#ef4444', '#f59e0b', '#22c55e'].map(c => <div key={c} style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />)}
               </div>
               <div style={{ height: 260, borderRadius: '4px 4px 0 0', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <InterfaceMock />
+                <InterfaceMock src={HERO_SCREENSHOT} alt="Aperçu du tableau de bord RegistreCancer.dz" />
               </div>
             </div>
             <div style={{ height: 14, background: '#1e293b', borderRadius: '0 0 10px 10px', margin: '0 -6px' }} />
@@ -274,7 +298,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Aperçu de l'interface ── */}
+      {/* ── Aperçu de l'interface — captures réelles de l'application ── */}
       <section style={{ padding: '70px 56px', background: '#f0f4f9' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
@@ -284,7 +308,7 @@ export default function LandingPage() {
             {PREVIEWS.map(p => (
               <div key={p.title}>
                 <div style={{ height: 130, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(37,99,235,0.1)', boxShadow: '0 4px 14px rgba(15,23,42,0.06)', marginBottom: 10 }}>
-                  <InterfaceMock compact />
+                  <InterfaceMock compact src={p.src} alt={p.title} />
                 </div>
                 <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>{p.title}</div>
                 <div style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.4 }}>{p.desc}</div>
