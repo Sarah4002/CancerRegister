@@ -716,14 +716,7 @@ export default function PatientDossierPage() {
           {activeMainTab === 'identite' && (
             <>
              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-               <div>
-                 {isSecretary && vs && (
-                   <span style={{
-                     display: 'inline-block', padding: '4px 12px', borderRadius: 20, fontSize: 11.5, fontWeight: 600,
-                     background: vs.bg, color: vs.color, border: `1px solid ${vs.border}`,
-                   }}>{vs.label}</span>
-                 )}
-               </div>
+             
                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                  
                  {can.writePatient && <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
