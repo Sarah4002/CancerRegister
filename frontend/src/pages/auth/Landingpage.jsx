@@ -50,19 +50,44 @@ const FEATURES = [
 const PREVIEWS = [
   { title: 'Tableau de bord',    desc: 'Vue d’ensemble des données clés',          src: '/images/screenshots/3.png' },
   { title: 'Liste des patients', desc: 'Recherche et gestion des dossiers',        src: '/images/screenshots/4.png' },
-  { title: 'Dossier patient',    desc: 'Informations médicales complètes',         src: '/images/screenshots/dossier-patient.png' },
-  { title: 'Réunion RCP',        desc: 'Suivi des décisions et recommandations',   src: '/images/screenshots/rcp.png' },
+  { title: 'Dossier patient',    desc: 'Informations médicales complètes',         src: '/images/screenshots/5.png' },
+  { title: 'Réunion RCP',        desc: 'Suivi des décisions et recommandations',   src: '/images/screenshots/6.png' },
   { title: 'Cartographie',       desc: 'Analyse géographique des données',         src: '/images/screenshots/cartographie.png' },
 ];
 
 /* Capture utilisée dans la maquette "laptop" du hero */
-const HERO_SCREENSHOT = '/images/screenshots/dashboard-hero.png';
+const HERO_SCREENSHOT = '/images/screenshots/0.png';
 
+/* Icônes en traits (même style que PatientsPage : strokeWidth 2, extrémités arrondies) */
 const TRUST_STATS = [
-  { icon: '🛡', label: 'Données sécurisées' },
-  { icon: '👥', label: 'Équipe pluridisciplinaire' },
-  { icon: '📈', label: 'Suivi en temps réel' },
-  { icon: '🎯', label: 'Meilleure prise en charge' },
+  {
+    label: 'Données sécurisées',
+    icon: (
+      <>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <polyline points="9 12 11 14 15 10" />
+      </>
+    ),
+  },
+  {
+    label: 'Équipe pluridisciplinaire',
+    icon: (
+      <>
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </>
+    ),
+  },
+  {
+    label: 'Suivi en temps réel',
+    icon: <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />,
+  },
+  {
+    label: 'Meilleure prise en charge',
+    icon: <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />,
+  },
 ];
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -326,7 +351,12 @@ export default function LandingPage() {
           flexWrap: 'wrap', gap: 24, color: '#fff',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 18, maxWidth: 480 }}>
-            <div style={{ width: 52, height: 52, borderRadius: 14, background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{
+              width: 52, height: 52, borderRadius: 14,
+              background: 'rgba(255,255,255,0.14)',
+              border: '1px solid rgba(255,255,255,0.22)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
               <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#fff"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9.5 9.5l5 5M8 16l-2.5 2.5a2.121 2.121 0 01-3-3L5 13m9-9l2.5-2.5a2.121 2.121 0 013 3L17 7m-9 9l9-9" /></svg>
             </div>
             <div>
@@ -339,7 +369,18 @@ export default function LandingPage() {
           <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
             {TRUST_STATS.map(s => (
               <div key={s.label} style={{ textAlign: 'center', minWidth: 90 }}>
-                <div style={{ fontSize: 20, marginBottom: 6 }}>{s.icon}</div>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 11,
+                  background: 'rgba(255,255,255,0.14)',
+                  border: '1px solid rgba(255,255,255,0.22)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 8px',
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff"
+                    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {s.icon}
+                  </svg>
+                </div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{s.label}</div>
               </div>
             ))}
