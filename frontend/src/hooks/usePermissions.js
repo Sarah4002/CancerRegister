@@ -20,6 +20,9 @@ export const ROLES = {
   PHARMACIST:     'pharmacist',
   SECRETAIRE:     'secretaire',
   DOCTOR_CHEF:    'doctor_chef',
+  RADIOLOGIST:    'radiologist',
+  LABORATORY:     'laboratory',
+  NURSE:          'nurse',
   READONLY:       'readonly',
 };
 
@@ -31,6 +34,9 @@ export const ROLE_LABELS = {
   pharmacist:     'Pharmacien',
   secretaire:     'Secrétaire',
   doctor_chef:    'Médecin chef',
+  radiologist:    'Radiologue',
+  laboratory:     'Laboratoire',
+  nurse:          'Infirmière',
   readonly:       'Lecture seule',
 };
 
@@ -42,6 +48,9 @@ export const ROLE_COLORS = {
   pharmacist:     { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',   border: 'rgba(245,158,11,0.25)'   },
   secretaire:     { color: '#14b8a6', bg: 'rgba(20,184,166,0.1)',   border: 'rgba(20,184,166,0.25)'   },
   doctor_chef:    { color: '#7c3aed', bg: 'rgba(124,58,237,0.1)',   border: 'rgba(124,58,237,0.25)'   },
+  radiologist:    { color: '#ea580c', bg: 'rgba(234,88,12,0.1)',    border: 'rgba(234,88,12,0.25)'    },
+  laboratory:     { color: '#0891b2', bg: 'rgba(8,145,178,0.1)',    border: 'rgba(8,145,178,0.25)'    },
+  nurse:          { color: '#16a34a', bg: 'rgba(22,163,74,0.1)',    border: 'rgba(22,163,74,0.25)'    },
   readonly:       { color: '#9ca3af', bg: 'rgba(107,114,128,0.1)', border: 'rgba(107,114,128,0.25)' },
 };
 
@@ -91,20 +100,20 @@ export default function usePermissions() {
   // contiennent pas `user.permissions`. Conserver les droits attendus par rôle
   // évite de bloquer un médecin jusqu'à sa prochaine reconnexion.
   const rolePermissions = {
-    can_read_patient: ['doctor_chef', 'doctor', 'secretaire', 'anapath', 'pharmacist'].includes(role),
+    can_read_patient: ['doctor_chef', 'doctor', 'secretaire', 'anapath', 'pharmacist', 'radiologist', 'laboratory', 'nurse'].includes(role),
     can_write_patient: ['doctor_chef', 'doctor', 'secretaire'].includes(role),
-    can_read_diagnostic: ['doctor_chef', 'doctor', 'anapath'].includes(role),
+    can_read_diagnostic: ['doctor_chef', 'doctor', 'anapath', 'radiologist', 'laboratory'].includes(role),
     can_write_diagnostic: ['doctor_chef', 'doctor'].includes(role),
     can_read_treatment: ['doctor_chef', 'doctor', 'pharmacist'].includes(role),
     can_write_treatment: ['doctor_chef', 'doctor'].includes(role),
     can_view_statistics: ['admin', 'doctor_chef', 'doctor', 'pharmacist', 'anapath', 'epidemiologist'].includes(role),
-    can_export: ['doctor_chef', 'epidemiologist'].includes(role),
-    can_export_identified_data: role === 'doctor_chef',
+    can_export: ['doctor_chef', 'doctor', 'epidemiologist'].includes(role),
+    can_export_identified_data: ['doctor_chef', 'doctor'].includes(role),
     can_view_map: ['doctor_chef', 'epidemiologist'].includes(role),
     can_manage_users: role === 'admin',
     can_view_rcp: ['doctor_chef', 'doctor'].includes(role),
     can_write_anapath_report: role === 'anapath',
-    can_validate_diagnosis: role === 'doctor_chef',
+    can_validate_diagnosis: ['doctor_chef', 'doctor'].includes(role),
     can_manage_appointments: ['doctor_chef', 'doctor', 'secretaire'].includes(role),
     can_access_clinical_followup: ['doctor_chef', 'doctor'].includes(role),
     can_manage_canreg: ['admin', 'doctor_chef'].includes(role),

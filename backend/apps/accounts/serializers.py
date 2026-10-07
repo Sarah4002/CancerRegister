@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from .factories import UserFactory
 
 from apps.accounts.permissions import (
     can_read_patient,    can_write_patient,
@@ -105,7 +106,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
+        user = UserFactory.create_user(**validated_data)
         user.is_active = True  # compte activé immédiatement par défaut
         user.save()
         return user

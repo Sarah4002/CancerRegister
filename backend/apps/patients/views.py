@@ -19,7 +19,9 @@ from apps.accounts.permissions import (
 )
 
 from .duplicate_service import detecter_doublons, fusionner_patients
-from .query_builder import PatientQueryBuilder
+from .commands import ChangePatientStatusCommand, DecidePatientConfirmationCommand
+from .observers import patient_events
+from .repositories import PatientRepository
 from .models import ContactUrgence, DossierMedical, Patient, DocumentAdministratif
 from apps.suivi.models import ConsultationSuivi
 from .serializers import (
@@ -223,7 +225,7 @@ class PatientViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # PATTERN Builder — compose le queryset par étapes nommées puis le finalise.
         builder = (
-            PatientQueryBuilder(self.request, self.action)
+            PatientRepository().build_queryset(self.request, self.action)
             .with_registry_scope()
             .with_age_range()
             .with_birth_date_search()
@@ -238,7 +240,9 @@ class PatientViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         is_secretary = self.request.user.role == 'secretaire'
-        is_limited_clinical_reader = self.request.user.role in {'pharmacist', 'anapath'}
+        is_limited_clinical_reader = self.request.user.role in {
+            'pharmacist', 'anapath', 'radiologist', 'laboratory', 'nurse'
+        }
         if self.action == 'list':
             return PatientClinicalContextSerializer if is_limited_clinical_reader else PatientListSerializer
 
@@ -262,29 +266,8 @@ class PatientViewSet(viewsets.ModelViewSet):
         patient = serializer.save(cree_par=self.request.user)
 
         if patient.statut_confirmation == Patient.StatutConfirmation.EN_ATTENTE:
-            # Notification déclenchée explicitement dans le flux de création.
-            # Ce n'est pas Observer : aucun signal/événement découplé n'est utilisé ici.
-            from apps.notifications.models import Notification
-            from apps.accounts.models import User
-
-            destinataires = User.objects.filter(
-                role__in=['doctor', 'doctor_chef'],
-                is_active=True,
-            )
-
-            Notification.objects.bulk_create([
-                Notification(
-                    destinataire=user,
-                    type=Notification.Type.DOSSIER_AJOUTE,
-                    titre='Nouveau dossier en attente',
-                    message=(
-                        f"Un nouveau patient {patient.get_full_name()} a été créé et est en attente "
-                        "de confirmation médicale."
-                    ),
-                    dossier_id=patient.id,
-                )
-                for user in destinataires
-            ])
+            # PATTERN Observer — les abonnés réagissent à l'événement de création.
+            patient_events.patient_created(patient, created_by=self.request.user)
 
             # Crée automatiquement un rendez-vous de première visite au premier créneau libre.
             try:
@@ -306,7 +289,12 @@ class PatientViewSet(viewsets.ModelViewSet):
                 "Vous n'avez pas le droit de modifier ce dossier patient."
             )
 
+        # Le formulaire PatientDetailPage envoie aussi le statut via PATCH.
+        # Extraire ce champ pour que sa transition passe par la Command dédiée.
+        new_status = serializer.validated_data.pop('statut_dossier', None)
         serializer.save()
+        if new_status is not None:
+            ChangePatientStatusCommand(serializer.instance, new_status).execute()
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -506,8 +494,10 @@ class PatientViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        patient.statut_dossier = nouveau_statut
-        patient.save(update_fields=['statut_dossier'])
+        try:
+            ChangePatientStatusCommand(patient, nouveau_statut).execute()
+        except ValueError as error:
+            return Response({'error': str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({
             'message': 'Statut mis à jour.',
@@ -552,14 +542,10 @@ class PatientViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        from django.utils import timezone
-
         if decision == 'confirme':
-            patient.statut_confirmation = Patient.StatutConfirmation.CONFIRME
-            patient.motif_refus = ''
-            patient.confirme_par = request.user
-            patient.date_confirmation = timezone.now()
-            patient.save(update_fields=['statut_confirmation', 'motif_refus', 'confirme_par', 'date_confirmation', 'date_modification'])
+            DecidePatientConfirmationCommand(
+                patient, request.user, decision
+            ).execute()
             return Response({
                 'detail': 'Patient confirmé et ajouté au registre principal.',
                 'statut_confirmation': patient.statut_confirmation,
@@ -572,11 +558,9 @@ class PatientViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        patient.statut_confirmation = Patient.StatutConfirmation.REFUSE
-        patient.motif_refus = motif
-        patient.confirme_par = request.user
-        patient.date_confirmation = timezone.now()
-        patient.save(update_fields=['statut_confirmation', 'motif_refus', 'confirme_par', 'date_confirmation', 'date_modification'])
+        DecidePatientConfirmationCommand(
+            patient, request.user, decision, refusal_reason=motif
+        ).execute()
 
         return Response({
             'detail': 'Patient refusé. Le dossier reste tracé sans entrer dans le registre principal.',

@@ -36,6 +36,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         READONLY       = 'readonly',    'Lecture seule'
         SECRETAIRE     = 'secretaire',   'Saise des données'
         DOCTOR_CHEF    = 'doctor_chef', 'Médecin Chef'
+        RADIOLOGIST    = 'radiologist', 'Radiologue'
+        LABORATORY     = 'laboratory',  'Laboratoire'
+        NURSE          = 'nurse',       'Infirmière'
        
 
     class Speciality(models.TextChoices):

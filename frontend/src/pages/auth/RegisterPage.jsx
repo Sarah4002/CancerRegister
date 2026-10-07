@@ -26,6 +26,9 @@ const ROLES = [
   { value: 'epidemiologist', label: 'Epidemiologiste', icon: '' },
   { value: 'pharmacist', label: 'Pharmacien', icon: '' },
   { value: 'secretaire', label: 'Secretaire', icon: '' },
+  { value: 'radiologist', label: 'Radiologue', icon: '' },
+  { value: 'laboratory', label: 'Laboratoire', icon: '' },
+  { value: 'nurse', label: 'Infirmière', icon: '' },
 ];
 
 const SPECIALITIES = [
@@ -141,6 +144,9 @@ function Step3({ onNext, onBack, saved, isLoading }) {
     epidemiologist: { active: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.30)', text: '#1d4ed8' },
     pharmacist: { active: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.24)', text: '#d97706' },
     secretaire: { active: 'rgba(8,145,178,0.10)', border: 'rgba(8,145,178,0.24)', text: '#0891b2' },
+    radiologist: { active: 'rgba(234,88,12,0.10)', border: 'rgba(234,88,12,0.24)', text: '#ea580c' },
+    laboratory: { active: 'rgba(8,145,178,0.10)', border: 'rgba(8,145,178,0.24)', text: '#0891b2' },
+    nurse: { active: 'rgba(22,163,74,0.10)', border: 'rgba(22,163,74,0.24)', text: '#16a34a' },
   };
 
   return (

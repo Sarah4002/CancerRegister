@@ -12,7 +12,7 @@ const MOBILE_BREAKPOINT = 1100;
 // ses rôles et/ou sa permission; le menu est filtré à partir de cette configuration.
 const NAV_CONFIG = [
   { section: 'Principal', items: [
-    { path: '/dashboard', label: 'Tableau de bord', icon: GridIcon, roles: ['doctor', 'doctor_chef', 'anapath', 'epidemiologist', 'pharmacist', 'secretaire', 'readonly'] },
+    { path: '/dashboard', label: 'Tableau de bord', icon: GridIcon, roles: ['doctor', 'doctor_chef', 'anapath', 'epidemiologist', 'pharmacist', 'secretaire', 'readonly', 'radiologist', 'laboratory', 'nurse'] },
   ] },
   { section: 'Administration', items: [
     { path: '/dashboardadmin', label: 'Tableau de bord ', icon: GridIcon, permission: 'manageUsers' },
@@ -48,7 +48,7 @@ const NAV_CONFIG = [
   {
     section: 'Système',
     items: [
-      { path: '/aide', label: "Centre d'aide", labelKey: 'help', icon: HelpIcon, roles: ['doctor', 'doctor_chef', 'anapath', 'epidemiologist', 'pharmacist', 'secretaire', 'readonly'] },
+      { path: '/aide', label: "Centre d'aide", labelKey: 'help', icon: HelpIcon, roles: ['doctor', 'doctor_chef', 'anapath', 'epidemiologist', 'pharmacist', 'secretaire', 'readonly', 'radiologist', 'laboratory', 'nurse'] },
       { path: '/parametres-medecin', label: 'Paramètres', icon: DoctorSettingsIcon, roles: ['doctor', 'doctor_chef', 'anapath'] },
     ],
   },

@@ -20,6 +20,9 @@ const ROLE_CFG = {
   pharmacist:     { color:'#d97706', label:'Pharmacien' },
   anapath:        { color:'#ca8a04', label:'Anapathologist' },
   readonly:       { color:'#64748b', label:'Lecture seule' },
+  radiologist:    { color:'#ea580c', label:'Radiologue' },
+  laboratory:     { color:'#0891b2', label:'Laboratoire' },
+  nurse:          { color:'#16a34a', label:'Infirmière' },
 };
 
 const ACTION_CFG = {

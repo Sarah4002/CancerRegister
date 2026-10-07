@@ -116,8 +116,9 @@ ROLE_LABELS = {
     'readonly':       'Lecture seule',
     # rôles éventuels ajoutés plus tard
     'pharmacist':     'Pharmacien',
-    'nurse':          'Infirmier',
+    'nurse':          'Infirmière',
     'radiologist':    'Radiologue',
+    'laboratory':     'Laboratoire',
     'surgeon':        'Chirurgien',
 }
 

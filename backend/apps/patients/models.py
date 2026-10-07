@@ -9,8 +9,8 @@ class Patient(models.Model):
     Fiche patient complète conforme CanReg5 / CIRC-OMS.
     """
 
-    # PATTERN (éléments de State) — les statuts sont des choix persistés sur Patient;
-    # leurs transitions sont traitées par les vues, sans classes d'état dédiées.
+    # PATTERN State — les états de confirmation sont sélectionnés dans states.py;
+    # les statuts de dossier et les autres statuts restent des champs à choix.
 
     class Sexe(models.TextChoices):
         MASCULIN = 'M', 'Masculin'
