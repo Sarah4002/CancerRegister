@@ -19,7 +19,6 @@ class Migration(migrations.Migration):
     dependencies = [('patients', '0005_patient_confirmation_fields')]
 
     operations = [
-        migrations.RunPython(map_legacy_cancer_status, restore_legacy_cancer_status),
         migrations.AlterField(
             model_name='patient',
             name='statut_confirmation',
@@ -34,4 +33,7 @@ class Migration(migrations.Migration):
                 max_length=20,
             ),
         ),
+        # Les nouvelles valeurs CANCER_CONFIRMED et CANCER_REJECTED dépassent
+        # la limite historique de 12 caractères : élargir le champ avant la copie.
+        migrations.RunPython(map_legacy_cancer_status, restore_legacy_cancer_status),
     ]
