@@ -2,12 +2,11 @@ import React, { useState } from 'react';
 import { CATEGORIES_EXAMENS, EXAMENS_PREDEFINIS } from '../../utils/examensDataset';
 import { examenService } from '../../services/examenService';
 
-export default function ExamenModal({ patientId, onClose, onSuccess }) {
-  const [categorie, setCategorie] = useState(CATEGORIES_EXAMENS[0].value);
-  const [nomExamen, setNomExamen] = useState('');
-  const [datePrescription, setDatePrescription] = useState(new Date().toISOString().split('T')[0]);
-  // 1. Remplacement de l'état 'observations' par 'valeur'
-  const [valeur, setValeur] = useState('');
+export default function ExamenModal({ patientId, examen, onClose, onSuccess }) {
+  const [categorie, setCategorie] = useState(examen?.categorie || CATEGORIES_EXAMENS[0].value);
+  const [nomExamen, setNomExamen] = useState(examen?.nom_examen || '');
+  const [datePrescription, setDatePrescription] = useState(examen?.date_prescription || new Date().toISOString().split('T')[0]);
+  const [resultat, setResultat] = useState(examen?.resultat || '');
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -19,19 +18,24 @@ export default function ExamenModal({ patientId, onClose, onSuccess }) {
     
     setSubmitting(true);
     try {
-      await examenService.create({
+      const payload = {
         patient: patientId,
         categorie,
         nom_examen: nomExamen,
         date_prescription: datePrescription,
-        // 2. Envoi de la propriété 'valeur' à la place d'observations
-        valeur 
-      });
+        resultat,
+        statut: resultat.trim()
+          ? 'resultat_disponible'
+          : (examen?.resultat ? 'prescrit' : (examen?.statut || 'prescrit')),
+        date_realisation: resultat.trim() ? (examen?.date_realisation || new Date().toISOString().split('T')[0]) : examen?.date_realisation || null,
+      };
+      if (examen) await examenService.update(examen.id, payload);
+      else await examenService.create(payload);
       onSuccess();
       onClose();
     } catch (err) {
       console.error(err);
-      alert("Erreur lors de la prescription de l'examen.");
+      alert("Erreur lors de l'enregistrement de l'examen ou de son résultat.");
     } finally {
       setSubmitting(false);
     }
@@ -43,7 +47,7 @@ export default function ExamenModal({ patientId, onClose, onSuccess }) {
     <div style={overlaySt}>
       <div style={modalSt}>
         <div style={headerSt}>
-          <h3 style={{ margin: 0, fontSize: 16 }}>Prescrire un examen</h3>
+          <h3 style={{ margin: 0, fontSize: 16 }}>{examen ? 'Mettre à jour un examen' : 'Demander un examen'}</h3>
           <button onClick={onClose} style={closeBtnSt}>&times;</button>
         </div>
         
@@ -51,7 +55,8 @@ export default function ExamenModal({ patientId, onClose, onSuccess }) {
           <div style={fieldSt}>
             <label style={labelSt}>Catégorie</label>
             <select 
-              value={categorie} 
+              value={categorie}
+              disabled={Boolean(examen)}
               onChange={e => { setCategorie(e.target.value); setNomExamen(''); }} 
               style={inputSt}
             >
@@ -64,7 +69,8 @@ export default function ExamenModal({ patientId, onClose, onSuccess }) {
           <div style={fieldSt}>
             <label style={labelSt}>Examen</label>
             <select 
-              value={nomExamen} 
+              value={nomExamen}
+              disabled={Boolean(examen)}
               onChange={e => setNomExamen(e.target.value)} 
               style={inputSt}
               required
@@ -87,14 +93,13 @@ export default function ExamenModal({ patientId, onClose, onSuccess }) {
             />
           </div>
 
-          {/* 3. Modification du bloc HTML/JSX pour le champ Valeur */}
           <div style={fieldSt}>
-            <label style={labelSt}>Valeur (Optionnel)</label>
+            <label style={labelSt}>Résultat (laisser vide si en attente)</label>
             <input 
               type="text" 
-              value={valeur} 
-              onChange={e => setValeur(e.target.value)} 
-              placeholder="Ex: 120 mg/dL, Négatif..."
+              value={resultat}
+              onChange={e => setResultat(e.target.value)}
+              placeholder="Conclusion ou résultat de l'examen..."
               style={inputSt}
             />
           </div>
@@ -102,7 +107,7 @@ export default function ExamenModal({ patientId, onClose, onSuccess }) {
           <div style={footerSt}>
             <button type="button" onClick={onClose} style={btnCancelSt}>Annuler</button>
             <button type="submit" disabled={submitting} style={btnSubmitSt}>
-              {submitting ? 'Prescription...' : 'Prescrire'}
+              {submitting ? 'Enregistrement...' : examen ? 'Enregistrer' : 'Demander l’examen'}
             </button>
           </div>
         </form>

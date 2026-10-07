@@ -64,6 +64,7 @@ ROLE_PERMISSION_STRATEGIES = {
     'write_diagnostic': AllowedRolesStrategy(ROLE_DOCTOR_CHEF, ROLE_DOCTOR),
     'read_diagnostic': AllowedRolesStrategy(ROLE_DOCTOR_CHEF, ROLE_DOCTOR, ROLE_ANAPATH, ROLE_RADIOLOGIST, ROLE_LABORATORY),
     'write_anapath_report': AllowedRolesStrategy(ROLE_ANAPATH),
+    'manage_exam_results': AllowedRolesStrategy(ROLE_DOCTOR_CHEF, ROLE_DOCTOR, ROLE_ANAPATH, ROLE_RADIOLOGIST, ROLE_LABORATORY),
     'validate_diagnosis': AllowedRolesStrategy(ROLE_DOCTOR_CHEF, ROLE_DOCTOR),
     'write_treatment': AllowedRolesStrategy(ROLE_DOCTOR_CHEF, ROLE_DOCTOR),
     'read_treatment': AllowedRolesStrategy(ROLE_DOCTOR_CHEF, ROLE_DOCTOR, ROLE_PHARMACIST),
@@ -116,6 +117,10 @@ def can_read_diagnostic(user):
 def can_write_anapath_report(user):
     """Ajouter ou modifier un compte rendu d'anatomopathologie."""
     return _allows(user, 'write_anapath_report')
+
+def can_manage_exam_results(user):
+    """Prescrire les examens et saisir leurs résultats selon le rôle médical."""
+    return _allows(user, 'manage_exam_results')
 
 def can_validate_diagnosis(user):
     """Valider un diagnostic définitif."""
@@ -218,6 +223,15 @@ class CanReadOrWriteDiagnostic(BasePermission):
         if request.method in SAFE_METHODS:
             return can_read_diagnostic(request.user)
         return can_write_diagnostic(request.user) or can_write_anapath_report(request.user)
+
+
+class CanManageMedicalExams(BasePermission):
+    message = "Accès aux examens médicaux non autorisé."
+
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return can_read_patient(request.user) or can_read_diagnostic(request.user)
+        return can_manage_exam_results(request.user)
 
 
 class CanWriteAnapathReport(BasePermission):

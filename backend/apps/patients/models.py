@@ -31,20 +31,9 @@ class Patient(models.Model):
         ARCHIVE       = 'archive',    'Archivé'
 
     class StatutConfirmation(models.TextChoices):
-        """
-        Circuit de validation du diagnostic :
-          - EN_ATTENTE : dossier créé par le secrétariat, pas encore
-            examiné. N'apparaît PAS dans le registre principal.
-          - CONFIRME   : un médecin ou le médecin chef a confirmé le
-            cancer (sur la base labo/radiologie/anapath). Le patient
-            entre automatiquement dans le registre principal.
-          - REFUSE     : un médecin ou le médecin chef a examiné le
-            dossier et conclu à l'absence de cancer. Le dossier reste
-            tracé mais n'entre jamais dans le registre.
-        """
-        EN_ATTENTE = 'en_attente', 'En attente de confirmation'
-        CONFIRME   = 'confirme',   'Confirmé (cancer)'
-        REFUSE     = 'refuse',     'Refusé (pas de cancer)'
+        EN_ATTENTE = 'PENDING', 'En cours de vérification — cancer non confirmé'
+        CONFIRME = 'CANCER_CONFIRMED', 'Cancer confirmé'
+        REFUSE = 'CANCER_REJECTED', 'Cancer écarté'
 
     class NiveauInstruction(models.TextChoices):
         AUCUN      = '0', 'Aucun'
@@ -158,10 +147,10 @@ class Patient(models.Model):
 
     # ── Confirmation diagnostic (circuit secrétaire → médecin) ─────
     statut_confirmation = models.CharField(
-        max_length=12,
+        max_length=20,
         choices=StatutConfirmation.choices,
         default=StatutConfirmation.EN_ATTENTE,
-        help_text="En attente tant qu'un médecin n'a pas confirmé le diagnostic de cancer.",
+        help_text="Statut de confirmation médicale du cancer, distinct du statut administratif du dossier.",
     )
     motif_refus = models.TextField(
         blank=True,

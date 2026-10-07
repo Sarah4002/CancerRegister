@@ -283,6 +283,17 @@ class PatientViewSet(viewsets.ModelViewSet):
             resource_id=patient.id,
         )
 
+    def destroy(self, request, *args, **kwargs):
+        """Un dossier où le cancer est écarté reste conservé avec son historique."""
+        from django.shortcuts import get_object_or_404
+        patient = get_object_or_404(Patient, pk=kwargs.get('pk'))
+        if patient.statut_confirmation == Patient.StatutConfirmation.REFUSE:
+            return Response(
+                {'detail': 'Un dossier où le cancer a été écarté ne peut pas être supprimé ; son historique médical doit être conservé.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return super().destroy(request, *args, **kwargs)
+
     def perform_update(self, serializer):
         if not can_write_patient(self.request.user):
             raise PermissionDenied(
@@ -542,19 +553,25 @@ class PatientViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        if not patient.examens_medicaux.exclude(resultat='').exists():
+            return Response(
+                {'detail': 'Aucun résultat d’examen n’est enregistré. Le patient reste en attente jusqu’à la saisie des éléments médicaux nécessaires.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if decision == 'confirme':
             DecidePatientConfirmationCommand(
                 patient, request.user, decision
             ).execute()
             return Response({
-                'detail': 'Patient confirmé et ajouté au registre principal.',
+                'detail': 'Cancer confirmé ; patient ajouté au registre principal.',
                 'statut_confirmation': patient.statut_confirmation,
             })
 
         motif = str(request.data.get('motif_refus', '') or '').strip()
         if not motif:
             return Response(
-                {'detail': 'Un motif de refus est obligatoire.'},
+            {'detail': 'Une justification médicale de l’exclusion du cancer est obligatoire.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -563,7 +580,7 @@ class PatientViewSet(viewsets.ModelViewSet):
         ).execute()
 
         return Response({
-            'detail': 'Patient refusé. Le dossier reste tracé sans entrer dans le registre principal.',
+            'detail': 'Cancer écarté. Le dossier et son historique sont conservés hors du registre des cancers confirmés.',
             'statut_confirmation': patient.statut_confirmation,
         })
 

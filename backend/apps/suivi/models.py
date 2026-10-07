@@ -14,6 +14,7 @@ class ConsultationSuivi(models.Model):
     """Consultation de suivi oncologique."""
 
     class TypeConsultation(models.TextChoices):
+        INITIALE        = 'initiale',    'Consultation initiale'
         SUIVI_STANDARD  = 'suivi',       'Suivi standard'
         POST_TRAITEMENT = 'post_trt',    'Post-traitement'
         URGENCE         = 'urgence',     'Urgence'
@@ -128,9 +129,14 @@ class ConsultationSuivi(models.Model):
 
     # Compte rendu
     motif              = models.TextField(blank=True)
+    symptomes          = models.TextField(blank=True)
+    antecedents        = models.TextField(blank=True)
     examen_clinique    = models.TextField(blank=True)
+    hypothese_medicale = models.TextField(blank=True)
+    suspicion_cancer   = models.BooleanField(default=False)
     conclusion         = models.TextField(blank=True)
     conduite_a_tenir   = models.TextField(blank=True, help_text="CAT : examens, traitements, prochaine consultation")
+    commentaires       = models.TextField(blank=True)
     prochaine_consultation = models.DateField(null=True, blank=True)
 
     date_creation      = models.DateTimeField(auto_now_add=True)

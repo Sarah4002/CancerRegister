@@ -14,6 +14,7 @@ from apps.accounts.permissions import (
     can_manage_appointments, can_access_clinical_followup, can_manage_canreg,
     can_manage_medical_configuration,
     can_manage_pharmacy,
+    can_manage_exam_results,
 )
 
 User = get_user_model()
@@ -67,6 +68,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'can_manage_canreg': can_manage_canreg(user),
                 'can_manage_medical_configuration': can_manage_medical_configuration(user),
                 'can_manage_pharmacy': can_manage_pharmacy(user),
+                'can_manage_exam_results': can_manage_exam_results(user),
             }
         }
         return data

@@ -58,6 +58,10 @@ export default function NewConsultationPage() {
  }, [initialPatient, patients, setValue]);
 
  useEffect(() => {
+   if (selectedPatient?.statut_confirmation === 'PENDING') setValue('type_consultation', 'initiale');
+ }, [selectedPatient, setValue]);
+
+ useEffect(() => {
    if (!patientIdWatch) { setSelectedPatient(null); return; }
    const existing = patients.find((p) => String(p.id) === String(patientIdWatch)) || null;
    if (existing?.date_naissance) { setSelectedPatient(existing); return; }
@@ -110,7 +114,7 @@ export default function NewConsultationPage() {
 
  return (
  <AppLayout
-   title="Nouvelle Consultation de Suivi"
+   title={selectedPatient?.statut_confirmation === 'PENDING' ? 'Consultation initiale' : 'Nouvelle consultation'}
    patientContext={selectedPatient ? {
      patient: selectedPatient,
      backPath: `/patients/${selectedPatient.id}`,
@@ -121,7 +125,7 @@ export default function NewConsultationPage() {
  <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>
  <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:24, paddingBottom:16, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>
  <span style={{ fontSize:24 }}></span>
- <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'#0f172a' }}>Consultation de suivi</h2>
+ <h2 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:700, color:'#0f172a' }}>{selectedPatient?.statut_confirmation === 'PENDING' ? 'Consultation initiale' : 'Consultation médicale'}</h2>
  </div>
 
  <form onSubmit={handleSubmit(onSubmit)}>
@@ -142,6 +146,7 @@ export default function NewConsultationPage() {
  <Row2>
  <Field label="Type de consultation">
  <select {...register('type_consultation')} style={selSt}>
+ <option value="initiale">Consultation initiale</option>
  <option value="suivi">Suivi standard</option>
  <option value="post_trt">Post-traitement</option>
  <option value="urgence">Urgence</option>
@@ -342,14 +347,29 @@ export default function NewConsultationPage() {
  <Field label="Motif de consultation">
  <textarea {...register('motif')} rows={2} placeholder="Suivi post-chimiothérapie cycle 4..." style={{ ...inputSt, resize:'vertical', lineHeight:1.6 }} />
  </Field>
+ <Field label="Symptômes">
+ <textarea {...register('symptomes')} rows={2} placeholder="Symptômes rapportés par le patient..." style={{ ...inputSt, resize:'vertical', lineHeight:1.6 }} />
+ </Field>
+ <Field label="Antécédents">
+ <textarea {...register('antecedents')} rows={2} placeholder="Antécédents médicaux et familiaux utiles..." style={{ ...inputSt, resize:'vertical', lineHeight:1.6 }} />
+ </Field>
  <Field label="Examen clinique">
  <textarea {...register('examen_clinique')} rows={3} placeholder="État général satisfaisant, PS 1. Pas d'adénopathie palpable..." style={{ ...inputSt, resize:'vertical', lineHeight:1.6 }} />
  </Field>
+ <Field label="Hypothèse médicale">
+ <textarea {...register('hypothese_medicale')} rows={2} placeholder="Hypothèse à explorer, sans valeur de diagnostic confirmé..." style={{ ...inputSt, resize:'vertical', lineHeight:1.6 }} />
+ </Field>
+ <label style={{ display:'flex', alignItems:'center', gap:9, margin:'4px 0 16px', color:'#334155', fontSize:13 }}>
+ <input type="checkbox" {...register('suspicion_cancer')} /> Suspicion éventuelle de cancer
+ </label>
  <Field label="Conclusion">
  <textarea {...register('conclusion')} rows={2} placeholder="Réponse tumorale satisfaisante, tolérance correcte..." style={{ ...inputSt, resize:'vertical', lineHeight:1.6 }} />
  </Field>
  <Field label="Conduite à tenir">
  <textarea {...register('conduite_a_tenir')} rows={3} placeholder="Poursuite chimio cycle 5. Bilan hépatique. Prochain RDV dans 3 semaines..." style={{ ...inputSt, resize:'vertical', lineHeight:1.6 }} />
+ </Field>
+ <Field label="Commentaires du médecin">
+ <textarea {...register('commentaires')} rows={2} placeholder="Informations complémentaires..." style={{ ...inputSt, resize:'vertical', lineHeight:1.6 }} />
  </Field>
  </Section>
 

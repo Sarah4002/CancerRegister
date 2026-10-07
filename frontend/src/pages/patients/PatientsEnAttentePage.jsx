@@ -192,10 +192,10 @@ function RefusModal({ patient, onClose, onConfirm, loading }) {
           </div>
 
           <div style={{ fontSize:17, fontWeight:800, color:'#0f172a', marginBottom:8 }}>
-            Refuser ce dossier ?
+            Écarter le cancer ?
           </div>
           <div style={{ fontSize:13, color:'#64748b', lineHeight:1.6, marginBottom:6 }}>
-            Le diagnostic de cancer n'est pas confirmé pour :
+            Cette décision signifie que les examens suffisants permettent d’écarter le cancer pour :
           </div>
           <div style={{
             padding:'10px 14px',
@@ -211,7 +211,7 @@ function RefusModal({ patient, onClose, onConfirm, loading }) {
           </div>
 
           <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:.8, marginBottom:8, display:'block' }}>
-            Motif du refus
+            Justification médicale de l’exclusion
           </div>
           <textarea
             value={motif}
@@ -257,7 +257,7 @@ function RefusModal({ patient, onClose, onConfirm, loading }) {
                   <span style={{ width:13, height:13, border:'2px solid #ffffff44', borderTopColor:'#fff', borderRadius:'50%', animation:'spin .7s linear infinite', display:'inline-block' }} />
                   Envoi…
                 </>
-              ) : 'Confirmer le refus'}
+              ) : 'Confirmer l’exclusion du cancer'}
             </button>
           </div>
         </div>
@@ -318,7 +318,7 @@ export default function PatientsEnAttentePage() {
     setRefusLoading(true);
     try {
       await patientService.confirmPatient(motifModal.patient.id, { decision: 'refuse', motif_refus: motif });
-      toast.success('Dossier refusé');
+      toast.success('Cancer écarté ; le dossier et son historique sont conservés.');
       setMotifModal(null);
       fetchEnAttente();
     } catch (e) {
@@ -491,6 +491,21 @@ export default function PatientsEnAttentePage() {
                           Voir
                         </button>
                       </Link>
+                      {canValidate && <Link to={`/suivi/consultations/nouveau?patient=${p.id}`} style={{ textDecoration:'none' }}>
+                        <button style={{ padding:'5px 12px', background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:6, color:'#1d4ed8', fontSize:11.5, cursor:'pointer' }}>
+                          Consultation
+                        </button>
+                      </Link>}
+                      {canValidate && <Link to={`/patients/${p.id}`} state={{ returnSection:'examens', openExamenModal:true }} style={{ textDecoration:'none' }}>
+                        <button style={{ padding:'5px 12px', background:'#f5f3ff', border:'1px solid #ddd6fe', borderRadius:6, color:'#6d28d9', fontSize:11.5, cursor:'pointer' }}>
+                          Demander un examen
+                        </button>
+                      </Link>}
+                      {canValidate && <Link to={`/patients/${p.id}`} state={{ returnSection:'examens' }} style={{ textDecoration:'none' }}>
+                        <button style={{ padding:'5px 12px', background:'#ecfeff', border:'1px solid #a5f3fc', borderRadius:6, color:'#0e7490', fontSize:11.5, cursor:'pointer' }}>
+                          Voir les résultats
+                        </button>
+                      </Link>}
                       {canValidate && (
                         <>
                           <ConfirmIconButton

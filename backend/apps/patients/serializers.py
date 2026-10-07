@@ -248,39 +248,18 @@ class PatientEnAttenteSerializer(serializers.ModelSerializer):
     def get_full_name(self, obj):
         return f"{obj.nom} {obj.prenom}".strip()
 
-    def _dernier_resume(self, obj, related_name):
-        """
-        Va chercher le dernier résultat lié (labo / radiologie / anapath) si
-        l'application correspondante est branchée sur Patient via cette
-        related_name. Ne casse jamais si l'app n'existe pas encore côté
-        backend — retourne simplement None (affiché comme '—' au frontend).
-        À adapter avec le vrai related_name une fois les modules labo/
-        radiologie/anapath en place (ex: 'analyses_labo', 'examens_radiologie',
-        'examens_anapath').
-        """
-        manager = getattr(obj, related_name, None)
-        if manager is None:
-            return None
-        try:
-            dernier = manager.order_by('-id').first()
-        except Exception:
-            return None
-        if not dernier:
-            return None
-        for champ in ('resume', 'conclusion', 'resultat', 'notes'):
-            val = getattr(dernier, champ, None)
-            if val:
-                return str(val)[:150]
-        return None
+    def _dernier_resume(self, obj, categorie):
+        examen = obj.examens_medicaux.filter(categorie=categorie).exclude(resultat='').order_by('-date_creation').first()
+        return str(examen.resultat)[:150] if examen else None
 
     def get_resume_labo(self, obj):
-        return self._dernier_resume(obj, 'analyses_labo')
+        return self._dernier_resume(obj, 'biologie')
 
     def get_resume_radio(self, obj):
-        return self._dernier_resume(obj, 'examens_radiologie')
+        return self._dernier_resume(obj, 'imagerie')
 
     def get_resume_anapath(self, obj):
-        return self._dernier_resume(obj, 'examens_anapath')
+        return self._dernier_resume(obj, 'anapath')
 
 
 class PatientClinicalContextSerializer(serializers.ModelSerializer):

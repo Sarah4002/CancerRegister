@@ -84,7 +84,10 @@ class ConsultationSuiviViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         ensure_rdv_slot_is_free(serializer.validated_data)
-        obj = serializer.save(cree_par=self.request.user)
+        obj = serializer.save(
+            cree_par=self.request.user,
+            medecin=serializer.validated_data.get('medecin') or self.request.user,
+        )
         AccessLog.objects.create(
             user=self.request.user, action=AccessLog.Action.CREATE,
             resource='consultation_suivi', resource_id=str(obj.id),

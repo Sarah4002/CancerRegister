@@ -12,6 +12,7 @@ from .serializers import (
     DiagnosticValidationRuleSerializer,
 )
 from apps.accounts.models import AccessLog
+from apps.patients.models import Patient
 from apps.accounts.permissions import (
     CanReadOrWriteDiagnostic, can_write_diagnostic, can_validate_diagnosis,
     CanManageMedicalConfiguration,
@@ -122,6 +123,10 @@ class DiagnosticViewSet(viewsets.ModelViewSet):
         if not can_write_diagnostic(self.request.user):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Saisie de diagnostics réservée aux oncologues et anatomopathologistes.")
+        patient = serializer.validated_data['patient']
+        if patient.statut_confirmation != Patient.StatutConfirmation.CONFIRME:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'patient': 'Un diagnostic de cancer ne peut être créé qu’après confirmation médicale du cancer.'})
         diag = serializer.save(cree_par=self.request.user)
         AccessLog.objects.create(
             user=self.request.user,
@@ -135,6 +140,10 @@ class DiagnosticViewSet(viewsets.ModelViewSet):
         if not can_write_diagnostic(self.request.user):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Modification de diagnostics réservée aux oncologues et anatomopathologistes.")
+        patient = serializer.validated_data.get('patient', serializer.instance.patient)
+        if patient.statut_confirmation != Patient.StatutConfirmation.CONFIRME:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'patient': 'Un diagnostic de cancer ne peut être associé qu’à un patient dont le cancer est confirmé.'})
         serializer.save()
 
     @action(detail=False, methods=['get'])

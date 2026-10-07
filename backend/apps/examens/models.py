@@ -16,9 +16,14 @@ class ExamenMedical(models.Model):
         PRESCRIT = 'prescrit', 'Prescrit'
         EN_ATTENTE = 'en_attente', 'En attente'
         REALISE = 'realise', 'Réalisé'
+        RESULTAT_DISPONIBLE = 'resultat_disponible', 'Résultat disponible'
         ANNULE = 'annule', 'Annulé'
 
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='examens_medicaux')
+    consultation = models.ForeignKey(
+        'suivi.ConsultationSuivi', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='examens_demandes',
+    )
     categorie = models.CharField(max_length=50, choices=CategorieChoices.choices)
     nom_examen = models.CharField(max_length=200)
     date_prescription = models.DateField()

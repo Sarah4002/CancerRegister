@@ -66,6 +66,7 @@ const EXAMEN_STATUT_COLORS = {
   prescrit:   { bg: 'rgba(155,138,251,0.1)', color: '#7c3aed' },
   en_attente: { bg: 'rgba(245,166,35,0.1)',  color: '#d97706' },
   realise:    { bg: 'rgba(0,229,160,0.1)',   color: '#16a34a' },
+  resultat_disponible: { bg: 'rgba(0,229,160,0.1)', color: '#16a34a' },
   annule:     { bg: 'rgba(255,77,106,0.1)',  color: '#dc2626' },
 };
 
@@ -73,6 +74,7 @@ const EXAMEN_STATUT_LABELS = {
   prescrit:   'Prescrit',
   en_attente: 'En attente',
   realise:    'Réalisé',
+  resultat_disponible: 'Résultat disponible',
   annule:     'Annulé',
 };
 
@@ -442,6 +444,14 @@ export default function PatientDossierPage() {
       if (location.state?.newDiagnosticId) {
         setHighlightedDiagnosticId(location.state.newDiagnosticId);
         setTimeout(() => setHighlightedDiagnosticId(null), 3000);
+      }
+    }
+    if (location.state?.returnSection === 'examens') {
+      setActiveMainTab('dossier');
+      setActiveSubTab('examens');
+      if (location.state?.openExamenModal) {
+        setEditingExamen(null);
+        setShowExamenModal(true);
       }
     }
   }, [id, navigate, location.state]);
@@ -1118,7 +1128,7 @@ export default function PatientDossierPage() {
                  <div style={{ animation: 'fadeIn 0.2s ease' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                      <SectionLabel style={{ margin: 0 }}>Diagnostic(s) associé(s)</SectionLabel>
-                     {can.writeDiagnostic && <Link to={`/diagnostics/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
+                     {can.writeDiagnostic && patient.statut_confirmation === 'CANCER_CONFIRMED' && <Link to={`/diagnostics/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
                        <button style={addBtnStyle}>
                          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
@@ -1216,20 +1226,20 @@ export default function PatientDossierPage() {
                              const stLabel = EXAMEN_STATUT_LABELS[ex.statut] || ex.statut || '—';
                              return (
                                <tr key={ex.id}
-                                 onClick={() => { setEditingExamen(ex); setShowExamenModal(true); }}
-                                 style={{ cursor: 'pointer', borderBottom: '1px solid rgba(37,99,235,0.12)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
+                                 onClick={() => { if (can.manageExamResults) { setEditingExamen(ex); setShowExamenModal(true); } }}
+                                 style={{ cursor: can.manageExamResults ? 'pointer' : 'default', borderBottom: '1px solid rgba(37,99,235,0.12)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
                                  onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
                                  onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'}
                                >
                                  <td style={{ ...tdStyle, color: '#0f172a', fontWeight: 500, fontSize: 12.5 }}>{ex.categorie || '—'}</td>
                                  <td style={{ ...tdStyle, color: '#334155', fontSize: 12.5 }}>{ex.nom_examen || '—'}</td>
-                                 <td style={{ ...tdStyle, color: '#0f172a', fontWeight: 600, fontSize: 12.5 }}>{ex.valeur || '—'}</td>
+                                 <td style={{ ...tdStyle, color: '#0f172a', fontWeight: 600, fontSize: 12.5 }}>{ex.resultat || '—'}</td>
                                  <td style={tdStyle}>
                                    <span style={{ padding: '4px 10px', borderRadius: 20, background: st.bg, color: st.color, fontSize: 11, fontWeight: 600 }}>{stLabel}</span>
                                  </td>
                                  <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{ex.date_prescription ? new Date(ex.date_prescription).toLocaleDateString('fr-DZ') : '—'}</td>
                                  <td style={tdStyle} onClick={e => e.stopPropagation()}>
-                                   <button onClick={() => { setEditingExamen(ex); setShowExamenModal(true); }} style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: 'pointer' }}>Voir</button>
+                                   <button onClick={() => { if (can.manageExamResults) { setEditingExamen(ex); setShowExamenModal(true); } }} style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: can.manageExamResults ? 'pointer' : 'default' }}>{can.manageExamResults ? 'Résultat' : 'Voir'}</button>
                                  </td>
                                </tr>
                              );
@@ -1370,6 +1380,7 @@ export default function PatientDossierPage() {
 
       {showExamenModal && (
         <ExamenModal
+          key={editingExamen?.id || 'new-exam'}
           patientId={id}
           examen={editingExamen}
           onClose={() => { setShowExamenModal(false); setEditingExamen(null); }}
