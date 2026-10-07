@@ -231,6 +231,10 @@ const PATIENT_SECTIONS = [
   { key: 'rendezvous',  label: 'Rendez-vous'        },
 ];
 
+// Sections visibles pour un dossier encore EN ATTENTE de confirmation
+// (pas de Infos Cliniques, Diagnostic, Traitements ni RCP)
+const PENDING_SECTION_KEYS = ['identite', 'suivi', 'examens', 'rendezvous'];
+
 function EditField({ field, value, onChange, allValues }) {
   const base = { width: '100%', padding: '9px 11px', background: '#f1f5f9', border: '1px solid #2563eb', borderRadius: '12px', color: '#0f172a', fontSize: 13, fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box' };
   if (field.type === 'select') return (
@@ -389,6 +393,20 @@ export default function PatientDossierPage() {
   const { user } = useAuthStore();
   const { can } = usePermissions();
   const isSecretary = user?.role === 'secretaire';
+
+  // On mémorise que ce dossier a été ouvert depuis la liste "en attente"
+  // (survit au rafraîchissement de la page grâce à sessionStorage)
+  const [fromAttente] = useState(() => {
+    try {
+      if (location.state?.fromAttente) {
+        sessionStorage.setItem(`attente:${id}`, '1');
+        return true;
+      }
+      return sessionStorage.getItem(`attente:${id}`) === '1';
+    } catch {
+      return Boolean(location.state?.fromAttente);
+    }
+  });
 
   const [patient, setPatient] = useState(null);
   const [dossier, setDossier] = useState(null);
@@ -631,21 +649,46 @@ export default function PatientDossierPage() {
     }
   };
 
-  const visiblePatientSections = PATIENT_SECTIONS.filter((section) => {
-    if (isSecretary) return section.key === 'identite' || section.key === 'rendezvous';
+  // ── Dossier "en attente" = cancer pas encore confirmé ──
+  const isConfirmed = patient?.statut_confirmation === 'CANCER_CONFIRMED';
+  // En attente = pas confirmé ET (ouvert depuis la liste attente OU statut backend différent de confirmé)
+  const isPendingDossier = !isConfirmed && (fromAttente || Boolean(patient?.statut_confirmation));
 
-    return {
-      identite: can.readPatient,
-      clinique: can.writeDiagnostic,
-      diagnostic: can.readDiagnostic,
-      examens: can.readDiagnostic,
-      traitements: can.readTreatment,
-      suivi: can.accessClinicalFollowup,
-      rcp: can.viewRcp,
-      rendezvous: can.manageAppointments,
-    }[section.key];
-  });
+  // DEBUG TEMPORAIRE : à supprimer une fois le comportement validé
+  console.log('[Dossier] statut_confirmation =', patient?.statut_confirmation, '| fromAttente =', fromAttente, '| pending =', isPendingDossier);
+
+  const visiblePatientSections = PATIENT_SECTIONS
+    // 1) Dossier en attente : on ne garde que Identité, Consultation, Examens, Rendez-vous
+    .filter(section => !isPendingDossier || PENDING_SECTION_KEYS.includes(section.key))
+    // 2) Libellé "Consultation" à la place de "Suivi Clinique" pour un dossier en attente
+    .map(section =>
+      isPendingDossier && section.key === 'suivi'
+        ? { ...section, label: 'Consultation' }
+        : section
+    )
+    // 3) Permissions existantes
+    .filter((section) => {
+      if (isSecretary) return section.key === 'identite' || section.key === 'rendezvous';
+
+      return {
+        identite: can.readPatient,
+        clinique: can.writeDiagnostic,
+        diagnostic: can.readDiagnostic,
+        examens: can.readDiagnostic,
+        traitements: can.readTreatment,
+        suivi: can.accessClinicalFollowup,
+        rcp: can.viewRcp,
+        rendezvous: can.manageAppointments,
+      }[section.key];
+    });
   const currentSectionLabel = visiblePatientSections.find(s => s.key === activeSectionKey)?.label || '';
+
+  // Garde-fou : si le dossier est en attente et qu'un onglet interdit est actif, retour à Identité
+  useEffect(() => {
+    if (isPendingDossier && !PENDING_SECTION_KEYS.includes(activeSectionKey)) {
+      setActiveMainTab('identite');
+    }
+  }, [isPendingDossier, activeSectionKey]);
 
   if (loading || !patient) return (
     <AppLayout title="Fiche Patient">
