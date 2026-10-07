@@ -55,6 +55,8 @@ import useAuthStore from './hooks/useAuth';
 import { getHomeRouteForRole } from './hooks/usePermissions';
 import './styles/globals.css';
 
+// PATTERN — Route Guard / RBAC : ProtectedRoute vérifie la session,
+// PermRoute ajoute le contrôle d'une permission avant de rendre une page.
 
 // ─────────────────────────────────────────
 // Route protégée : authentification

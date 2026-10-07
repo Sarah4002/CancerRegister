@@ -8,6 +8,8 @@ import NotificationBell from './NotificationBell';
 const SIDEBAR_WIDTH = 260;
 const MOBILE_BREAKPOINT = 1100;
 
+// PATTERN — Navigation pilotée par les données : chaque entrée décrit sa route,
+// ses rôles et/ou sa permission; le menu est filtré à partir de cette configuration.
 const NAV_CONFIG = [
   { section: 'Principal', items: [
     { path: '/dashboard', label: 'Tableau de bord', icon: GridIcon, roles: ['doctor', 'doctor_chef', 'anapath', 'epidemiologist', 'pharmacist', 'secretaire', 'readonly'] },
@@ -319,6 +321,8 @@ export default function Sidebar({ patientContext }) {
   );
 }
 
+// PATTERN — Layout partagé (composition) : les pages métier fournissent leur contenu
+// via children et réutilisent la même navigation, l'en-tête et la zone de travail.
 export function AppLayout({ children, title, patientContext, breadcrumb }) {
   const isMobile = useIsMobile();
   const { theme, language } = usePreferences();

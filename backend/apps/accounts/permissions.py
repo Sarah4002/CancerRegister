@@ -27,6 +27,8 @@ Exporter les données nominatives	          ❌	        ✅	      ❌	      ❌	
 
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
+# PATTERN (approche) — règles d'autorisation par rôle : ces fonctions isolent
+# des politiques réutilisables. C'est proche de Strategy, sans objets Strategy distincts.
 
 # ── Constantes de rôles ────────────────────────────────────────
 ROLE_ADMIN          = 'admin'

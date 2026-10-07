@@ -1,5 +1,8 @@
 import api from './api';
 
+// PATTERN (façade/adaptateur HTTP) — regroupe les appels patient derrière une
+// interface métier côté frontend. L'accès PostgreSQL reste géré par Django ORM;
+// aucun Repository dédié n'est défini dans ce projet.
 export const patientService = {
   // Liste avec filtres/pagination
   list: (params = {}) => api.get('/patients/', { params }),

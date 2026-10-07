@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { authService } from '../services/api';
 
+// PATTERN — Store global Zustand : état d'authentification et actions centralisés,
+// consommés par les routes et les composants sans propager l'état de parent en enfant.
 const useAuthStore = create((set, get) => ({
   user: null,
   isAuthenticated: false,

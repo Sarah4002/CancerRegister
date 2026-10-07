@@ -4,6 +4,8 @@ from django.utils import timezone
 
 
 class UserManager(BaseUserManager):
+    # PATTERN (proche Factory Method) — le manager centralise la création et
+    # l'initialisation des comptes. Le rôle reste un champ User, pas une sous-classe.
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError("L'adresse email est obligatoire")
@@ -108,7 +110,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class AccessLog(models.Model):
-    """Audit log for all user actions - mirrors CanReg5 access logs."""
+    """Audit log for all user actions - mirrors CanReg5 access logs.
+
+    PATTERN (fonctionnel) — journal d'audit : les vues enregistrent des actions.
+    Ce modèle ne met pas en œuvre Command (pas d'objet commande/exécution différée).
+    """
     class Action(models.TextChoices):
         LOGIN       = 'login',       'Connexion'
         LOGOUT      = 'logout',      'Déconnexion'

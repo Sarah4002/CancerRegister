@@ -19,6 +19,7 @@ from apps.accounts.permissions import (
 )
 
 from .duplicate_service import detecter_doublons, fusionner_patients
+from .query_builder import PatientQueryBuilder
 from .models import ContactUrgence, DossierMedical, Patient, DocumentAdministratif
 from apps.suivi.models import ConsultationSuivi
 from .serializers import (
@@ -150,6 +151,10 @@ class PatientViewSet(viewsets.ModelViewSet):
     ViewSet principal des patients
     """
 
+    # PATTERN ARCHITECTURE — organisation Django MTV, proche de MVC :
+    # le ViewSet traite HTTP, les serializers façonnent les données, les Models
+    # portent la persistance. Le métier reste en partie dans les ViewSets.
+
     permission_classes = [IsAuthenticated, CanWritePatient]
 
     filter_backends = [
@@ -216,89 +221,16 @@ class PatientViewSet(viewsets.ModelViewSet):
     # =========================================================================
 
     def get_queryset(self):
-        queryset = (
-            Patient.objects
-            .select_related('medecin_referent', 'cree_par')
-            .prefetch_related('contacts_urgence')
+        # PATTERN Builder — compose le queryset par étapes nommées puis le finalise.
+        builder = (
+            PatientQueryBuilder(self.request, self.action)
+            .with_registry_scope()
+            .with_age_range()
+            .with_birth_date_search()
         )
-
-        # Les dossiers décédés ou en rémission sont archivés automatiquement.
-        # Ils restent accessibles dans la vue dédiée et lors de la consultation
-        # d'un dossier, sans réapparaître dans la liste principale.
-        archive_filter = Q(est_actif=False) | Q(statut_vital='decede') | Q(
-            statut_dossier__in=['remission', 'decede', 'archive']
-        )
-
-        # Circuit de confirmation : un dossier créé par le secrétariat reste
-        # "en attente" et n'apparaît PAS dans le registre principal tant
-        # qu'un médecin/médecin chef ne l'a pas confirmé. Un dossier "refusé"
-        # (pas de cancer) n'y entre jamais. Ces dossiers restent néanmoins
-        # consultables individuellement (retrieve) et gérables via l'action
-        # `confirmer`, qui doit pouvoir les retrouver par pk quel que soit
-        # leur statut.
-        en_attente_filter = Q(statut_confirmation=Patient.StatutConfirmation.EN_ATTENTE)
-        refuse_filter = Q(statut_confirmation=Patient.StatutConfirmation.REFUSE)
-
-        if self.action in ('retrieve', 'confirmer'):
-            pass
-        elif self.request.query_params.get('archives') == '1':
-            queryset = queryset.filter(archive_filter).exclude(en_attente_filter)
-        else:
-            queryset = queryset.exclude(archive_filter).exclude(en_attente_filter).exclude(refuse_filter)
-
-        queryset = self._filter_age(queryset)
-        queryset = self._apply_search_date_filter(queryset)
-
-        return queryset
-
-    def _filter_age(self, queryset):
-        age_min = self.request.query_params.get('age_min')
-        age_max = self.request.query_params.get('age_max')
-
-        if age_min:
-            queryset = queryset.filter(age_diagnostic__gte=age_min)
-
-        if age_max:
-            queryset = queryset.filter(age_diagnostic__lte=age_max)
-
-        return queryset
-
-    def _apply_search_date_filter(self, queryset):
-        search_query = self.request.query_params.get('search', '').strip()
-
-        if not search_query:
-            return queryset
-
-        periode_match = re.match(r'^(\d{4})[\-/](\d{4})$', search_query)
-        date_fr_match = re.match(r'^(\d{2})[\-/](\d{2})[\-/](\d{4})$', search_query)
-        date_iso_match = re.match(r'^(\d{4})[\-/](\d{2})[\-/](\d{2})$', search_query)
-
-        if periode_match:
-            annee_debut = int(periode_match.group(1))
-            annee_fin = int(periode_match.group(2))
-
+        if builder.uses_exact_search:
             self.search_fields = []
-
-            return queryset.filter(
-                date_naissance__year__gte=min(annee_debut, annee_fin),
-                date_naissance__year__lte=max(annee_debut, annee_fin),
-            )
-
-        if date_fr_match:
-            date_obj = self._parse_fr_date(date_fr_match)
-
-            if date_obj:
-                self.search_fields = []
-                return queryset.filter(date_naissance=date_obj)
-
-        if date_iso_match:
-            date_obj = self._parse_iso_date(date_iso_match)
-
-            if date_obj:
-                self.search_fields = []
-                return queryset.filter(date_naissance=date_obj)
-
-        return queryset
+        return builder.build()
 
     # =========================================================================
     # SERIALIZERS
@@ -330,6 +262,8 @@ class PatientViewSet(viewsets.ModelViewSet):
         patient = serializer.save(cree_par=self.request.user)
 
         if patient.statut_confirmation == Patient.StatutConfirmation.EN_ATTENTE:
+            # Notification déclenchée explicitement dans le flux de création.
+            # Ce n'est pas Observer : aucun signal/événement découplé n'est utilisé ici.
             from apps.notifications.models import Notification
             from apps.accounts.models import User
 

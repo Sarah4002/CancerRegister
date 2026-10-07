@@ -1,3 +1,6 @@
+// PATTERN — Instance de module partagée (singleton pratique) : les services
+// frontend utilisent le même client Axios. La connexion PostgreSQL, elle, est
+// gérée par Django; l'application n'implémente pas son propre Singleton DB.
 import axios from 'axios';
 
 /**

@@ -32,6 +32,8 @@ const ICONS = {
   rapports:  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />,
 };
 
+// PATTERN UI — Contenu déclaratif : les cartes de fonctionnalités sont générées
+// depuis cette configuration, ce qui sépare les données de leur rendu.
 const FEATURES = [
   { key: 'patients',    color: '#2563eb', title: 'Gestion des patients', desc: "Centralisation des informations administratives et médicales dans un dossier patient sécurisé." },
   { key: 'diagnostic',  color: '#0d9488', title: 'Diagnostic', desc: "Saisie et suivi des diagnostics, examens et résultats d'imagerie." },
@@ -47,6 +49,8 @@ const FEATURES = [
    Ajoute le champ `src` (chemin public, ex: '/images/screenshots/dashboard.png')
    dès que tu as les fichiers. Tant que `src` est absent ou introuvable,
    InterfaceMock retombe automatiquement sur la maquette générée. */
+// PATTERN UI — Contenu déclaratif + rendu de liste; InterfaceMock applique
+// aussi un fallback visuel si une capture manque ou ne peut pas être chargée.
 const PREVIEWS = [
   { title: 'Tableau de bord',    desc: 'Vue d’ensemble des données clés',          src: '/images/screenshots/3.png' },
   { title: 'Liste des patients', desc: 'Recherche et gestion des dossiers',        src: '/images/screenshots/4.png' },
@@ -119,6 +123,7 @@ function Logo() {
 }
 
 function FeatureCard({ icon, color, title, desc }) {
+  // PATTERN UI — Composant de présentation réutilisable, configuré par props.
   const [hovered, setHovered] = useState(false);
   return (
     <div
@@ -266,7 +271,8 @@ export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
-  /* Carrousel des captures : défilement circulaire (après la dernière, on revient à la première) */
+  /* PATTERN UI — Carrousel contrôlé : l'index est un état local React et le modulo
+     rend le défilement circulaire sans dupliquer la liste des captures. */
   const [start, setStart] = useState(0);
   const total = PREVIEWS.length;
   const canCycle = total > VISIBLE_PREVIEWS;
