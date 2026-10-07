@@ -1,6 +1,6 @@
 // PatientsEnAttentePage.jsx
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { patientService } from '../../services/patientService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import usePermissions from '../../hooks/usePermissions';
@@ -60,23 +60,26 @@ function UrgenceBadge({ dateEnregistrement }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   CONFIRM ICON BUTTON — même gabarit que DeleteIconButton (PatientsPage)
+   ICON BUTTON générique — même gabarit que DeleteIconButton / ExportSingleButton
+   (30×30, bordure + fond teintés au survol, icône Feather en traits)
+   `rgb` = composante "r,g,b" de la couleur d'accent, ex: '22,163,74'
 ───────────────────────────────────────────────────────────────────────────── */
-function ConfirmIconButton({ onClick, loading }) {
+function IconButton({ title, rgb, onClick, loading = false, strokeWidth = 2, children }) {
   const [hovered, setHovered] = useState(false);
+  const accent = `rgb(${rgb})`;
   return (
     <button
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       disabled={loading}
-      title="Confirmer le diagnostic (cancer)"
+      title={title}
       style={{
         width:30, height:30,
         display:'flex', alignItems:'center', justifyContent:'center',
         borderRadius:8,
-        border: hovered ? '1px solid rgba(22,163,74,0.3)' : '1px solid transparent',
-        background: hovered ? 'rgba(22,163,74,0.07)' : 'transparent',
+        border: hovered ? `1px solid rgba(${rgb},0.3)` : '1px solid transparent',
+        background: hovered ? `rgba(${rgb},0.07)` : 'transparent',
         cursor: loading ? 'not-allowed' : 'pointer',
         transition:'all .15s',
         flexShrink:0,
@@ -84,63 +87,52 @@ function ConfirmIconButton({ onClick, loading }) {
       }}
     >
       {loading ? (
-        <span style={{ width:13, height:13, border:'2px solid rgba(22,163,74,0.3)', borderTopColor:'#16a34a', borderRadius:'50%', animation:'spin .7s linear infinite', display:'inline-block' }} />
+        <span style={{ width:13, height:13, border:`2px solid rgba(${rgb},0.3)`, borderTopColor:accent, borderRadius:'50%', animation:'spin .7s linear infinite', display:'inline-block' }} />
       ) : (
         <svg
-          width="14" height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={hovered ? '#16a34a' : '#94a3b8'}
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke={hovered ? accent : '#94a3b8'}
+          strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"
           style={{ transition:'stroke .15s' }}
         >
-          <polyline points="20 6 9 17 4 12"/>
+          {children}
         </svg>
       )}
     </button>
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   REFUSE ICON BUTTON — même gabarit que DeleteIconButton (PatientsPage)
-───────────────────────────────────────────────────────────────────────────── */
-function RefuseIconButton({ onClick }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      title="Refuser le diagnostic"
-      style={{
-        width:30, height:30,
-        display:'flex', alignItems:'center', justifyContent:'center',
-        borderRadius:8,
-        border: hovered ? '1px solid rgba(220,38,38,0.3)' : '1px solid transparent',
-        background: hovered ? 'rgba(220,38,38,0.07)' : 'transparent',
-        cursor:'pointer',
-        transition:'all .15s',
-        flexShrink:0,
-      }}
-    >
-      <svg
-        width="14" height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke={hovered ? '#dc2626' : '#94a3b8'}
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        style={{ transition:'stroke .15s' }}
-      >
-        <line x1="18" y1="6" x2="6" y2="18"/>
-        <line x1="6" y1="6" x2="18" y2="18"/>
-      </svg>
-    </button>
-  );
-}
+/* Icônes (Feather) */
+const IconConsultation = () => (
+  <>
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+    <line x1="9" y1="12" x2="15" y2="12"/>
+    <line x1="9" y1="16" x2="13" y2="16"/>
+  </>
+);
+const IconExamen = () => (
+  <>
+    <path d="M9 3h6"/>
+    <path d="M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2.2h12.4a1.5 1.5 0 0 0 1.3-2.2L14 9V3"/>
+    <line x1="7.5" y1="14" x2="16.5" y2="14"/>
+  </>
+);
+const IconResultats = () => (
+  <>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+  </>
+);
+const IconCheck = () => <polyline points="20 6 9 17 4 12"/>;
+const IconX = () => (
+  <>
+    <line x1="18" y1="6" x2="6" y2="18"/>
+    <line x1="6" y1="6" x2="18" y2="18"/>
+  </>
+);
 
 /* ─────────────────────────────────────────────────────────────────────────────
    REFUS MODAL — même gabarit que DeleteConfirmModal (PatientsPage)
@@ -272,15 +264,21 @@ function RefusModal({ patient, onClose, onConfirm, loading }) {
 export default function PatientsEnAttentePage() {
   const { can } = usePermissions();
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const canValidate = can.validateDiagnosis || can.confirmDiagnostic;
   const canAccess   = canValidate || user?.role === 'secretaire';
 
-  const [patients,      setPatients]      = useState([]);
+  const [patients,       setPatients]      = useState([]);
   const [loading,        setLoading]       = useState(true);
   const [search,         setSearch]        = useState('');
   const [motifModal,     setMotifModal]    = useState(null); // { patient }
   const [refusLoading,   setRefusLoading]  = useState(false);
   const [confirmingId,   setConfirmingId]  = useState(null);
+
+  /* Ouvre la fiche patient. `fromAttente` permet à PatientDossierPage
+     d'afficher le menu réduit (Identité, Consultation, Rendez-vous, Examens). */
+  const openPatient = (id, extraState = {}) =>
+    navigate(`/patients/${id}`, { state: { fromAttente: true, ...extraState } });
 
   const fetchEnAttente = useCallback(async () => {
     setLoading(true);
@@ -288,8 +286,6 @@ export default function PatientsEnAttentePage() {
       const { data } = await patientService.getEnAttente();
       let results = data.results || data;
       if (!Array.isArray(results)) results = [];
-      // DEBUG TEMPORAIRE : vérifier que sexe / sexe_label / age / date_naissance arrivent
-      if (results[0]) console.log('[EnAttente] 1er patient reçu:', results[0]);
       setPatients(results);
     } catch {
       toast.error('Erreur lors du chargement des dossiers en attente');
@@ -438,7 +434,7 @@ export default function PatientsEnAttentePage() {
           <table style={{ width:'100%', borderCollapse:'collapse' }}>
             <thead>
               <tr style={{ background:'var(--bg-elevated)' }}>
-                {['N° Dossier','Patient','Sexe','Âge','Ajouté par','Délai','Résultats',''].map((h,idx) => (
+                {['N° Dossier','Patient','Sexe','Âge','Ajouté par','Délai','Résultats','','','','','',''].map((h,idx) => (
                   <th key={idx} style={{
                     padding:'10px 14px', textAlign:'left',
                     fontSize:11, fontWeight:600, letterSpacing:.5,
@@ -452,10 +448,12 @@ export default function PatientsEnAttentePage() {
               {filteredPatients.map((p, i) => {
                 const sexe = getSexe(p);
                 const age  = getAge(p);
+                const stop = e => e.stopPropagation();
                 return (
                 <tr key={p.id}
+                  onClick={() => openPatient(p.id)}
                   style={{
-                    borderBottom:'1px solid rgba(37,99,235,0.06)', transition:'background .1s',
+                    cursor:'pointer', borderBottom:'1px solid rgba(37,99,235,0.06)', transition:'background .1s',
                     background: i%2===0 ? 'transparent' : 'rgba(255,255,255,0.01)',
                   }}
                   onMouseEnter={e => e.currentTarget.style.background='var(--bg-hover)'}
@@ -484,41 +482,70 @@ export default function PatientsEnAttentePage() {
                       Labo: {p.resume_labo || '—'} · Radio: {p.resume_radio || '—'} · Anapath: {p.resume_anapath || '—'}
                     </div>
                   </td>
-                  <td style={{ padding:'12px 14px' }}>
-                    <div style={{ display:'flex', gap:6, justifyContent:'flex-end' }}>
-                      <Link to={`/patients/${p.id}`} style={{ textDecoration:'none' }}>
-                        <button style={{ padding:'5px 12px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:6, color:'#334155', fontSize:11.5, cursor:'pointer' }}>
-                          Voir
-                        </button>
-                      </Link>
-                      {canValidate && <Link to={`/suivi/consultations/nouveau?patient=${p.id}`} style={{ textDecoration:'none' }}>
-                        <button style={{ padding:'5px 12px', background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:6, color:'#1d4ed8', fontSize:11.5, cursor:'pointer' }}>
-                          Consultation
-                        </button>
-                      </Link>}
-                      {canValidate && <Link to={`/patients/${p.id}`} state={{ returnSection:'examens', openExamenModal:true }} style={{ textDecoration:'none' }}>
-                        <button style={{ padding:'5px 12px', background:'#f5f3ff', border:'1px solid #ddd6fe', borderRadius:6, color:'#6d28d9', fontSize:11.5, cursor:'pointer' }}>
-                          Demander un examen
-                        </button>
-                      </Link>}
-                      {canValidate && <Link to={`/patients/${p.id}`} state={{ returnSection:'examens' }} style={{ textDecoration:'none' }}>
-                        <button style={{ padding:'5px 12px', background:'#ecfeff', border:'1px solid #a5f3fc', borderRadius:6, color:'#0e7490', fontSize:11.5, cursor:'pointer' }}>
-                          Voir les résultats
-                        </button>
-                      </Link>}
-                      {canValidate && (
-                        <>
-                          <ConfirmIconButton
-                            onClick={() => handleConfirm(p)}
-                            loading={confirmingId === p.id}
-                          />
-                          <RefuseIconButton
-                            onClick={() => setMotifModal({ patient: p })}
-                          />
-                        </>
-                      )}
-                    </div>
+
+                  {/* Voir */}
+                  <td style={{ padding:'12px 8px 12px 14px' }} onClick={stop}>
+                    <button
+                      onClick={() => openPatient(p.id)}
+                      style={{ padding:'5px 12px', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:6, color:'#334155', fontSize:11.5, cursor:'pointer' }}
+                    >
+                      Voir
+                    </button>
                   </td>
+
+                  {/* Actions médecin : une cellule par icône, comme PatientsPage */}
+                  {canValidate ? (
+                    <>
+                      <td style={{ padding:'12px 4px' }} onClick={stop}>
+                        <Link to={`/suivi/consultations/nouveau?patient=${p.id}`} style={{ textDecoration:'none' }}>
+                          <IconButton title="Nouvelle consultation" rgb="37,99,235">
+                            <IconConsultation />
+                          </IconButton>
+                        </Link>
+                      </td>
+                      <td style={{ padding:'12px 4px' }} onClick={stop}>
+                        <IconButton
+                          title="Demander un examen"
+                          rgb="124,58,237"
+                          onClick={() => openPatient(p.id, { returnSection:'examens', openExamenModal:true })}
+                        >
+                          <IconExamen />
+                        </IconButton>
+                      </td>
+                      <td style={{ padding:'12px 4px' }} onClick={stop}>
+                        <IconButton
+                          title="Voir les résultats"
+                          rgb="8,145,178"
+                          onClick={() => openPatient(p.id, { returnSection:'examens' })}
+                        >
+                          <IconResultats />
+                        </IconButton>
+                      </td>
+                      <td style={{ padding:'12px 4px' }} onClick={stop}>
+                        <IconButton
+                          title="Confirmer le diagnostic (cancer)"
+                          rgb="22,163,74"
+                          strokeWidth={2.2}
+                          loading={confirmingId === p.id}
+                          onClick={() => handleConfirm(p)}
+                        >
+                          <IconCheck />
+                        </IconButton>
+                      </td>
+                      <td style={{ padding:'12px 14px 12px 4px' }} onClick={stop}>
+                        <IconButton
+                          title="Écarter le cancer"
+                          rgb="220,38,38"
+                          strokeWidth={2.2}
+                          onClick={() => setMotifModal({ patient: p })}
+                        >
+                          <IconX />
+                        </IconButton>
+                      </td>
+                    </>
+                  ) : (
+                    <td colSpan={5} />
+                  )}
                 </tr>
                 );
               })}
