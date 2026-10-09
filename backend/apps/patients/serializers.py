@@ -212,6 +212,7 @@ class PatientAdministrativeCreateSerializer(PatientAdministrativeSerializer):
     """Création administrative avec choix des habitudes de vie."""
     class Meta(PatientAdministrativeSerializer.Meta):
         fields = PatientAdministrativeSerializer.Meta.fields + [
+            'antecedents_personnels', 'antecedents_familiaux',
             'tabagisme', 'alcool', 'activite_physique', 'alimentation',
         ]
 
