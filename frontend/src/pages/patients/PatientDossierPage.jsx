@@ -699,12 +699,7 @@ export default function PatientDossierPage() {
 
       
 
-      {editMode && activeMainTab === 'identite' && (
-        <div style={{ marginBottom: 14, padding: '10px 16px', background: 'rgba(245,166,35,0.06)', border: '1px solid rgba(245,166,35,0.2)', borderRadius: '12px', fontSize: 12, color: '#d97706', display: 'flex', alignItems: 'center', gap: 8, animation: 'fadeIn 0.2s ease' }}>
-          <span style={{ fontWeight: 700 }}>Mode edition actif</span>
-          {tabHasEdit ? '— Modifiez les champs ci-dessous puis cliquez sur Enregistrer.' : "— Cet onglet n'est pas editable. Naviguez vers un autre onglet pour modifier."}
-        </div>
-      )}
+   
 
       {/* ── Contenu (la navigation entre sections se fait désormais via le sidebar global) ── */}
       <div className="main-content">

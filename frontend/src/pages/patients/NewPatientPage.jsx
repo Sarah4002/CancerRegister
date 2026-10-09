@@ -457,14 +457,6 @@ export default function NewPatientPage() {
                   </Field>
                 </Row>
                 <Row>
-                  <Field label="Nom de jeune fille">
-                    <input {...register('nom_jeune_fille')} placeholder="Nom de naissance" style={inputStyle()} />
-                  </Field>
-                  <Field label="Matricule">
-                    <input {...register('num_matricule')} style={inputStyle()} />
-                  </Field>
-                </Row>
-                <Row>
                   <Field label="N° identité nationale" error={errors.id_national?.message}>
                     <input
                       {...register('id_national', { validate: validateIdNational })}
