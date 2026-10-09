@@ -13,6 +13,9 @@ class Notification(models.Model):
         NOUVELLE_DECISION = 'new_decision', 'Nouvelle décision'
         DOSSIER_AJOUTE  = 'dossier_ajoute', 'Dossier ajouté'
 
+        EXAMEN_DEMANDE = 'examen_demande', 'Examen demandé'
+        EXAMEN_RESULTAT = 'examen_resultat', 'Résultat d’examen disponible'
+
     destinataire = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='notifications'
     )

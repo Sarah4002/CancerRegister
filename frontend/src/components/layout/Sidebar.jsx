@@ -31,6 +31,9 @@ const NAV_CONFIG = [
     ],
     
   },
+  { section: 'Examens', items: [
+    { path: '/examens', label: 'Demandes et résultats', icon: CheckCircleIcon, permission: 'manageExamResults', roles: ['doctor', 'doctor_chef', 'anapath', 'radiologist', 'laboratory'] },
+  ] },
   { section: 'Pharmacie', items: [
     { path: '/pharmacie?vue=dashboard', label: 'Tableau de bord', icon: PillIcon, roles: ['pharmacist'] },
     { path: '/pharmacie?vue=medicaments', label: 'Médicaments', icon: PillIcon, roles: ['pharmacist'] },

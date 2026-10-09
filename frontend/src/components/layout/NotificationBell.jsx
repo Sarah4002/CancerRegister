@@ -9,6 +9,8 @@ const TYPE_ICONS = {
   nouveau_msg:   'C',   // chat
   new_decision:  'D',
   dossier_ajoute:'F',   // file
+  examen_demande: 'E',
+  examen_resultat: 'R',
 };
 
 const TYPE_COLORS = {
@@ -18,6 +20,8 @@ const TYPE_COLORS = {
   nouveau_msg:   '#7c3aed',
   new_decision:  '#d97706',
   dossier_ajoute:'#0891b2',
+  examen_demande: '#ea580c',
+  examen_resultat: '#16a34a',
 };
 
 function timeAgo(dateStr) {
@@ -93,6 +97,10 @@ export default function NotificationBell() {
       setCount(prev => Math.max(0, prev - 1));
     }
     setOpen(false);
+    if (['examen_demande', 'examen_resultat'].includes(notif.type) && notif.dossier_id) {
+      navigate(`/examens?patient=${notif.dossier_id}`);
+      return;
+    }
     if (notif.dossier_id) {
       navigate(`/patients/${notif.dossier_id}`);
       return;

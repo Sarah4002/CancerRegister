@@ -5,18 +5,23 @@ from apps.accounts.serializers import UserSummarySerializer
 class ExamenMedicalSerializer(serializers.ModelSerializer):
     prescrit_par_info = UserSummarySerializer(source='prescrit_par', read_only=True)
     fichier_dicom_url = serializers.FileField(source='fichier_dicom', read_only=True)
+    patient_nom = serializers.SerializerMethodField()
+    patient_numero = serializers.CharField(source='patient.registration_number', read_only=True)
     statut_label = serializers.CharField(source='get_statut_display', read_only=True)
+
+    def get_patient_nom(self, obj):
+        return f'{obj.patient.prenom} {obj.patient.nom}'.strip()
 
     class Meta:
         model = ExamenMedical
         fields = [
-            'id', 'patient', 'consultation', 'categorie', 'nom_examen',
+            'id', 'patient', 'patient_nom', 'patient_numero', 'consultation', 'categorie', 'nom_examen',
             'date_prescription', 'date_realisation', 'resultat', 
-            'fichier_dicom', 'fichier_dicom_url', 'statut', 
+            'fichier_dicom', 'fichier_dicom_url', 'fichier_resultat', 'service_destinataire', 'statut',
             'statut_label', 'prescrit_par', 'prescrit_par_info', 'observations',
             'date_creation', 'date_mise_a_jour'
         ]
-        read_only_fields = ['id', 'date_creation', 'date_mise_a_jour', 'prescrit_par']
+        read_only_fields = ['id', 'date_creation', 'date_mise_a_jour', 'prescrit_par', 'service_destinataire']
 
     def validate(self, attrs):
         patient = attrs.get('patient', getattr(self.instance, 'patient', None))

@@ -18,6 +18,7 @@ import DoublonsPage from './pages/patients/Doublonspage';
 import DiagnosticsPage from './pages/diagnostics/DiagnosticsPage';
 import NewDiagnosticPage from './pages/diagnostics/NewDiagnosticPage';
 import DiagnosticDetailPage from './pages/diagnostics/DiagnosticDetailPage';
+import NewExamenPage from './pages/examens/NewExamenPage';
 
 import TraitementsPage from './pages/traitements/TraitementsPage';
 import NewTraitementPage from './pages/traitements/NewTraitementPage';
@@ -230,6 +231,9 @@ function App() {
             <DiagnosticDetailPage />
           </PermRoute>
         } />
+
+        <Route path="/examens/nouveau" element={<PermRoute permission="manageExamResults"><NewExamenPage /></PermRoute>} />
+        <Route path="/examens" element={<PermRoute permission="manageExamResults"><NewExamenPage /></PermRoute>} />
 
         {/* ───────── Traitements ───────── */}
         <Route path="/traitements" element={
