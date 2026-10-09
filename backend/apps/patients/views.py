@@ -29,6 +29,7 @@ from .serializers import (
     DossierMedicalSerializer,
     PatientCreateSerializer,
     PatientAdministrativeSerializer,
+    PatientAdministrativeCreateSerializer,
     PatientAdministrativeDetailSerializer,
     PatientClinicalContextSerializer,
     PatientDetailSerializer,
@@ -246,7 +247,9 @@ class PatientViewSet(viewsets.ModelViewSet):
         if self.action == 'list':
             return PatientClinicalContextSerializer if is_limited_clinical_reader else PatientListSerializer
 
-        if self.action in ['create', 'update', 'partial_update']:
+        if self.action == 'create':
+            return PatientAdministrativeCreateSerializer if is_secretary else PatientCreateSerializer
+        if self.action in ['update', 'partial_update']:
             return PatientAdministrativeSerializer if is_secretary else PatientCreateSerializer
 
         if is_secretary:

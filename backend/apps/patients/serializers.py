@@ -208,6 +208,14 @@ class PatientAdministrativeSerializer(PatientCreateSerializer):
         ]
 
 
+class PatientAdministrativeCreateSerializer(PatientAdministrativeSerializer):
+    """Création administrative avec choix des habitudes de vie."""
+    class Meta(PatientAdministrativeSerializer.Meta):
+        fields = PatientAdministrativeSerializer.Meta.fields + [
+            'tabagisme', 'alcool', 'activite_physique', 'alimentation',
+        ]
+
+
 class PatientAdministrativeDetailSerializer(serializers.ModelSerializer):
     contacts_urgence = ContactUrgenceSerializer(many=True, read_only=True)
 

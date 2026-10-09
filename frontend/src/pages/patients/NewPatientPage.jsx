@@ -160,7 +160,9 @@ export default function NewPatientPage() {
   const navigate = useNavigate();
   const { role } = usePermissions();
   const isSecretary = role === 'secretaire';
-  const visibleSteps = isSecretary ? STEPS.slice(0, 3) : STEPS;
+  const visibleSteps = isSecretary
+    ? STEPS.map((item, index) => index === 3 ? { ...item, label: 'Habitudes' } : item)
+    : STEPS;
   const lastStep = visibleSteps.length - 1;
   const [step, setStep]             = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -181,10 +183,10 @@ export default function NewPatientPage() {
     useForm({
       mode: 'onSubmit',
       defaultValues: {
-        tabagisme: 'inconnu',
-        alcool: 'inconnu',
-        activite_physique: 'inconnu',
-        alimentation: 'inconnu',
+        tabagisme: '',
+        alcool: '',
+        activite_physique: '',
+        alimentation: '',
       },
     });
 
@@ -308,8 +310,7 @@ export default function NewPatientPage() {
     // cliniques ou le statut médical du dossier.
     if (isSecretary) {
       [
-        'antecedents_personnels', 'antecedents_familiaux', 'tabagisme', 'alcool',
-        'activite_physique', 'alimentation', 'statut_dossier', 'statut_vital',
+        'antecedents_personnels', 'antecedents_familiaux', 'statut_dossier', 'statut_vital',
         'etablissement_pec', 'notes',
       ].forEach((key) => delete payload[key]);
     }
@@ -331,6 +332,14 @@ export default function NewPatientPage() {
   const handlePrev = () => setStep(s => s - 1);
 
   const onFinalSubmit = async (data) => {
+    const missingHabit = [
+      ['tabagisme', 'le tabagisme'], ['alcool', "la consommation d'alcool"],
+      ['activite_physique', "l'activité physique"], ['alimentation', "l'alimentation"],
+    ].find(([key]) => !data[key]);
+    if (missingHabit) {
+      toast.error(`Veuillez choisir ${missingHabit[1]} avant d'enregistrer le patient.`);
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = buildPayload(data);
@@ -670,8 +679,9 @@ export default function NewPatientPage() {
             )}
 
             {/* ══ STEP 3 : Antécédents ═══════════════════════════════ */}
-            {step === 3 && !isSecretary && (
+            {step === 3 && (
               <div style={{ animation: 'fadeUp 0.3s ease' }}>
+                {!isSecretary && <>
                 <SectionTitle>Antecedents medicaux</SectionTitle>
 
                 <ChoiceGroup
@@ -705,6 +715,7 @@ export default function NewPatientPage() {
                 </Field>
 
                 {/* ── Habitudes de vie : choix unique ── */}
+                </>}
                 <SectionTitle style={{ marginTop: 20 }}>Habitudes de vie</SectionTitle>
 
                 <SingleChoiceGroup
