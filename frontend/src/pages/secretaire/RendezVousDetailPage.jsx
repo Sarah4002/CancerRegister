@@ -7,18 +7,7 @@ import { AppLayout } from '../../components/layout/Sidebar';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../hooks/useAuth';
 import usePermissions from '../../hooks/usePermissions';
-
-/* ── Mêmes sections que dans le sidebar du dossier patient (PatientDossierPage.js) ── */
-const PATIENT_SECTIONS = [
-  { key: 'identite',    label: 'Identité & Profil'  },
-  { key: 'clinique',    label: 'Infos Cliniques'    },
-  { key: 'diagnostic',  label: 'Diagnostic'         },
-  { key: 'examens',     label: 'Examens & Bilans'   },
-  { key: 'traitements', label: 'Traitements'        },
-  { key: 'suivi',       label: 'Suivi Clinique'     },
-  { key: 'rcp',         label: 'RCP'                },
-  { key: 'rendezvous',  label: 'Rendez-vous'        },
-];
+import { getVisiblePatientSections } from '../../utils/patientSidebar';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    IMPORTANT — méthodes de service attendues
@@ -216,7 +205,6 @@ export default function RendezVousDetailPage() {
   const navigate = useNavigate();
   const { can } = usePermissions();
   const { user } = useAuthStore();
-  const isSecretary = user?.role === 'secretaire';
 
   const [rdv, setRdv]           = useState(null);
   const [patient, setPatient]   = useState(null);
@@ -262,21 +250,6 @@ export default function RendezVousDetailPage() {
 
   useEffect(() => { fetchRdv(); }, [fetchRdv]);
 
-  /* ── Sections du sidebar patient (mêmes règles de visibilité que PatientDossierPage) ── */
-  const visiblePatientSections = PATIENT_SECTIONS.filter((section) => {
-    if (isSecretary) return section.key === 'identite' || section.key === 'rendezvous';
-    return {
-      identite: can.readPatient,
-      clinique: can.writeDiagnostic,
-      diagnostic: can.readDiagnostic,
-      examens: can.readDiagnostic,
-      traitements: can.readTreatment,
-      suivi: can.accessClinicalFollowup,
-      rcp: can.viewRcp,
-      rendezvous: can.manageAppointments,
-    }[section.key];
-  });
-
   const handleSectionSelect = (key) => {
     if (!rdv?.patient) return;
     navigate(`/patients/${rdv.patient}`, { state: { returnSection: key } });
@@ -293,6 +266,7 @@ export default function RendezVousDetailPage() {
     full_name: rdv.patient_nom || 'Patient',
     registration_number: rdv.patient_numero || '',
   } : null);
+  const visiblePatientSections = getVisiblePatientSections(patientForSidebar, { can, role: user?.role });
 
   const openEdit = async () => {
     setForm({

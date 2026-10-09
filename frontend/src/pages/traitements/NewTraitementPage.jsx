@@ -7,6 +7,7 @@ import { patientService } from '../../services/patientService';
 import { diagnosticService } from '../../services/diagnosticService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import { createPatientSidebarContext } from '../../utils/patientSidebar';
+import usePermissions from '../../hooks/usePermissions';
 
 const todayLocal = () => {
   const date = new Date();
@@ -25,6 +26,7 @@ const TYPE_CONFIG = {
 
 export default function NewTraitementPage() {
   const navigate = useNavigate();
+  const { can, role } = usePermissions();
   const location = useRouterLocation();
   const [searchParams] = useSearchParams();
   const type = searchParams.get('type') || 'chimio';
@@ -107,7 +109,7 @@ export default function NewTraitementPage() {
   return (
     <AppLayout
       title={`Nouveau traitement – ${cfg.label}`}
-      patientContext={createPatientSidebarContext(selectedPatient, 'traitements', navigate)}
+      patientContext={createPatientSidebarContext(selectedPatient, 'traitements', navigate, { can, role })}
     >
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
 

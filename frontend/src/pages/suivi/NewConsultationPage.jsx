@@ -7,6 +7,7 @@ import { patientService } from '../../services/patientService';
 import { secretaryService } from '../../services/secretaryService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import { createPatientSidebarContext } from '../../utils/patientSidebar';
+import usePermissions from '../../hooks/usePermissions';
 
 const todayLocal = () => {
  const date = new Date();
@@ -16,6 +17,7 @@ const todayLocal = () => {
 
 export default function NewConsultationPage() {
  const navigate = useNavigate();
+ const { can, role } = usePermissions();
  const location = useRouterLocation();
  const [searchParams] = useSearchParams();
  const [submitting, setSubmitting] = useState(false);
@@ -143,7 +145,7 @@ export default function NewConsultationPage() {
  return (
  <AppLayout
    title={selectedPatient?.statut_confirmation === 'PENDING' ? 'Consultation initiale' : 'Nouvelle consultation'}
-   patientContext={createPatientSidebarContext(selectedPatient, 'suivi', navigate)}
+   patientContext={createPatientSidebarContext(selectedPatient, 'suivi', navigate, { can, role, isPending: location.state?.fromAttente })}
  >
  <div style={{ maxWidth:860, margin:'0 auto' }}>
  <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>

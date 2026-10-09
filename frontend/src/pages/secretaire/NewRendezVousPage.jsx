@@ -8,6 +8,7 @@ import { adminService } from '../../services/adminService';
 import { medecinService } from '../../services/accountsService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import { createPatientSidebarContext } from '../../utils/patientSidebar';
+import usePermissions from '../../hooks/usePermissions';
 
 // Rôles autorisés à apparaître dans la liste "Médecin / Praticien"
 // (mêmes valeurs que ROLE_CFG dans AdminUsersPage.jsx).
@@ -33,6 +34,7 @@ function nowHHMM() {
 
 export default function NewRendezVousPage() {
   const navigate = useNavigate();
+  const { can, role } = usePermissions();
   const location = useRouterLocation();
   const [searchParams] = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
@@ -170,7 +172,7 @@ export default function NewRendezVousPage() {
   return (
     <AppLayout
       title="Nouveau Rendez-vous"
-      patientContext={createPatientSidebarContext(selectedPatient, 'rendezvous', navigate)}
+      patientContext={createPatientSidebarContext(selectedPatient, 'rendezvous', navigate, { can, role })}
     >
       <div style={{ maxWidth:860, margin:'0 auto' }}>
         <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>

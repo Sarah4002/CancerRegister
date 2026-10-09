@@ -7,6 +7,7 @@ import { patientService } from '../../services/patientService';
 import { validationRulesService } from '../../services/validationRulesService';
 import { AppLayout } from '../../components/layout/Sidebar';
 import { createPatientSidebarContext } from '../../utils/patientSidebar';
+import usePermissions from '../../hooks/usePermissions';
 import useCustomFields from '../../hooks/useCustomFields';
 import CustomFieldsSection from '../../components/custom_fields/CustomFieldsSection';
 import VoiceDictation from '../../components/voice/VoiceDictation';
@@ -419,6 +420,7 @@ function ValidationStatusBar({ violations }) {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function NewDiagnosticPage() {
   const navigate       = useNavigate();
+  const { can, role } = usePermissions();
   const location       = useLocation();
   const [searchParams] = useSearchParams();
   const initialPatient = searchParams.get('patient') || location.state?.patientContext?.id || '';
@@ -607,7 +609,7 @@ export default function NewDiagnosticPage() {
   return (
     <AppLayout
       title="Nouveau Diagnostic"
-      patientContext={createPatientSidebarContext(selectedPatient, 'diagnostic', navigate)}
+      patientContext={createPatientSidebarContext(selectedPatient, 'diagnostic', navigate, { can, role })}
     >
       <style>{`
         @keyframes spin   { to { transform: rotate(360deg); } }

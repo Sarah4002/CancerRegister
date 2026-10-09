@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 import useAuthStore from '../../hooks/useAuth';
 import usePermissions from '../../hooks/usePermissions';
 import { secretaryService } from '../../services/secretaryService';
+import { getVisiblePatientSections } from '../../utils/patientSidebar';
 
 const MOBILE_APP_BASE_URL = (
   import.meta.env.VITE_MOBILE_APP_URL || 'https://patientlifestyleform.vercel.app/patient'
@@ -218,22 +219,6 @@ const EDIT_FIELDS = {
     { key: 'antecedents_familiaux',  label: 'Antecedents familiaux',  type: 'textarea' },
   ],
 };
-
-// ── Sections affichées dans le sidebar global lorsqu'on est sur la fiche patient ──
-const PATIENT_SECTIONS = [
-  { key: 'identite',    label: 'Identité & Profil'  },
-  { key: 'clinique',    label: 'Infos Cliniques'    },
-  { key: 'diagnostic',  label: 'Diagnostic'         },
-  { key: 'examens',     label: 'Examens & Bilans'   },
-  { key: 'traitements', label: 'Traitements'        },
-  { key: 'suivi',       label: 'Suivi Clinique'     },
-  { key: 'rcp',         label: 'RCP'                },
-  { key: 'rendezvous',  label: 'Rendez-vous'        },
-];
-
-// Sections visibles pour un dossier encore EN ATTENTE de confirmation
-// (pas de Infos Cliniques, Diagnostic, Traitements ni RCP)
-const PENDING_SECTION_KEYS = ['identite', 'suivi', 'examens', 'rendezvous'];
 
 function EditField({ field, value, onChange, allValues }) {
   const base = { width: '100%', padding: '9px 11px', background: '#f1f5f9', border: '1px solid #2563eb', borderRadius: '12px', color: '#0f172a', fontSize: 13, fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box' };
@@ -664,35 +649,16 @@ export default function PatientDossierPage() {
   // DEBUG TEMPORAIRE : à supprimer une fois le comportement validé
   console.log('[Dossier] statut_confirmation =', patient?.statut_confirmation, '| fromAttente =', fromAttente, '| pending =', isPendingDossier);
 
-  const visiblePatientSections = PATIENT_SECTIONS
-    // 1) Dossier en attente : on ne garde que Identité, Consultation, Examens, Rendez-vous
-    .filter(section => !isPendingDossier || PENDING_SECTION_KEYS.includes(section.key))
-    // 2) Libellé "Consultation" à la place de "Suivi Clinique" pour un dossier en attente
-    .map(section =>
-      isPendingDossier && section.key === 'suivi'
-        ? { ...section, label: 'Consultation' }
-        : section
-    )
-    // 3) Permissions existantes
-    .filter((section) => {
-      if (isSecretary) return section.key === 'identite' || section.key === 'rendezvous';
-
-      return {
-        identite: can.readPatient,
-        clinique: can.writeDiagnostic,
-        diagnostic: can.readDiagnostic,
-        examens: can.readDiagnostic,
-        traitements: can.readTreatment,
-        suivi: can.accessClinicalFollowup,
-        rcp: can.viewRcp,
-        rendezvous: can.manageAppointments,
-      }[section.key];
-    });
+  const visiblePatientSections = getVisiblePatientSections(patient, {
+    can,
+    role: user?.role,
+    isPending: isPendingDossier,
+  });
   const currentSectionLabel = visiblePatientSections.find(s => s.key === activeSectionKey)?.label || '';
 
   // Garde-fou : si le dossier est en attente et qu'un onglet interdit est actif, retour à Identité
   useEffect(() => {
-    if (isPendingDossier && !PENDING_SECTION_KEYS.includes(activeSectionKey)) {
+    if (isPendingDossier && !['identite', 'suivi', 'examens', 'rendezvous'].includes(activeSectionKey)) {
       setActiveMainTab('identite');
     }
   }, [isPendingDossier, activeSectionKey]);
