@@ -54,8 +54,10 @@ export function createPatientSidebarContext(patient, activeKey, navigate, access
     activeKey,
     backPath: `/patients/${id}`,
     backLabel: 'Retour au patient',
-    onSelect: (key) => navigate(`/patients/${id}`, {
-      state: { returnSection: key, fromAttente: isPending },
-    }),
+    onSelect: (key) => key === 'examens'
+      ? navigate(`/examens/nouveau?patient=${id}`, { state: { fromAttente: isPending } })
+      : navigate(`/patients/${id}`, {
+        state: { returnSection: key, fromAttente: isPending },
+      }),
   };
 }

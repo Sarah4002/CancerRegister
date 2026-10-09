@@ -43,7 +43,9 @@ export default function NewExamenPage() {
     finally { setLoading(false); }
   };
   useEffect(() => {
+    setPatient(patientParam);
     if (!isSpecialist) patientService.list({ page_size: 300 }).then(({ data }) => setPatients(data.results || data || [])).catch(() => {});
+    else if (patientParam) patientService.get(patientParam).then(({ data }) => setPatients(current => [data, ...current.filter(p => String(p.id) !== String(data.id))])).catch(() => {});
     refresh();
   }, [role, patientParam]);
   useEffect(() => {
