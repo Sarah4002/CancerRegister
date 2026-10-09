@@ -472,6 +472,13 @@ export default function PatientDossierPage() {
         setShowExamenModal(true);
       }
     }
+    const returnSection = location.state?.returnSection;
+    if (['clinique', 'diagnostic', 'examens'].includes(returnSection)) {
+      setActiveMainTab('dossier');
+      setActiveSubTab(returnSection);
+    } else if (['identite', 'traitements', 'suivi', 'rcp', 'rendezvous'].includes(returnSection)) {
+      setActiveMainTab(returnSection);
+    }
   }, [id, navigate, location.state]);
 
   const loadAllData = async () => {

@@ -7,6 +7,7 @@ import { patientService } from '../../services/patientService';
 import { adminService } from '../../services/adminService';
 import { medecinService } from '../../services/accountsService';
 import { AppLayout } from '../../components/layout/Sidebar';
+import { createPatientSidebarContext } from '../../utils/patientSidebar';
 
 // Rôles autorisés à apparaître dans la liste "Médecin / Praticien"
 // (mêmes valeurs que ROLE_CFG dans AdminUsersPage.jsx).
@@ -169,11 +170,7 @@ export default function NewRendezVousPage() {
   return (
     <AppLayout
       title="Nouveau Rendez-vous"
-      patientContext={selectedPatient ? {
-        patient: selectedPatient,
-        backPath: `/patients/${selectedPatient.id}`,
-        backLabel: 'Retour au patient',
-      } : undefined}
+      patientContext={createPatientSidebarContext(selectedPatient, 'rendezvous', navigate)}
     >
       <div style={{ maxWidth:860, margin:'0 auto' }}>
         <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>

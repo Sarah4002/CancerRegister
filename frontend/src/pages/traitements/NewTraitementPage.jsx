@@ -6,6 +6,7 @@ import { traitementService } from '../../services/traitementService';
 import { patientService } from '../../services/patientService';
 import { diagnosticService } from '../../services/diagnosticService';
 import { AppLayout } from '../../components/layout/Sidebar';
+import { createPatientSidebarContext } from '../../utils/patientSidebar';
 
 const todayLocal = () => {
   const date = new Date();
@@ -106,11 +107,7 @@ export default function NewTraitementPage() {
   return (
     <AppLayout
       title={`Nouveau traitement – ${cfg.label}`}
-      patientContext={selectedPatient ? {
-        patient: selectedPatient,
-        backPath: `/patients/${selectedPatient.id}`,
-        backLabel: 'Retour au patient',
-      } : undefined}
+      patientContext={createPatientSidebarContext(selectedPatient, 'traitements', navigate)}
     >
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
 

@@ -6,6 +6,7 @@ import { diagnosticService } from '../../services/diagnosticService';
 import { patientService } from '../../services/patientService';
 import { validationRulesService } from '../../services/validationRulesService';
 import { AppLayout } from '../../components/layout/Sidebar';
+import { createPatientSidebarContext } from '../../utils/patientSidebar';
 import useCustomFields from '../../hooks/useCustomFields';
 import CustomFieldsSection from '../../components/custom_fields/CustomFieldsSection';
 import VoiceDictation from '../../components/voice/VoiceDictation';
@@ -606,11 +607,7 @@ export default function NewDiagnosticPage() {
   return (
     <AppLayout
       title="Nouveau Diagnostic"
-      patientContext={selectedPatient ? {
-        patient: selectedPatient,
-        backPath: `/patients/${selectedPatient.id}`,
-        backLabel: 'Retour au patient',
-      } : undefined}
+      patientContext={createPatientSidebarContext(selectedPatient, 'diagnostic', navigate)}
     >
       <style>{`
         @keyframes spin   { to { transform: rotate(360deg); } }

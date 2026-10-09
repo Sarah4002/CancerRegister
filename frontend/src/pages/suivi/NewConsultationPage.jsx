@@ -6,6 +6,7 @@ import { suiviService } from '../../services/suiviService';
 import { patientService } from '../../services/patientService';
 import { secretaryService } from '../../services/secretaryService';
 import { AppLayout } from '../../components/layout/Sidebar';
+import { createPatientSidebarContext } from '../../utils/patientSidebar';
 
 const todayLocal = () => {
  const date = new Date();
@@ -142,11 +143,7 @@ export default function NewConsultationPage() {
  return (
  <AppLayout
    title={selectedPatient?.statut_confirmation === 'PENDING' ? 'Consultation initiale' : 'Nouvelle consultation'}
-   patientContext={selectedPatient ? {
-     patient: selectedPatient,
-     backPath: `/patients/${selectedPatient.id}`,
-     backLabel: 'Retour au patient',
-   } : undefined}
+   patientContext={createPatientSidebarContext(selectedPatient, 'suivi', navigate)}
  >
  <div style={{ maxWidth:860, margin:'0 auto' }}>
  <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'28px 32px' }}>
@@ -278,58 +275,7 @@ export default function NewConsultationPage() {
  </Field>
  </Section>
 
- {/* ── Habitudes de vie ── */}
- <Section title="Habitudes de vie">
- <Row3>
- <Field label="Tabac">
- <select {...register('tabac')} style={selSt}>
- <option value="inconnu">Inconnu</option>
- <option value="non">Non-fumeur</option>
- <option value="ex">Ex-fumeur</option>
- <option value="actif">Fumeur actif</option>
- </select>
- </Field>
- <Field label="Paquets-années">
- <input type="number" step="0.5" {...register('tabac_paquets_annee')} placeholder="Ex: 15" style={inputSt} />
- </Field>
- <Field label="Alcool">
- <select {...register('alcool')} style={selSt}>
- <option value="inconnu">Inconnu</option>
- <option value="non">Non</option>
- <option value="oui">Oui</option>
- </select>
- </Field>
- </Row3>
- <Row3>
- <Field label="Activité physique">
- <select {...register('activite_physique')} style={selSt}>
- <option value="inconnu">Inconnu</option>
- <option value="sedentaire">Sédentaire</option>
- <option value="leger">Activité légère</option>
- <option value="modere">Activité modérée</option>
- <option value="intense">Activité intense</option>
- </select>
- </Field>
- <Field label="Alimentation">
- <select {...register('alimentation')} style={selSt}>
- <option value="inconnu">Inconnu</option>
- <option value="equilibree">Équilibrée</option>
- <option value="desequilibree">Déséquilibrée</option>
- </select>
- </Field>
- <Field label="">
- <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:13, color:'#334155', marginTop:22 }}>
- <input type="checkbox" {...register('exposition_toxique')} style={{ width:14, height:14, accentColor:'#2563eb' }} />
- Exposition toxique
- </label>
- </Field>
- </Row3>
- {exposition_toxique && (
- <Field label="Détail exposition toxique">
- <input {...register('exposition_toxique_detail')} placeholder="Ex: Pesticides, amiante, solvants industriels..." style={inputSt} />
- </Field>
- )}
- </Section>
+
 
  {/* ── Évolution ── */}
  <Section title="Évolution de la maladie">
@@ -377,9 +323,7 @@ export default function NewConsultationPage() {
  <Field label="Symptômes">
  <textarea {...register('symptomes')} rows={2} placeholder="Symptômes rapportés par le patient..." style={{ ...inputSt, resize:'vertical', lineHeight:1.6 }} />
  </Field>
- <Field label="Antécédents">
- <textarea {...register('antecedents')} rows={2} placeholder="Antécédents médicaux et familiaux utiles..." style={{ ...inputSt, resize:'vertical', lineHeight:1.6 }} />
- </Field>
+ 
  <Field label="Examen clinique">
  <textarea {...register('examen_clinique')} rows={3} placeholder="État général satisfaisant, PS 1. Pas d'adénopathie palpable..." style={{ ...inputSt, resize:'vertical', lineHeight:1.6 }} />
  </Field>
