@@ -11,7 +11,7 @@ import { CATEGORIES_EXAMENS, EXAMENS_PREDEFINIS } from '../../utils/examensDatas
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
 const serviceForRole = { radiologist: 'imagerie', anapath: 'anapath', laboratory: 'biologie' };
 const serviceLabel = { radiologist: 'Radiologie', anapath: 'Anatomopathologie', laboratory: 'Analyses biologiques' };
-const fieldStyle = { width:'100%', boxSizing:'border-box', padding:'11px 13px', border:'1px solid #dbe5f2', borderRadius:10, background:'#f8fafc', color:'#0f172a', fontSize:13, outline:'none' };
+const fieldStyle = { width:'100%', boxSizing:'border-box', padding:'10px 12px', border:'1px solid rgba(37,99,235,0.08)', borderRadius:12, background:'#f1f5f9', color:'#0f172a', fontSize:13, outline:'none', fontFamily:'var(--font-body)' };
 
 export default function NewExamenPage() {
   const { role, can } = usePermissions();
@@ -44,8 +44,18 @@ export default function NewExamenPage() {
   };
   useEffect(() => {
     setPatient(patientParam);
-    if (!isSpecialist) patientService.list({ page_size: 300 }).then(({ data }) => setPatients(data.results || data || [])).catch(() => {});
-    else if (patientParam) patientService.get(patientParam).then(({ data }) => setPatients(current => [data, ...current.filter(p => String(p.id) !== String(data.id))])).catch(() => {});
+    if (!isSpecialist) {
+      Promise.all([
+        patientService.list({ page_size: 300 }).catch(() => ({ data: [] })),
+        patientParam ? patientService.get(patientParam).catch(() => null) : Promise.resolve(null),
+      ]).then(([{ data }, selectedResponse]) => {
+        const list = data.results || data || [];
+        const selected = selectedResponse?.data;
+        setPatients(selected ? [selected, ...list.filter(item => String(item.id) !== String(selected.id))] : list);
+      });
+    } else if (patientParam) {
+      patientService.get(patientParam).then(({ data }) => setPatients(current => [data, ...current.filter(p => String(p.id) !== String(data.id))])).catch(() => {});
+    }
     refresh();
   }, [role, patientParam]);
   useEffect(() => {
@@ -93,7 +103,7 @@ export default function NewExamenPage() {
 
   const title = isSpecialist ? serviceLabel[role] : 'Nouvel examen';
   return <AppLayout title={title} patientContext={createPatientSidebarContext(selectedPatient, 'examens', navigate, { can, role })}>
-    <div style={{ maxWidth:980, margin:'0 auto', display:'grid', gap:18 }}>
+    <div style={{ maxWidth:isSpecialist ? 980 : 800, margin:'0 auto', display:'grid', gap:18 }}>
       {isSpecialist ? <>
         <section style={cardStyle}>
           <h2 style={headingStyle}>Demandes à traiter</h2>
@@ -125,7 +135,7 @@ export default function NewExamenPage() {
           {ex.fichier_resultat && <a href={ex.fichier_resultat} target="_blank" rel="noreferrer">Télécharger le résultat joint</a>}
         </div>)}</div>
       </section>}
-      <form onSubmit={submitRequest} style={cardStyle}>
+      <form onSubmit={submitRequest} style={{ ...cardStyle, padding:'28px 32px' }}>
         <div style={{ paddingBottom:17, marginBottom:19, borderBottom:'1px solid #e5edf7' }}><div style={{ color:'#2563eb', fontSize:11, fontWeight:700, letterSpacing:1, textTransform:'uppercase' }}>Prescription médicale</div><h2 style={{ ...headingStyle, margin:'7px 0 0' }}>Demander un examen</h2></div>
         <div style={sectionTitle}>Patient et examen</div>
         <div style={gridStyle}>
@@ -135,6 +145,12 @@ export default function NewExamenPage() {
           <label style={labelStyle}>Examen *<select required value={nom} onChange={e => setNom(e.target.value)} style={{ ...fieldStyle, marginTop:7 }}><option value="">Sélectionner un examen…</option>{(EXAMENS_PREDEFINIS[categorie] || []).map(item => <option key={item} value={item}>{item}</option>)}</select></label>
         </div>
         <label style={{ ...labelStyle, display:'block', marginTop:18 }}>Consignes<textarea value={observations} onChange={e => setObservations(e.target.value)} rows={4} placeholder="Motif, région à examiner, renseignements utiles…" style={{ ...fieldStyle, marginTop:7, resize:'vertical' }} /></label>
+        {selectedPatient && <div style={patientChip}>
+          <strong>{selectedPatient.full_name || `${selectedPatient.prenom || ''} ${selectedPatient.nom || ''}`}</strong>
+          {selectedPatient.sexe && <span style={{ color:'#2563eb' }}>{selectedPatient.sexe === 'F' ? 'Femme' : selectedPatient.sexe === 'M' ? 'Homme' : 'Inconnu'}</span>}
+          {(selectedPatient.age || selectedPatient.age_diagnostic) && <span style={muted}>{selectedPatient.age || selectedPatient.age_diagnostic} ans</span>}
+          <span style={muted}>{selectedPatient.registration_number}</span>
+        </div>}
         <FileInput fichier={fichier} onChange={setFichier} label="Joindre une ordonnance ou un document" />
         <div style={{ marginTop:23, display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
           <span style={muted}>{selectedPatient ? `Dossier : ${selectedPatient.registration_number} · ${selectedPatient.full_name || selectedPatient.nom}` : 'La demande sera envoyée au service correspondant.'}</span>
@@ -152,8 +168,9 @@ const cardStyle = { background:'#fff', border:'1px solid rgba(37,99,235,.1)', bo
 const headingStyle = { fontSize:18, color:'#0f172a', fontWeight:700 };
 const muted = { color:'#64748b', fontSize:12.5 };
 const labelStyle = { color:'#334155', display:'block', fontSize:12, fontWeight:600 };
-const sectionTitle = { fontSize:11, fontWeight:700, color:'#64748b', letterSpacing:.8, textTransform:'uppercase', marginBottom:12 };
+const sectionTitle = { fontSize:12, fontWeight:700, color:'#64748b', letterSpacing:.8, textTransform:'uppercase', marginBottom:14, paddingBottom:8, borderBottom:'1px solid rgba(37,99,235,0.12)' };
 const gridStyle = { display:'grid', gridTemplateColumns:'repeat(2,minmax(0,1fr))', gap:'14px 20px' };
 const primaryButton = { padding:'11px 20px', background:'#2563eb', color:'#fff', border:0, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer' };
 const linkButton = { padding:0, marginBottom:12, border:0, background:'none', color:'#2563eb', cursor:'pointer' };
 const requestStyle = { display:'grid', gridTemplateColumns:'1fr auto', gap:'5px 12px', textAlign:'left', padding:'13px 15px', border:'1px solid #e2e8f0', borderRadius:10, background:'#fff', cursor:'pointer', color:'#0f172a' };
+const patientChip = { display:'flex', alignItems:'center', gap:10, padding:'8px 12px', margin:'0 0 15px', background:'rgba(37,99,235,0.06)', border:'1px solid rgba(37,99,235,0.15)', borderRadius:9, flexWrap:'wrap', fontSize:12 };
