@@ -49,7 +49,11 @@ class ExamenMedicalViewSet(viewsets.ModelViewSet):
         is_prescriber = role in {'doctor', 'doctor_chef'}
         if not is_prescriber and role != examen.service_destinataire:
             raise PermissionDenied("Cet examen ne relève pas de votre service.")
-        if not is_prescriber:
+        if is_prescriber:
+            protected_fields = {'resultat', 'date_realisation', 'fichier_resultat', 'statut'}
+            if set(self.request.data.keys()) & protected_fields:
+                raise PermissionDenied("Seul le service chargé de l’examen peut saisir son résultat.")
+        else:
             allowed_fields = {'resultat', 'date_realisation', 'statut', 'fichier_resultat', 'observations'}
             if set(self.request.data.keys()) - allowed_fields:
                 raise PermissionDenied("Vous pouvez uniquement compléter le résultat de l'examen.")
@@ -60,4 +64,5 @@ class ExamenMedicalViewSet(viewsets.ModelViewSet):
                 titre=f"Résultat disponible : {updated.nom_examen}",
                 message=f"Le résultat est disponible dans le dossier {updated.patient.registration_number}.",
                 dossier_id=updated.patient_id,
+                examen_id=updated.id,
             )

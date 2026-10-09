@@ -354,7 +354,7 @@ export default function PatientDossierPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthStore();
-  const { can } = usePermissions();
+  const { can, role } = usePermissions();
   const isSecretary = user?.role === 'secretaire';
 
   // On mémorise que ce dossier a été ouvert depuis la liste "en attente"
@@ -390,6 +390,18 @@ export default function PatientDossierPage() {
 
   const [showExamenModal, setShowExamenModal] = useState(false);
   const [editingExamen, setEditingExamen] = useState(null);
+  const openExamen = (examen) => {
+    if (['radiologist', 'laboratory', 'anapath'].includes(role)) {
+      navigate(`/examens?patient=${id}&examen=${examen.id}`);
+      return;
+    }
+    if (['doctor', 'doctor_chef'].includes(role)) {
+      navigate(`/examens/${examen.id}`);
+      return;
+    }
+    setEditingExamen(examen);
+    setShowExamenModal(true);
+  };
 
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState({});
@@ -1220,7 +1232,7 @@ export default function PatientDossierPage() {
                              const stLabel = EXAMEN_STATUT_LABELS[ex.statut] || ex.statut || '—';
                              return (
                                <tr key={ex.id}
-                                 onClick={() => { if (can.manageExamResults) { setEditingExamen(ex); setShowExamenModal(true); } }}
+                                 onClick={() => { if (can.manageExamResults) openExamen(ex); }}
                                  style={{ cursor: can.manageExamResults ? 'pointer' : 'default', borderBottom: '1px solid rgba(37,99,235,0.12)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
                                  onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
                                  onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'}
@@ -1233,7 +1245,7 @@ export default function PatientDossierPage() {
                                  </td>
                                  <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{ex.date_prescription ? new Date(ex.date_prescription).toLocaleDateString('fr-DZ') : '—'}</td>
                                  <td style={tdStyle} onClick={e => e.stopPropagation()}>
-                                   <button onClick={() => { if (can.manageExamResults) { setEditingExamen(ex); setShowExamenModal(true); } }} style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: can.manageExamResults ? 'pointer' : 'default' }}>{can.manageExamResults ? 'Résultat' : 'Voir'}</button>
+                                   <button onClick={() => { if (can.manageExamResults) openExamen(ex) }} style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: can.manageExamResults ? 'pointer' : 'default' }}>{can.manageExamResults ? 'Résultat' : 'Voir'}</button>
                                  </td>
                                </tr>
                              );

@@ -97,6 +97,10 @@ export default function NotificationBell() {
       setCount(prev => Math.max(0, prev - 1));
     }
     setOpen(false);
+    if (notif.type === 'examen_resultat' && notif.examen_id) {
+      navigate(`/examens/${notif.examen_id}`);
+      return;
+    }
     if (['examen_demande', 'examen_resultat'].includes(notif.type) && notif.dossier_id) {
       navigate(`/examens?patient=${notif.dossier_id}`);
       return;

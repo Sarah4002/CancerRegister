@@ -28,6 +28,7 @@ class Notification(models.Model):
     # Liens optionnels vers les objets concernés
     reunion_id   = models.IntegerField(null=True, blank=True)
     dossier_id   = models.IntegerField(null=True, blank=True)
+    examen_id    = models.IntegerField(null=True, blank=True)
 
     class Meta:
         db_table  = 'notifications'
