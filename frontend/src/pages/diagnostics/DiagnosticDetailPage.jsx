@@ -359,7 +359,7 @@ export default function DiagnosticDetailPage() {
       )}
 
       {/* ── Contenu ── */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 16, padding: 24 }}>
+      <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: 16, padding: 24, boxShadow: '0 8px 24px rgba(15,23,42,0.025)' }}>
         {!editMode ? (
           <>
             <SectionLabel>Patient</SectionLabel>

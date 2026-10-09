@@ -205,8 +205,7 @@ export default function RCPDetailPage() {
     <AppLayout title="Reunion RCP">
 
       {/* HEADER */}
-      <div style={{ background:'#ffffff', border:`1px solid ${sc.color}25`, borderRadius:'16px', padding:'20px 24px', marginBottom:20, position:'relative', overflow:'hidden' }}>
-        <div style={{ position:'absolute', right:-20, top:-20, width:120, height:120, borderRadius:'50%', background:`${sc.color}08`, pointerEvents:'none' }} />
+      <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'24px', marginBottom:20, position:'relative', overflow:'hidden', boxShadow:'0 8px 24px rgba(15,23,42,0.03)' }}>
 
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:14 }}>
           <div>

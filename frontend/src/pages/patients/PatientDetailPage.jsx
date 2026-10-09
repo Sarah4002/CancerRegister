@@ -235,7 +235,7 @@ export default function PatientDetailPage() {
       `}</style>
 
       {/* ── Header ── */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+      <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '16px', padding: '24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, boxShadow: '0 8px 24px rgba(15,23,42,0.03)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ width: 56, height: 56, borderRadius: '50%', flexShrink: 0, background: patient.sexe === 'F' ? 'linear-gradient(135deg, rgba(245,101,196,0.2), rgba(245,101,196,0.1))' : 'linear-gradient(135deg, rgba(0,168,255,0.2), rgba(0,168,255,0.1))', border: '2px solid ' + (patient.sexe === 'F' ? 'rgba(245,101,196,0.3)' : 'rgba(0,168,255,0.3)'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: patient.sexe === 'F' ? 'rgba(245,101,196,0.9)' : 'rgba(0,168,255,0.9)' }}>
             {((patient.nom?.[0] || '') + (patient.prenom?.[0] || '')).toUpperCase()}

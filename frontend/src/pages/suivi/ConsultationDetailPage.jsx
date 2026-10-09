@@ -71,7 +71,7 @@ export default function ConsultationDetailPage() {
   return (
     <AppLayout title="Consultation de Suivi">
       {/* Header */}
-      <div style={{ background:'#ffffff', border:'1px solid rgba(155,138,251,0.2)', borderRadius:'16px', padding:'20px 24px', marginBottom:20, display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:14 }}>
+      <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'24px', marginBottom:20, display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:14, boxShadow:'0 8px 24px rgba(15,23,42,0.03)' }}>
         <div style={{ display:'flex', gap:14, alignItems:'flex-start' }}>
           <div style={{ width:46, height:46, borderRadius:12, background:'rgba(155,138,251,0.15)', border:'1px solid rgba(155,138,251,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, color:'#7c3aed', fontWeight:700 }}>CS</div>
           <div>
@@ -230,17 +230,17 @@ export default function ConsultationDetailPage() {
 
 function Card({ title, color, children }) {
   return (
-    <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'12px', overflow:'hidden' }}>
-      <div style={{ padding:'10px 16px', background:'#f1f5f9', borderBottom:'1px solid rgba(37,99,235,0.12)', fontSize:11, fontWeight:600, color:'#64748b', textTransform:'uppercase', letterSpacing:0.5, borderLeft:`3px solid ${color}` }}>{title}</div>
-      <div style={{ padding:'4px 16px 14px' }}>{children}</div>
+    <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', overflow:'hidden', boxShadow:'0 8px 24px rgba(15,23,42,0.025)' }}>
+      <div style={{ padding:'14px 18px', background:'#ffffff', borderBottom:'1px solid rgba(37,99,235,0.12)', fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:0.8 }}>{title}</div>
+      <div style={{ padding:'4px 18px 14px' }}>{children}</div>
     </div>
   );
 }
 function InfoRow({ label, value }) {
   return (
-    <div style={{ padding:'9px 0', borderBottom:'1px solid rgba(37,99,235,0.12)', display:'grid', gridTemplateColumns:'130px 1fr', gap:12, alignItems:'start' }}>
-      <span style={{ fontSize:11, color:'#64748b', paddingTop:2 }}>{label}</span>
-      <span style={{ fontSize:13, color:'#0f172a' }}>{value || '—'}</span>
+    <div style={{ padding:'11px 0', borderBottom:'1px solid rgba(37,99,235,0.12)', display:'flex', flexDirection:'column', gap:4 }}>
+      <span style={{ fontSize:10.5, color:'#64748b', letterSpacing:0.35, textTransform:'uppercase' }}>{label}</span>
+      <span style={{ fontSize:13.5, color:'#0f172a' }}>{value || '—'}</span>
     </div>
   );
 }
