@@ -497,7 +497,7 @@ export default function PatientsEnAttentePage() {
                   {canValidate ? (
                     <>
                       <td style={{ padding:'12px 4px' }} onClick={stop}>
-                        <Link to={`/suivi/consultations/nouveau?patient=${p.id}`} style={{ textDecoration:'none' }}>
+                        <Link to={`/suivi/consultations/nouveau?patient=${p.id}`} state={{ patientContext: p }} style={{ textDecoration:'none' }}>
                           <IconButton title="Nouvelle consultation" rgb="37,99,235">
                             <IconConsultation />
                           </IconButton>

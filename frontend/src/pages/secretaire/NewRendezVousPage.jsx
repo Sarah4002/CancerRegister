@@ -36,13 +36,13 @@ export default function NewRendezVousPage() {
   const [searchParams] = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
   const [patients, setPatients] = useState([]);
-  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [selectedPatient, setSelectedPatient] = useState(location.state?.patientContext || null);
   const [medecins, setMedecins] = useState([]);
   const [medecinsLoading, setMedecinsLoading] = useState(true);
   const [availability, setAvailability] = useState(null);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const initialPatient = searchParams.get('patient') || location.state?.patientContext?.id || '';
-  const initialDate = searchParams.get('date') || '';
+  const initialDate = searchParams.get('date') || todayStr();
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     mode: 'onSubmit',

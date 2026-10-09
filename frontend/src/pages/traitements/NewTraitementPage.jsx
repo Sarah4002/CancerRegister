@@ -7,6 +7,12 @@ import { patientService } from '../../services/patientService';
 import { diagnosticService } from '../../services/diagnosticService';
 import { AppLayout } from '../../components/layout/Sidebar';
 
+const todayLocal = () => {
+  const date = new Date();
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 10);
+};
+
 const TYPE_CONFIG = {
   chimio:    { label: 'Chimiothérapie',    color: '#2563eb' },
   radio:     { label: 'Radiothérapie',     color: '#2563eb' },
@@ -27,12 +33,13 @@ export default function NewTraitementPage() {
   const [submitting, setSubmitting] = useState(false);
   const [patients, setPatients]     = useState([]);
   const [diagnostics, setDiagnostics] = useState([]);
-  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [selectedPatient, setSelectedPatient] = useState(location.state?.patientContext || null);
 
   const { register, handleSubmit, watch, control, setValue, formState: { errors } } = useForm({
     mode: 'onSubmit',
     defaultValues: {
       patient:          initialPatient,
+      date_debut:       todayLocal(),
       intention:        'curatif',
       statut:           'planifie',
       tnm_type:         'c',

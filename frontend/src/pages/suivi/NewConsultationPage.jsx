@@ -7,19 +7,28 @@ import { patientService } from '../../services/patientService';
 import { secretaryService } from '../../services/secretaryService';
 import { AppLayout } from '../../components/layout/Sidebar';
 
+const todayLocal = () => {
+ const date = new Date();
+ date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+ return date.toISOString().slice(0, 10);
+};
+
 export default function NewConsultationPage() {
  const navigate = useNavigate();
  const location = useRouterLocation();
  const [searchParams] = useSearchParams();
  const [submitting, setSubmitting] = useState(false);
- const [patients, setPatients] = useState([]);
- const [selectedPatient, setSelectedPatient] = useState(null);
- const initialPatient = searchParams.get('patient') || location.state?.patientContext?.id || '';
+ const patientFromNavigation = location.state?.patientContext || null;
+ const patientFromNavigationId = patientFromNavigation?.id || patientFromNavigation?.patient_id || '';
+ const initialPatient = searchParams.get('patient') || patientFromNavigationId;
+ const [patients, setPatients] = useState(() => patientFromNavigationId ? [patientFromNavigation] : []);
+ const [selectedPatient, setSelectedPatient] = useState(patientFromNavigation);
 
  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
  mode: 'onSubmit',
  defaultValues: {
  patient: initialPatient,
+ date_consultation: todayLocal(),
  type_consultation: 'suivi',
  statut: 'realisee',
  rechute: false,
@@ -33,6 +42,7 @@ export default function NewConsultationPage() {
  });
 
  const patientIdWatch = watch('patient');
+ const consultationDateWatch = watch('date_consultation');
  const poids = watch('poids_kg');
  const taille = watch('taille_cm');
  const rechute = watch('rechute');
@@ -41,20 +51,37 @@ export default function NewConsultationPage() {
  const imc = poids && taille ? (poids / ((taille / 100) ** 2)).toFixed(1) : null;
 
  useEffect(() => {
+   if (!consultationDateWatch) setValue('date_consultation', todayLocal());
+ }, [consultationDateWatch, setValue]);
+
+ useEffect(() => {
  patientService.list({ page_size: 200 }).then(({ data }) => {
-   setPatients(data.results || data);
+   const loaded = data.results || data;
+   setPatients((current) => {
+     const merged = [...current, ...(Array.isArray(loaded) ? loaded : [])];
+     return merged.filter((patient, index) => merged.findIndex((item) => String(item.id) === String(patient.id)) === index);
+   });
  }).catch(() => {});
  }, []);
 
  useEffect(() => {
-   if (initialPatient && patients.length > 0) {
-     const found = patients.find((p) => String(p.id) === String(initialPatient));
-     if (found) {
-       const patientValue = String(found.id);
-       setValue('patient', patientValue, { shouldValidate: true });
-       setSelectedPatient(found);
-     }
+   if (!initialPatient) return;
+   const patientValue = String(initialPatient);
+   setValue('patient', patientValue, { shouldValidate: true });
+
+   const found = patients.find((p) => String(p.id) === patientValue);
+   if (found) {
+     setSelectedPatient(found);
+     return;
    }
+
+   // Les patients en attente peuvent être absents de la première page de la liste.
+   patientService.get(patientValue)
+     .then(({ data }) => {
+       setSelectedPatient(data);
+       setPatients((current) => current.some((p) => String(p.id) === patientValue) ? current : [data, ...current]);
+     })
+     .catch(() => {});
  }, [initialPatient, patients, setValue]);
 
  useEffect(() => {

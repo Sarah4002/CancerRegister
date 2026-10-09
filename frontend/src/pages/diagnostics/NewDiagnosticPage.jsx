@@ -11,6 +11,12 @@ import CustomFieldsSection from '../../components/custom_fields/CustomFieldsSect
 import VoiceDictation from '../../components/voice/VoiceDictation';
 import { CANCER_VALIDATION_RULES, runValidation, hasBlockingErrors } from './cancerValidationRules';
 
+const todayLocal = () => {
+  const date = new Date();
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 10);
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  HÉMOPATHIES
 // ─────────────────────────────────────────────────────────────────────────────
@@ -420,7 +426,7 @@ export default function NewDiagnosticPage() {
   const [topoSelected,  setTopoSelected]  = useState(null);
   const [morphSelected, setMorphSelected] = useState(null);
   const [patients,      setPatients]      = useState([]);
-  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [selectedPatient, setSelectedPatient] = useState(location.state?.patientContext || null);
 
   // Validation state
   const [validationRules, setValidationRules] = useState([]);
@@ -434,6 +440,7 @@ export default function NewDiagnosticPage() {
       categorie_cancer:'solide', tnm_type:'c', stade_ajcc:'U',
       base_diagnostic:'9', lateralite:'0', grade_histologique:'U',
       patient: initialPatient,
+      date_diagnostic: todayLocal(),
     },
   });
 
