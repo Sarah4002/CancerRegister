@@ -303,31 +303,7 @@ export default function ConsultationDetailPage() {
               </>
             )}
 
-            {hasHabitudes && (
-              <>
-                <SectionLabel style={{ marginTop: 28 }}>Habitudes de vie</SectionLabel>
-                <Grid>
-                  {data.tabac && (
-                    <InfoRow label="Tabac" value={
-                      <span>
-                        {TABAC_LABELS[data.tabac] || data.tabac}
-                        {data.tabac_paquets_annee && <span style={{ fontFamily: 'var(--font-mono)', color: '#64748b', marginLeft: 8 }}>{data.tabac_paquets_annee} paquets/an</span>}
-                      </span>
-                    } />
-                  )}
-                  {data.alcool && <InfoRow label="Alcool" value={ALCOOL_LABELS[data.alcool] || data.alcool} />}
-                  {data.activite_physique && <InfoRow label="Activité physique" value={ACTIVITE_LABELS[data.activite_physique] || data.activite_physique} />}
-                  {data.alimentation && <InfoRow label="Alimentation" value={data.alimentation} />}
-                  {data.exposition_toxique && (
-                    <InfoRow label="Exposition toxique" full value={
-                      <span style={{ color: '#d97706' }}>
-                        Oui{data.exposition_toxique_detail && ` — ${data.exposition_toxique_detail}`}
-                      </span>
-                    } />
-                  )}
-                </Grid>
-              </>
-            )}
+           
 
             {hasCompteRendu && (
               <>

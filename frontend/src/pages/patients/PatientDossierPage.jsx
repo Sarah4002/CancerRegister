@@ -74,12 +74,12 @@ const EXAMEN_STATUT_COLORS = {
 const EXAMEN_STATUT_LABELS = {
   prescrit:   'Prescrit',
   en_attente: 'En attente',
-  realise:    'RÃ©alisÃ©',
-  resultat_disponible: 'RÃ©sultat disponible',
-  annule:     'AnnulÃ©',
+  realise:    'Réalisé',
+  resultat_disponible: 'Résultat disponible',
+  annule:     'Annulé',
 };
 
-/* â”€â”€ Config pour la section Rendez-vous (mÃªme langage visuel que Diagnostic/Examens) â”€â”€ */
+/* ── Config pour la section Rendez-vous (même langage visuel que Diagnostic/Examens) ── */
 const RDV_STATUT_COLORS = {
   confirme:   { bg: 'rgba(0,168,255,0.1)',   color: '#2563eb' },
   en_attente: { bg: 'rgba(245,166,35,0.1)',  color: '#d97706' },
@@ -88,34 +88,34 @@ const RDV_STATUT_COLORS = {
   absent:     { bg: 'rgba(107,114,128,0.1)', color: '#9ca3af' },
 };
 const RDV_STATUT_LABELS = {
-  confirme: 'ConfirmÃ©', en_attente: 'En attente', annule: 'AnnulÃ©', termine: 'TerminÃ©', absent: 'Absent',
+  confirme: 'Confirmé', en_attente: 'En attente', annule: 'Annulé', termine: 'Terminé', absent: 'Absent',
 };
 const RDV_TYPE_LABELS = {
-  consultation: 'Consultation', suivi: 'Suivi', chimio: 'ChimiothÃ©rapie',
-  radiotherapie: 'RadiothÃ©rapie', examen: 'Examen', rcp: 'RCP',
+  consultation: 'Consultation', suivi: 'Suivi', chimio: 'Chimiothérapie',
+  radiotherapie: 'Radiothérapie', examen: 'Examen', rcp: 'RCP',
   chirurgie: 'Chirurgie', urgence: 'Urgence', autre: 'Autre',
 };
 
-/* â”€â”€ Config pour la section Documents administratifs (rÃ´le secrÃ©taire) â”€â”€ */
+/* ── Config pour la section Documents administratifs (rôle secrétaire) ── */
 const DOCUMENT_TYPE_OPTIONS = [
-  { v: 'carte_identite', l: "Carte d'identitÃ© / Extrait de naissance" },
-  { v: 'carte_chifa',    l: 'Carte Chifa / SÃ©curitÃ© sociale' },
-  { v: 'ordonnance',     l: 'Ordonnance mÃ©dicale' },
-  { v: 'compte_rendu',   l: 'Compte rendu mÃ©dical' },
-  { v: 'imagerie',       l: "RÃ©sultat d'imagerie" },
-  { v: 'biologie',       l: 'RÃ©sultat de biologie' },
+  { v: 'carte_identite', l: "Carte d'identité / Extrait de naissance" },
+  { v: 'carte_chifa',    l: 'Carte Chifa / Sécurité sociale' },
+  { v: 'ordonnance',     l: 'Ordonnance médicale' },
+  { v: 'compte_rendu',   l: 'Compte rendu médical' },
+  { v: 'imagerie',       l: "Résultat d'imagerie" },
+  { v: 'biologie',       l: 'Résultat de biologie' },
   { v: 'prise_charge',   l: 'Attestation de prise en charge' },
   { v: 'autre',          l: 'Autre document' },
 ];
 
-/* â”€â”€ Config pour le statut d'envoi au mÃ©decin pour validation â”€â”€ */
+/* ── Config pour le statut d'envoi au médecin pour validation ── */
 const VALIDATION_STATUT_CFG = {
   en_attente: { bg: 'rgba(217,119,6,0.08)', color: '#d97706', border: 'rgba(217,119,6,0.2)', label: 'En attente de validation' },
-  valide:     { bg: 'rgba(22,163,74,0.08)', color: '#16a34a', border: 'rgba(22,163,74,0.2)', label: 'ValidÃ© par le mÃ©decin' },
-  rejete:     { bg: 'rgba(220,38,38,0.08)', color: '#dc2626', border: 'rgba(220,38,38,0.2)', label: 'Ã€ corriger' },
+  valide:     { bg: 'rgba(22,163,74,0.08)', color: '#16a34a', border: 'rgba(22,163,74,0.2)', label: 'Validé par le médecin' },
+  rejete:     { bg: 'rgba(220,38,38,0.08)', color: '#dc2626', border: 'rgba(220,38,38,0.2)', label: 'À corriger' },
 };
 
-/* â”€â”€ Config pour la section RCP â”€â”€ */
+/* ── Config pour la section RCP ── */
 const RCP_STATUT_COLORS = {
   attente:   { bg: 'rgba(245,166,35,0.1)',  color: '#d97706' },
   presente:  { bg: 'rgba(0,168,255,0.1)',   color: '#2563eb' },
@@ -125,15 +125,15 @@ const RCP_STATUT_COLORS = {
   annule:    { bg: 'rgba(255,77,106,0.1)',  color: '#dc2626' },
 };
 const RCP_STATUT_LABELS = {
-  attente: 'En attente', presente: 'PrÃ©sentÃ©', discute: 'DiscutÃ©',
-  decide: 'DÃ©cision prise', reporte: 'ReportÃ©', annule: 'AnnulÃ©',
+  attente: 'En attente', presente: 'Présenté', discute: 'Discuté',
+  decide: 'Décision prise', reporte: 'Reporté', annule: 'Annulé',
 };
 const RCP_TYPE_PRESENTATION_LABELS = {
-  nouveau: 'Nouveau dossier', recidive: 'RÃ©cidive / Rechute', reval: 'RÃ©Ã©valuation',
+  nouveau: 'Nouveau dossier', recidive: 'Récidive / Rechute', reval: 'Réévaluation',
   post_trt: 'Post-traitement', second: 'Second avis', autre: 'Autre',
 };
 
-// â”€â”€ Reprises du design de DiagnosticsPage pour garder une cohÃ©rence visuelle â”€â”€
+// ── Reprises du design de DiagnosticsPage pour garder une cohérence visuelle ──
 const STADE_COLORS = {
   '0':    { bg: 'rgba(0,229,160,0.1)',   color: '#16a34a', border: 'rgba(0,229,160,0.3)' },
   'I':    { bg: 'rgba(0,229,160,0.12)',  color: '#16a34a', border: 'rgba(0,229,160,0.3)' },
@@ -162,7 +162,7 @@ function StageBadge({ stade, label }) {
 }
 
 function TNMBadge({ tnm }) {
-  if (!tnm || tnm === 'â€”') return <span style={{ color: '#64748b', fontSize: 12 }}>â€”</span>;
+  if (!tnm || tnm === '—') return <span style={{ color: '#64748b', fontSize: 12 }}>—</span>;
   return (
     <span style={{
       padding: '2px 8px', borderRadius: 6, fontSize: 11,
@@ -224,12 +224,12 @@ function EditField({ field, value, onChange, allValues }) {
   const base = { width: '100%', padding: '9px 11px', background: '#f1f5f9', border: '1px solid #2563eb', borderRadius: '12px', color: '#0f172a', fontSize: 13, fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box' };
   if (field.type === 'select') return (
     <select value={value || ''} onChange={e => onChange(e.target.value)} style={{ ...base, cursor: 'pointer' }}>
-      <option value="">â€” Selectionner â€”</option>{field.options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+      <option value="">— Selectionner —</option>{field.options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
     </select>
   );
   if (field.type === 'wilaya') return (
     <select value={value || ''} onChange={e => onChange(e.target.value)} style={{ ...base, cursor: 'pointer' }}>
-      <option value="">â€” Selectionner â€”</option>{WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
+      <option value="">— Selectionner —</option>{WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
     </select>
   );
   if (field.type === 'commune') {
@@ -237,7 +237,7 @@ function EditField({ field, value, onChange, allValues }) {
     const communes = wilaya ? (COMMUNES_PAR_WILAYA[wilaya] || []).sort() : [];
     return communes.length > 0 ? (
       <select value={value || ''} onChange={e => onChange(e.target.value)} style={{ ...base, cursor: 'pointer' }}>
-        <option value="">â€” Selectionner â€”</option>{communes.map(c => <option key={c} value={c}>{c}</option>)}
+        <option value="">— Selectionner —</option>{communes.map(c => <option key={c} value={c}>{c}</option>)}
       </select>
     ) : <input value={value || ''} onChange={e => onChange(e.target.value)} placeholder="Saisir la commune" style={base} />;
   }
@@ -247,9 +247,9 @@ function EditField({ field, value, onChange, allValues }) {
 
 
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-   MODAL â€” Ajouter un document administratif
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─────────────────────────────────────────────────────────────────────────────
+   MODAL — Ajouter un document administratif
+───────────────────────────────────────────────────────────────────────────── */
 function UploadDocumentModal({ onClose, onSubmit, loading }) {
   const [file, setFile] = useState(null);
   const [type, setType] = useState('autre');
@@ -274,7 +274,7 @@ function UploadDocumentModal({ onClose, onSubmit, loading }) {
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: .5 }}>LibellÃ© (optionnel)</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: .5 }}>Libellé (optionnel)</label>
             <input value={libelle} onChange={e => setLibelle(e.target.value)} placeholder="Ex: Carte Chifa recto-verso" style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', background: '#f8fafc', border: '1px solid rgba(37,99,235,0.15)', borderRadius: 9, color: '#0f172a', fontSize: 13, outline: 'none' }} />
           </div>
 
@@ -286,11 +286,11 @@ function UploadDocumentModal({ onClose, onSubmit, loading }) {
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={onClose} disabled={loading} style={{ flex: 1, padding: '11px', borderRadius: 10, border: '1px solid rgba(37,99,235,0.2)', background: 'transparent', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Annuler</button>
             <button
-              onClick={() => { if (!file) { toast.error('Veuillez sÃ©lectionner un fichier'); return; } onSubmit({ file, type, libelle }); }}
+              onClick={() => { if (!file) { toast.error('Veuillez sélectionner un fichier'); return; } onSubmit({ file, type, libelle }); }}
               disabled={loading}
               style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', background: loading ? '#93c5fd' : 'linear-gradient(135deg,#3b82f6,#2563eb)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer' }}
             >
-              {loading ? 'Envoiâ€¦' : 'Ajouter le document'}
+              {loading ? 'Envoi…' : 'Ajouter le document'}
             </button>
           </div>
         </div>
@@ -299,9 +299,9 @@ function UploadDocumentModal({ onClose, onSubmit, loading }) {
   );
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-   MODAL â€” Envoyer le dossier pour validation
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─────────────────────────────────────────────────────────────────────────────
+   MODAL — Envoyer le dossier pour validation
+───────────────────────────────────────────────────────────────────────────── */
 function SendValidationModal({ patient, medecins, onClose, onSubmit, loading }) {
   const [medecinId, setMedecinId] = useState('');
   const [note, setNote] = useState('');
@@ -316,12 +316,12 @@ function SendValidationModal({ patient, medecins, onClose, onSubmit, loading }) 
         <div style={{ height: 4, background: 'linear-gradient(90deg,#a78bfa,#7c3aed)' }} />
         <div style={{ padding: '24px 26px' }}>
           <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>Envoyer le dossier pour validation</div>
-          <div style={{ fontSize: 12.5, color: '#64748b', marginBottom: 16 }}>{patient?.nom} {patient?.prenom} â€” {patient?.registration_number}</div>
+          <div style={{ fontSize: 12.5, color: '#64748b', marginBottom: 16 }}>{patient?.nom} {patient?.prenom} — {patient?.registration_number}</div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: .5 }}>MÃ©decin destinataire</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: .5 }}>Médecin destinataire</label>
             <select value={medecinId} onChange={e => setMedecinId(e.target.value)} style={{ width: '100%', padding: '9px 12px', background: '#f8fafc', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 9, color: '#0f172a', fontSize: 13, outline: 'none', cursor: 'pointer' }}>
-              <option value="">â€” SÃ©lectionner un mÃ©decin â€”</option>
+              <option value="">— Sélectionner un médecin —</option>
               {medecins.map(m => (
                 <option key={m.id} value={m.id}>{m.full_name || `${m.first_name || ''} ${m.last_name || ''}`.trim()}</option>
               ))}
@@ -330,17 +330,17 @@ function SendValidationModal({ patient, medecins, onClose, onSubmit, loading }) 
 
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: .5 }}>Note (optionnel)</label>
-            <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} placeholder="PrÃ©cisions pour le mÃ©decin..." style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', background: '#f8fafc', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 9, color: '#0f172a', fontSize: 13, outline: 'none', resize: 'vertical' }} />
+            <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} placeholder="Précisions pour le médecin..." style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', background: '#f8fafc', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 9, color: '#0f172a', fontSize: 13, outline: 'none', resize: 'vertical' }} />
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={onClose} disabled={loading} style={{ flex: 1, padding: '11px', borderRadius: 10, border: '1px solid rgba(37,99,235,0.2)', background: 'transparent', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Annuler</button>
             <button
-              onClick={() => { if (!medecinId) { toast.error('Veuillez sÃ©lectionner un mÃ©decin'); return; } onSubmit({ medecinId, note }); }}
+              onClick={() => { if (!medecinId) { toast.error('Veuillez sélectionner un médecin'); return; } onSubmit({ medecinId, note }); }}
               disabled={loading}
               style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none', background: loading ? '#c4b5fd' : 'linear-gradient(135deg,#a78bfa,#7c3aed)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer' }}
             >
-              {loading ? 'Envoiâ€¦' : 'Envoyer pour validation'}
+              {loading ? 'Envoi…' : 'Envoyer pour validation'}
             </button>
           </div>
         </div>
@@ -354,11 +354,11 @@ export default function PatientDossierPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthStore();
-  const { can, role } = usePermissions();
+  const { can } = usePermissions();
   const isSecretary = user?.role === 'secretaire';
 
-  // On mÃ©morise que ce dossier a Ã©tÃ© ouvert depuis la liste "en attente"
-  // (survit au rafraÃ®chissement de la page grÃ¢ce Ã  sessionStorage)
+  // On mémorise que ce dossier a été ouvert depuis la liste "en attente"
+  // (survit au rafraîchissement de la page grâce à sessionStorage)
   const [fromAttente] = useState(() => {
     try {
       if (location.state?.fromAttente) {
@@ -390,14 +390,6 @@ export default function PatientDossierPage() {
 
   const [showExamenModal, setShowExamenModal] = useState(false);
   const [editingExamen, setEditingExamen] = useState(null);
-  const openExamen = (examen) => {
-    if (['radiologist', 'laboratory', 'anapath'].includes(role)) {
-      navigate(`/examens?patient=${id}&examen=${examen.id}`);
-      return;
-    }
-    setEditingExamen(examen);
-    setShowExamenModal(true);
-  };
 
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState({});
@@ -406,12 +398,12 @@ export default function PatientDossierPage() {
   const [dossierEditMode, setDossierEditMode] = useState(false);
   const [dossierForm, setDossierForm] = useState({});
 
-  // â”€â”€ Documents administratifs (secrÃ©taire) â”€â”€
+  // ── Documents administratifs (secrétaire) ──
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deletingDocId, setDeletingDocId] = useState(null);
 
-  // â”€â”€ Envoi au mÃ©decin pour validation (secrÃ©taire) â”€â”€
+  // ── Envoi au médecin pour validation (secrétaire) ──
   const [showSendModal, setShowSendModal] = useState(false);
   const [medecins, setMedecins] = useState([]);
   const [sending, setSending] = useState(false);
@@ -439,7 +431,8 @@ export default function PatientDossierPage() {
       setActiveMainTab('dossier');
       setActiveSubTab('examens');
       if (location.state?.openExamenModal) {
-        navigate(`/examens/nouveau?patient=${id}`, { replace: true });
+        setEditingExamen(null);
+        setShowExamenModal(true);
       }
     }
     const returnSection = location.state?.returnSection;
@@ -537,8 +530,8 @@ export default function PatientDossierPage() {
       await patientService.updateDossier(id, dossierForm);
       await loadAllData();
       setDossierEditMode(false);
-      toast.success('Dossier mÃ©dical mis Ã  jour');
-    } catch (error) { toast.error('Erreur lors de la mise Ã  jour'); } finally { setSaving(false); }
+      toast.success('Dossier médical mis à jour');
+    } catch (error) { toast.error('Erreur lors de la mise à jour'); } finally { setSaving(false); }
   };
 
   const updateField = (key, val) => {
@@ -549,7 +542,7 @@ export default function PatientDossierPage() {
     });
   };
 
-  /* â”€â”€ Documents administratifs â”€â”€ */
+  /* ── Documents administratifs ── */
   const handleUploadDocument = async ({ file, type, libelle }) => {
     setUploading(true);
     try {
@@ -559,7 +552,7 @@ export default function PatientDossierPage() {
       formData.append('libelle', libelle || file.name);
       formData.append('patient', id);
       await documentService.upload(id, formData);
-      toast.success('Document ajoutÃ© avec succÃ¨s');
+      toast.success('Document ajouté avec succès');
       setShowUploadModal(false);
       const { data } = await documentService.list(id);
       setDocuments(data?.results || data || []);
@@ -574,7 +567,7 @@ export default function PatientDossierPage() {
     setDeletingDocId(docId);
     try {
       await documentService.delete(docId);
-      toast.success('Document supprimÃ©');
+      toast.success('Document supprimé');
       setDocuments(prev => prev.filter(d => d.id !== docId));
     } catch (err) {
       toast.error('Erreur lors de la suppression');
@@ -583,7 +576,7 @@ export default function PatientDossierPage() {
     }
   };
 
-  /* â”€â”€ Envoi pour validation â”€â”€ */
+  /* ── Envoi pour validation ── */
   const openSendModal = async () => {
     setShowSendModal(true);
     if (medecins.length === 0) {
@@ -591,7 +584,7 @@ export default function PatientDossierPage() {
         const { data } = await medecinService.list();
         setMedecins(data?.results || data || []);
       } catch {
-        toast.error('Impossible de charger la liste des mÃ©decins');
+        toast.error('Impossible de charger la liste des médecins');
       }
     }
   };
@@ -600,7 +593,7 @@ export default function PatientDossierPage() {
     setSending(true);
     try {
       await patientService.envoyerPourValidation(id, { medecin: medecinId, note });
-      toast.success('Dossier envoyÃ© au mÃ©decin pour validation');
+      toast.success('Dossier envoyé au médecin pour validation');
       setShowSendModal(false);
       await loadAllData();
     } catch (err) {
@@ -610,7 +603,7 @@ export default function PatientDossierPage() {
     }
   };
 
-  // â”€â”€ Mapping entre les sections du sidebar global et les onglets internes â”€â”€
+  // ── Mapping entre les sections du sidebar global et les onglets internes ──
   const activeSectionKey = activeMainTab === 'dossier' ? activeSubTab : activeMainTab;
 
   const handleSectionSelect = (key) => {
@@ -626,12 +619,12 @@ export default function PatientDossierPage() {
     }
   };
 
-  // â”€â”€ Dossier "en attente" = cancer pas encore confirmÃ© â”€â”€
+  // ── Dossier "en attente" = cancer pas encore confirmé ──
   const isConfirmed = patient?.statut_confirmation === 'CANCER_CONFIRMED';
-  // En attente = pas confirmÃ© ET (ouvert depuis la liste attente OU statut backend diffÃ©rent de confirmÃ©)
+  // En attente = pas confirmé ET (ouvert depuis la liste attente OU statut backend différent de confirmé)
   const isPendingDossier = !isConfirmed && (fromAttente || Boolean(patient?.statut_confirmation));
 
-  // DEBUG TEMPORAIRE : Ã  supprimer une fois le comportement validÃ©
+  // DEBUG TEMPORAIRE : à supprimer une fois le comportement validé
   console.log('[Dossier] statut_confirmation =', patient?.statut_confirmation, '| fromAttente =', fromAttente, '| pending =', isPendingDossier);
 
   const visiblePatientSections = getVisiblePatientSections(patient, {
@@ -641,7 +634,7 @@ export default function PatientDossierPage() {
   });
   const currentSectionLabel = visiblePatientSections.find(s => s.key === activeSectionKey)?.label || '';
 
-  // Garde-fou : si le dossier est en attente et qu'un onglet interdit est actif, retour Ã  IdentitÃ©
+  // Garde-fou : si le dossier est en attente et qu'un onglet interdit est actif, retour à Identité
   useEffect(() => {
     if (isPendingDossier && !['identite', 'suivi', 'examens', 'rendezvous'].includes(activeSectionKey)) {
       setActiveMainTab('identite');
@@ -704,19 +697,16 @@ export default function PatientDossierPage() {
         .label-st { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 6px; font-weight: 600; }
       `}</style>
 
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:20, marginBottom:24, flexWrap:'wrap', padding:'18px 22px', background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:16 }}>
-        
-        
-      </div>
+      
 
       {editMode && activeMainTab === 'identite' && (
         <div style={{ marginBottom: 14, padding: '10px 16px', background: 'rgba(245,166,35,0.06)', border: '1px solid rgba(245,166,35,0.2)', borderRadius: '12px', fontSize: 12, color: '#d97706', display: 'flex', alignItems: 'center', gap: 8, animation: 'fadeIn 0.2s ease' }}>
           <span style={{ fontWeight: 700 }}>Mode edition actif</span>
-          {tabHasEdit ? 'â€” Modifiez les champs ci-dessous puis cliquez sur Enregistrer.' : "â€” Cet onglet n'est pas editable. Naviguez vers un autre onglet pour modifier."}
+          {tabHasEdit ? '— Modifiez les champs ci-dessous puis cliquez sur Enregistrer.' : "— Cet onglet n'est pas editable. Naviguez vers un autre onglet pour modifier."}
         </div>
       )}
 
-      {/* â”€â”€ Contenu (la navigation entre sections se fait dÃ©sormais via le sidebar global) â”€â”€ */}
+      {/* ── Contenu (la navigation entre sections se fait désormais via le sidebar global) ── */}
       <div className="main-content">
         <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
          
@@ -725,15 +715,34 @@ export default function PatientDossierPage() {
           {/* == IDENTITe & PROFIL == */}
           {activeMainTab === 'identite' && (
             <>
-             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-              
-               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                 
-                 {can.writePatient && <button type="button" onClick={handleEditMode} style={{ padding:'10px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>
-                   Modifier le patient
-                 </button>}
-               </div>
-             </div>
+            <div
+  style={{
+    display: 'flex',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginBottom: 12,
+    width: '100%'
+  }}
+>
+  {can.writePatient && (
+    <button
+      type="button"
+      onClick={handleEditMode}
+      style={{
+        padding: '10px 18px',
+        background: '#2563eb',
+        color: '#fff',
+        border: 'none',
+        borderRadius: 12,
+        cursor: 'pointer',
+        fontSize: 13,
+        fontWeight: 600
+      }}
+    >
+      Modifier le patient
+    </button>
+  )}
+</div>
               <div style={{ display: 'flex', marginBottom: 16, background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
                 {ID_TABS.map(t => (
                   <button key={t.key} onClick={() => setActiveIdentiteTab(t.key)} style={{ flex: 1, padding: '12px 6px', background: 'none', border: 'none', borderBottom: '2px solid ' + (activeIdentiteTab === t.key ? '#2563eb' : 'transparent'), color: activeIdentiteTab === t.key ? '#2563eb' : '#64748b', fontSize: 11.5, fontWeight: activeIdentiteTab === t.key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}>
@@ -747,16 +756,16 @@ export default function PatientDossierPage() {
                   {activeIdentiteTab === 'identite' && (
                     <Grid>
                       <InfoRow label="N Enregistrement"    value={patient.registration_number} mono />
-                      <InfoRow label="N Identite nationale" value={patient.id_national || 'â€”'} mono />
-                      <InfoRow label="N Securite sociale"   value={patient.num_securite_sociale || 'â€”'} mono />
-                      <InfoRow label="Matricule"            value={patient.num_matricule || 'â€”'} mono />
+                      <InfoRow label="N Identite nationale" value={patient.id_national || '—'} mono />
+                      <InfoRow label="N Securite sociale"   value={patient.num_securite_sociale || '—'} mono />
+                      <InfoRow label="Matricule"            value={patient.num_matricule || '—'} mono />
                       <InfoRow label="Nom complet"          value={patient.nom + ' ' + patient.prenom} />
-                      <InfoRow label="Nom de jeune fille"   value={patient.nom_jeune_fille || 'â€”'} />
+                      <InfoRow label="Nom de jeune fille"   value={patient.nom_jeune_fille || '—'} />
                       <InfoRow label="Sexe"                 value={patient.sexe_label} />
-                      <InfoRow label="Date de naissance"    value={patient.date_naissance ? new Date(patient.date_naissance).toLocaleDateString('fr-DZ') : 'â€”'} />
-                      <InfoRow label="Age"                  value={patient.age ? patient.age + ' ans' : patient.age_diagnostic ? patient.age_diagnostic + ' ans (au diagnostic)' : 'â€”'} />
-                      <InfoRow label="Lieu de naissance"    value={patient.lieu_naissance || 'â€”'} />
-                      <InfoRow label="Nationalite"          value={patient.nationalite || 'â€”'} />
+                      <InfoRow label="Date de naissance"    value={patient.date_naissance ? new Date(patient.date_naissance).toLocaleDateString('fr-DZ') : '—'} />
+                      <InfoRow label="Age"                  value={patient.age ? patient.age + ' ans' : patient.age_diagnostic ? patient.age_diagnostic + ' ans (au diagnostic)' : '—'} />
+                      <InfoRow label="Lieu de naissance"    value={patient.lieu_naissance || '—'} />
+                      <InfoRow label="Nationalite"          value={patient.nationalite || '—'} />
                       <InfoRow label="Statut vital"         value={patient.statut_vital_label} />
                       {patient.date_deces  && <InfoRow label="Date de deces"  value={new Date(patient.date_deces).toLocaleDateString('fr-DZ')} />}
                       {patient.cause_deces && <InfoRow label="Cause du deces" value={patient.cause_deces} />}
@@ -764,24 +773,24 @@ export default function PatientDossierPage() {
                   )}
                   {activeIdentiteTab === 'coordonnees' && (
                     <Grid>
-                      <InfoRow label="Adresse"     value={patient.adresse || 'â€”'} full />
-                      <InfoRow label="Commune"     value={patient.commune || 'â€”'} />
-                      <InfoRow label="Wilaya"      value={patient.wilaya || 'â€”'} />
-                      <InfoRow label="Code postal" value={patient.code_postal || 'â€”'} mono />
-                      <InfoRow label="Telephone"   value={patient.telephone || 'â€”'} mono />
-                      <InfoRow label="Telephone 2" value={patient.telephone2 || 'â€”'} mono />
-                      <InfoRow label="Email"       value={patient.email || 'â€”'} />
+                      <InfoRow label="Adresse"     value={patient.adresse || '—'} full />
+                      <InfoRow label="Commune"     value={patient.commune || '—'} />
+                      <InfoRow label="Wilaya"      value={patient.wilaya || '—'} />
+                      <InfoRow label="Code postal" value={patient.code_postal || '—'} mono />
+                      <InfoRow label="Telephone"   value={patient.telephone || '—'} mono />
+                      <InfoRow label="Telephone 2" value={patient.telephone2 || '—'} mono />
+                      <InfoRow label="Email"       value={patient.email || '—'} />
                     </Grid>
                   )}
                   {activeIdentiteTab === 'profil' && (
                     <Grid>
                       <InfoRow label="Niveau d instruction"  value={patient.instruction_label || patient.niveau_instruction} />
                       <InfoRow label="Profession"            value={patient.profession_label || patient.profession} />
-                      <InfoRow label="Situation familiale"   value={patient.situation_familiale || 'â€”'} />
-                      <InfoRow label="Nombre d enfants"      value={patient.nombre_enfants ?? 'â€”'} />
-                      <InfoRow label="Etablissement de PEC"  value={patient.etablissement_pec || 'â€”'} />
-                      <InfoRow label="Service Clinique"      value={patient.service_clinique || 'â€”'} />
-                      <InfoRow label="Medecin referent"      value={patient.medecin_referent_info?.full_name || 'â€”'} />
+                      <InfoRow label="Situation familiale"   value={patient.situation_familiale || '—'} />
+                      <InfoRow label="Nombre d enfants"      value={patient.nombre_enfants ?? '—'} />
+                      <InfoRow label="Etablissement de PEC"  value={patient.etablissement_pec || '—'} />
+                      <InfoRow label="Service Clinique"      value={patient.service_clinique || '—'} />
+                      <InfoRow label="Medecin referent"      value={patient.medecin_referent_info?.full_name || '—'} />
                       <InfoRow label="Statut dossier"        value={patient.statut_label} />
                       {patient.notes && <InfoRow label="Notes" value={patient.notes} full />}
                       <InfoRow label="Enregistre le"         value={new Date(patient.date_enregistrement).toLocaleString('fr-DZ')} />
@@ -857,20 +866,20 @@ export default function PatientDossierPage() {
 
                       {documents.length === 0 ? (
                         <div style={{ padding: 40, textAlign: 'center' }}>
-                          <div style={{ fontSize: 30, marginBottom: 10 }}>ðŸ“„</div>
-                          <div style={{ fontSize: 14, color: '#64748b' }}>Aucun document administratif enregistrÃ©.</div>
+                          <div style={{ fontSize: 30, marginBottom: 10 }}>📄</div>
+                          <div style={{ fontSize: 14, color: '#64748b' }}>Aucun document administratif enregistré.</div>
                         </div>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                           {documents.map(doc => (
                             <div key={doc.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', border: '1px solid rgba(37,99,235,0.1)', borderRadius: 12, background: '#fff' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(37,99,235,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>ðŸ“„</div>
+                                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(37,99,235,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📄</div>
                                 <div>
                                   <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>{doc.libelle || doc.file_name || 'Document'}</div>
                                   <div style={{ fontSize: 11, color: '#94a3b8' }}>
-                                    {DOCUMENT_TYPE_OPTIONS.find(t => t.v === doc.type_document)?.l || doc.type_document || 'â€”'}
-                                    {doc.date_ajout ? ` Â· ${new Date(doc.date_ajout).toLocaleDateString('fr-DZ')}` : ''}
+                                    {DOCUMENT_TYPE_OPTIONS.find(t => t.v === doc.type_document)?.l || doc.type_document || '—'}
+                                    {doc.date_ajout ? ` · ${new Date(doc.date_ajout).toLocaleDateString('fr-DZ')}` : ''}
                                   </div>
                                 </div>
                               </div>
@@ -934,14 +943,14 @@ export default function PatientDossierPage() {
               {rendezVous.length === 0 ? (
                 <div style={{ padding: 48, textAlign: 'center' }}>
                   <div style={{ fontSize: 40, marginBottom: 12 }}></div>
-                  <div style={{ fontSize: 14, color: '#64748b' }}>Aucun rendez-vous enregistrÃ© pour ce patient.</div>
+                  <div style={{ fontSize: 14, color: '#64748b' }}>Aucun rendez-vous enregistré pour ce patient.</div>
                 </div>
               ) : (
                 <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ background: '#f1f5f9' }}>
-                        {['Date', 'Heure', 'Type', 'MÃ©decin', 'Statut', ''].map(h => (
+                        {['Date', 'Heure', 'Type', 'Médecin', 'Statut', ''].map(h => (
                           <th key={h} style={thStyle}>{h}</th>
                         ))}
                       </tr>
@@ -951,7 +960,7 @@ export default function PatientDossierPage() {
                         .sort((a, b) => `${b.date}${b.heure}`.localeCompare(`${a.date}${a.heure}`))
                         .map((rdv, i) => {
                           const st = RDV_STATUT_COLORS[rdv.statut] || RDV_STATUT_COLORS.en_attente;
-                          const stLabel = RDV_STATUT_LABELS[rdv.statut] || rdv.statut || 'â€”';
+                          const stLabel = RDV_STATUT_LABELS[rdv.statut] || rdv.statut || '—';
                           const isPast = rdv.date && rdv.date < new Date().toISOString().slice(0, 10);
                           return (
                             <tr key={rdv.id}
@@ -965,11 +974,11 @@ export default function PatientDossierPage() {
                               onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'}
                             >
                               <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: '#0f172a' }}>
-                                {rdv.date ? new Date(`${rdv.date}T00:00:00`).toLocaleDateString('fr-DZ') : 'â€”'}
+                                {rdv.date ? new Date(`${rdv.date}T00:00:00`).toLocaleDateString('fr-DZ') : '—'}
                               </td>
-                              <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12, color: '#334155' }}>{rdv.heure || 'â€”'}</td>
+                              <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12, color: '#334155' }}>{rdv.heure || '—'}</td>
                               <td style={{ ...tdStyle, fontSize: 12.5, color: '#334155' }}>{RDV_TYPE_LABELS[rdv.type] || rdv.type || 'Consultation'}</td>
-                              <td style={{ ...tdStyle, fontSize: 12, color: '#64748b' }}>{rdv.medecin_nom || 'â€”'}</td>
+                              <td style={{ ...tdStyle, fontSize: 12, color: '#64748b' }}>{rdv.medecin_nom || '—'}</td>
                               <td style={tdStyle}>
                                 <span style={{ padding: '4px 10px', borderRadius: 20, background: st.bg, color: st.color, fontSize: 11, fontWeight: 600 }}>
                                   {stLabel}
@@ -1000,7 +1009,7 @@ export default function PatientDossierPage() {
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                     </svg>
-                    Ajouter Ã  une RCP
+                    Ajouter à une RCP
                   </button>
                 </Link>}
               </div>
@@ -1008,14 +1017,14 @@ export default function PatientDossierPage() {
               {rcp.length === 0 ? (
                 <div style={{ padding: 48, textAlign: 'center' }}>
                   <div style={{ fontSize: 40, marginBottom: 12 }}></div>
-                  <div style={{ fontSize: 14, color: '#64748b' }}>Aucun passage en RCP enregistrÃ© pour ce patient.</div>
+                  <div style={{ fontSize: 14, color: '#64748b' }}>Aucun passage en RCP enregistré pour ce patient.</div>
                 </div>
               ) : (
                 <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ background: '#f1f5f9' }}>
-                        {['RÃ©union', 'Date', 'Type de prÃ©sentation', 'Statut', ''].map(h => (
+                        {['Réunion', 'Date', 'Type de présentation', 'Statut', ''].map(h => (
                           <th key={h} style={thStyle}>{h}</th>
                         ))}
                       </tr>
@@ -1029,10 +1038,10 @@ export default function PatientDossierPage() {
                         })
                         .map((d, i) => {
                           const st = RCP_STATUT_COLORS[d.statut] || RCP_STATUT_COLORS.attente;
-                          const stLabel = RCP_STATUT_LABELS[d.statut] || d.statut || 'â€”';
-                          // AccÃ¨s dÃ©fensif : le nom exact des champs dÃ©normalisÃ©s dÃ©pend du serializer backend.
+                          const stLabel = RCP_STATUT_LABELS[d.statut] || d.statut || '—';
+                          // Accès défensif : le nom exact des champs dénormalisés dépend du serializer backend.
                           const reunionId    = d.reunion ?? d.reunion_id ?? d.reunion_info?.id;
-                          const reunionTitre = d.reunion_titre ?? d.reunion_nom ?? d.reunion_info?.titre ?? 'â€”';
+                          const reunionTitre = d.reunion_titre ?? d.reunion_nom ?? d.reunion_info?.titre ?? '—';
                           const reunionDate  = d.reunion_date ?? d.date_reunion ?? d.reunion_info?.date_reunion;
                           return (
                             <tr key={d.id}
@@ -1043,10 +1052,10 @@ export default function PatientDossierPage() {
                             >
                               <td style={{ ...tdStyle, fontSize: 12.5, fontWeight: 600, color: '#0f172a' }}>{reunionTitre}</td>
                               <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                                {reunionDate ? new Date(reunionDate).toLocaleDateString('fr-DZ') : 'â€”'}
+                                {reunionDate ? new Date(reunionDate).toLocaleDateString('fr-DZ') : '—'}
                               </td>
                               <td style={{ ...tdStyle, fontSize: 12.5, color: '#334155' }}>
-                                {RCP_TYPE_PRESENTATION_LABELS[d.type_presentation] || d.type_presentation || 'â€”'}
+                                {RCP_TYPE_PRESENTATION_LABELS[d.type_presentation] || d.type_presentation || '—'}
                               </td>
                               <td style={tdStyle}>
                                 <span style={{ padding: '4px 10px', borderRadius: 20, background: st.bg, color: st.color, fontSize: 11, fontWeight: 600 }}>
@@ -1071,8 +1080,8 @@ export default function PatientDossierPage() {
           {/* == DOSSIER MeDICAL == */}
           {activeMainTab === 'dossier' && (
              <div>
-               {/* Onglets internes conservÃ©s pour naviguer entre Clinique / Diagnostic / Examens
-                   (Ã©galement synchronisÃ©s avec le sidebar global via activeSubTab) */}
+               {/* Onglets internes conservés pour naviguer entre Clinique / Diagnostic / Examens
+                   (également synchronisés avec le sidebar global via activeSubTab) */}
               
 
                {activeSubTab === 'clinique' && (
@@ -1092,17 +1101,17 @@ export default function PatientDossierPage() {
                    {!dossierEditMode ? (
                      <Grid>
                        <InfoRow label="Tension arterielle" value={dossier?.tension_arterielle} />
-                       <InfoRow label="Temperature" value={dossier?.temperature ? `${dossier.temperature} Â°C` : 'â€”'} />
-                       <InfoRow label="Pouls" value={dossier?.pouls ? `${dossier.pouls} bpm` : 'â€”'} />
-                       <InfoRow label="Glycemie" value={dossier?.glycemie ? `${dossier.glycemie} g/L` : 'â€”'} />
-                       <InfoRow label="Taille / Poids" value={dossier?.taille_cm || dossier?.poids_kg ? `${dossier?.taille_cm || 'â€”'} cm / ${dossier?.poids_kg || 'â€”'} kg` : 'â€”'} />
+                       <InfoRow label="Temperature" value={dossier?.temperature ? `${dossier.temperature} °C` : '—'} />
+                       <InfoRow label="Pouls" value={dossier?.pouls ? `${dossier.pouls} bpm` : '—'} />
+                       <InfoRow label="Glycemie" value={dossier?.glycemie ? `${dossier.glycemie} g/L` : '—'} />
+                       <InfoRow label="Taille / Poids" value={dossier?.taille_cm || dossier?.poids_kg ? `${dossier?.taille_cm || '—'} cm / ${dossier?.poids_kg || '—'} kg` : '—'} />
                        <InfoRow label="Allergies connues" value={dossier?.allergies} full />
                        <InfoRow label="Acte chirurgical precedent" value={dossier?.acte_chirurgical} full />
                      </Grid>
                    ) : (
                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px', animation: 'fadeIn 0.2s ease' }}>
                        <div style={{ marginBottom: 14 }}><label className="label-st">Tension arterielle</label><input className="input-st" value={dossierForm.tension_arterielle || ''} onChange={e => setDossierForm({...dossierForm, tension_arterielle: e.target.value})} /></div>
-                       <div style={{ marginBottom: 14 }}><label className="label-st">Temperature (Â°C)</label><input className="input-st" type="number" value={dossierForm.temperature || ''} onChange={e => setDossierForm({...dossierForm, temperature: e.target.value})} /></div>
+                       <div style={{ marginBottom: 14 }}><label className="label-st">Temperature (°C)</label><input className="input-st" type="number" value={dossierForm.temperature || ''} onChange={e => setDossierForm({...dossierForm, temperature: e.target.value})} /></div>
                        <div style={{ marginBottom: 14 }}><label className="label-st">Pouls (bpm)</label><input className="input-st" type="number" value={dossierForm.pouls || ''} onChange={e => setDossierForm({...dossierForm, pouls: e.target.value})} /></div>
                        <div style={{ marginBottom: 14 }}><label className="label-st">Glycemie (g/L)</label><input className="input-st" type="number" step="0.01" value={dossierForm.glycemie || ''} onChange={e => setDossierForm({...dossierForm, glycemie: e.target.value})} /></div>
                        <div style={{ marginBottom: 14 }}><label className="label-st">Taille (cm)</label><input className="input-st" type="number" value={dossierForm.taille_cm || ''} onChange={e => setDossierForm({...dossierForm, taille_cm: e.target.value})} /></div>
@@ -1117,7 +1126,7 @@ export default function PatientDossierPage() {
                {activeSubTab === 'diagnostic' && (
                  <div style={{ animation: 'fadeIn 0.2s ease' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                     <SectionLabel style={{ margin: 0 }}>Diagnostic(s) associÃ©(s)</SectionLabel>
+                     <SectionLabel style={{ margin: 0 }}>Diagnostic(s) associé(s)</SectionLabel>
                      {can.writeDiagnostic && patient.statut_confirmation === 'CANCER_CONFIRMED' && <Link to={`/diagnostics/nouveau?patient=${id}`} state={{ patientContext: patient }} style={{ textDecoration: 'none' }}>
                        <button style={addBtnStyle}>
                          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1131,7 +1140,7 @@ export default function PatientDossierPage() {
                    {diagnostics.length === 0 ? (
                      <div style={{ padding: 48, textAlign: 'center' }}>
                        <div style={{ fontSize: 40, marginBottom: 12 }}></div>
-                       <div style={{ fontSize: 14, color: '#64748b' }}>Aucun diagnostic recensÃ©</div>
+                       <div style={{ fontSize: 14, color: '#64748b' }}>Aucun diagnostic recensé</div>
                      </div>
                    ) : (
                      <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
@@ -1152,24 +1161,24 @@ export default function PatientDossierPage() {
                                onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'}
                              >
                                <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                                 {d.date_diagnostic ? new Date(d.date_diagnostic).toLocaleDateString('fr-DZ') : 'â€”'}
+                                 {d.date_diagnostic ? new Date(d.date_diagnostic).toLocaleDateString('fr-DZ') : '—'}
                                </td>
                                <td style={tdStyle}>
                                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#2563eb', marginBottom: 2 }}>
                                    {d.categorie_cancer === 'liquide' ? 'HEMATO' : d.topographie_code}
                                  </div>
                                  <div style={{ fontSize: 11.5, color: '#334155', maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                   {d.diagnostic_resume || d.topographie_libelle || 'â€”'}
+                                   {d.diagnostic_resume || d.topographie_libelle || '—'}
                                  </div>
                                </td>
                                <td style={tdStyle}>
                                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#7c3aed', marginBottom: 2 }}>{d.morphologie_code}</div>
-                                 <div style={{ fontSize: 11, color: '#64748b', maxWidth: 150, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.morphologie_libelle || 'â€”'}</div>
+                                 <div style={{ fontSize: 11, color: '#64748b', maxWidth: 150, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.morphologie_libelle || '—'}</div>
                                </td>
                                <td style={tdStyle}><TNMBadge tnm={d.tnm_complet} /></td>
                                <td style={tdStyle}><StageBadge stade={d.stade_ajcc} label={d.stade_label} /></td>
-                               <td style={{ ...tdStyle, fontSize: 11, color: '#64748b' }}>{d.grade_label || 'â€”'}</td>
-                               <td style={{ ...tdStyle, fontSize: 11, color: '#64748b' }}>{d.base_diag_label || d.base_diagnostic || 'â€”'}</td>
+                               <td style={{ ...tdStyle, fontSize: 11, color: '#64748b' }}>{d.grade_label || '—'}</td>
+                               <td style={{ ...tdStyle, fontSize: 11, color: '#64748b' }}>{d.base_diag_label || d.base_diagnostic || '—'}</td>
                                <td style={tdStyle} onClick={e => e.stopPropagation()}>
                                  <Link to={`/diagnostics/${d.id}`} style={{ textDecoration: 'none' }}>
                                    <button style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: 'pointer' }}>Voir</button>
@@ -1188,7 +1197,7 @@ export default function PatientDossierPage() {
                  <div style={{ animation: 'fadeIn 0.2s ease' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                      <SectionLabel style={{ margin: 0 }}>Examens & Bilans</SectionLabel>
-                     {can.writeDiagnostic && <button onClick={() => navigate(`/examens/nouveau?patient=${id}`)} style={addBtnStyle}>
+                     {(can.writeDiagnostic || can.writeAnapathReport) && <button onClick={() => navigate(`/examens/nouveau?patient=${id}`)} style={addBtnStyle}>
                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                        </svg>
@@ -1198,14 +1207,14 @@ export default function PatientDossierPage() {
 
                    {examens.length === 0 ? (
                      <div style={{ padding: 48, textAlign: 'center' }}>
-                       <div style={{ fontSize: 14, color: '#64748b' }}>Aucun examen enregistrÃ©.</div>
+                       <div style={{ fontSize: 14, color: '#64748b' }}>Aucun examen enregistré.</div>
                      </div>
                    ) : (
                      <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                          <thead>
                            <tr style={{ background: '#f1f5f9' }}>
-                             {['CatÃ©gorie', 'Examen', 'Valeur', 'Statut', 'Prescrit le', ''].map(h => (
+                             {['Catégorie', 'Examen', 'Valeur', 'Statut', 'Prescrit le', ''].map(h => (
                                <th key={h} style={thStyle}>{h}</th>
                              ))}
                            </tr>
@@ -1213,23 +1222,23 @@ export default function PatientDossierPage() {
                          <tbody>
                            {examens.map((ex, i) => {
                              const st = EXAMEN_STATUT_COLORS[ex.statut] || EXAMEN_STATUT_COLORS.en_attente;
-                             const stLabel = EXAMEN_STATUT_LABELS[ex.statut] || ex.statut || 'â€”';
+                             const stLabel = EXAMEN_STATUT_LABELS[ex.statut] || ex.statut || '—';
                              return (
                                <tr key={ex.id}
-                                 onClick={() => { if (can.manageExamResults) openExamen(ex); }}
+                                 onClick={() => { if (can.manageExamResults) { setEditingExamen(ex); setShowExamenModal(true); } }}
                                  style={{ cursor: can.manageExamResults ? 'pointer' : 'default', borderBottom: '1px solid rgba(37,99,235,0.12)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
                                  onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
                                  onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'}
                                >
-                                 <td style={{ ...tdStyle, color: '#0f172a', fontWeight: 500, fontSize: 12.5 }}>{ex.categorie || 'â€”'}</td>
-                                 <td style={{ ...tdStyle, color: '#334155', fontSize: 12.5 }}>{ex.nom_examen || 'â€”'}</td>
-                                 <td style={{ ...tdStyle, color: '#0f172a', fontWeight: 600, fontSize: 12.5 }}>{ex.resultat || 'â€”'}</td>
+                                 <td style={{ ...tdStyle, color: '#0f172a', fontWeight: 500, fontSize: 12.5 }}>{ex.categorie || '—'}</td>
+                                 <td style={{ ...tdStyle, color: '#334155', fontSize: 12.5 }}>{ex.nom_examen || '—'}</td>
+                                 <td style={{ ...tdStyle, color: '#0f172a', fontWeight: 600, fontSize: 12.5 }}>{ex.resultat || '—'}</td>
                                  <td style={tdStyle}>
                                    <span style={{ padding: '4px 10px', borderRadius: 20, background: st.bg, color: st.color, fontSize: 11, fontWeight: 600 }}>{stLabel}</span>
                                  </td>
-                                 <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{ex.date_prescription ? new Date(ex.date_prescription).toLocaleDateString('fr-DZ') : 'â€”'}</td>
+                                 <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{ex.date_prescription ? new Date(ex.date_prescription).toLocaleDateString('fr-DZ') : '—'}</td>
                                  <td style={tdStyle} onClick={e => e.stopPropagation()}>
-                                   <button onClick={() => { if (can.manageExamResults) openExamen(ex); }} style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: can.manageExamResults ? 'pointer' : 'default' }}>{can.manageExamResults ? 'RÃ©sultat' : 'Voir'}</button>
+                                   <button onClick={() => { if (can.manageExamResults) { setEditingExamen(ex); setShowExamenModal(true); } }} style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: can.manageExamResults ? 'pointer' : 'default' }}>{can.manageExamResults ? 'Résultat' : 'Voir'}</button>
                                  </td>
                                </tr>
                              );
@@ -1265,7 +1274,7 @@ export default function PatientDossierPage() {
                 if (allTraitements.length === 0) {
                   return (
                     <div style={{ padding: 48, textAlign: 'center' }}>
-                      <div style={{ fontSize: 14, color: '#64748b' }}>Aucun traitement trouvÃ©.</div>
+                      <div style={{ fontSize: 14, color: '#64748b' }}>Aucun traitement trouvé.</div>
                     </div>
                   );
                 }
@@ -1274,7 +1283,7 @@ export default function PatientDossierPage() {
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr style={{ background: '#f1f5f9' }}>
-                          {['Type', 'Phase', 'Statut', 'DÃ©but', 'Fin', ''].map(h => (
+                          {['Type', 'Phase', 'Statut', 'Début', 'Fin', ''].map(h => (
                             <th key={h} style={thStyle}>{h}</th>
                           ))}
                         </tr>
@@ -1288,14 +1297,14 @@ export default function PatientDossierPage() {
                             onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'}
                           >
                             <td style={{ ...tdStyle, textTransform: 'capitalize', color: '#2563eb', fontWeight: 600, fontSize: 12 }}>{t._type}</td>
-                            <td style={{ ...tdStyle, fontSize: 12.5 }}>{t.phase_traitement || 'â€”'}</td>
+                            <td style={{ ...tdStyle, fontSize: 12.5 }}>{t.phase_traitement || '—'}</td>
                             <td style={tdStyle}>
                               <span style={{ padding: '4px 10px', borderRadius: 20, background: 'rgba(37,99,235,0.1)', color: '#2563eb', fontSize: 11, fontWeight: 600 }}>
-                                {t.statut_traitement || 'â€”'}
+                                {t.statut_traitement || '—'}
                               </span>
                             </td>
-                            <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{t.date_debut ? new Date(t.date_debut).toLocaleDateString('fr-DZ') : 'â€”'}</td>
-                            <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{t.date_fin ? new Date(t.date_fin).toLocaleDateString('fr-DZ') : 'â€”'}</td>
+                            <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{t.date_debut ? new Date(t.date_debut).toLocaleDateString('fr-DZ') : '—'}</td>
+                            <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{t.date_fin ? new Date(t.date_fin).toLocaleDateString('fr-DZ') : '—'}</td>
                             <td style={tdStyle} onClick={e => e.stopPropagation()}>
                               <button onClick={() => navigate(`/traitements/${t._type}/${t.id}`)} style={{ padding: '5px 12px', background: '#f1f5f9', border: '1px solid rgba(37,99,235,0.12)', borderRadius: 6, color: '#334155', fontSize: 11.5, cursor: 'pointer' }}>Voir</button>
                             </td>
@@ -1326,7 +1335,7 @@ export default function PatientDossierPage() {
 
                {suivi.length === 0 ? (
                  <div style={{ padding: 48, textAlign: 'center' }}>
-                   <div style={{ fontSize: 14, color: '#64748b' }}>Aucune consultation enregistrÃ©e.</div>
+                   <div style={{ fontSize: 14, color: '#64748b' }}>Aucune consultation enregistrée.</div>
                  </div>
                ) : (
                  <div style={{ background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
@@ -1346,13 +1355,13 @@ export default function PatientDossierPage() {
                            onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
                            onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'}
                          >
-                           <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{c.date_consultation ? new Date(c.date_consultation).toLocaleDateString('fr-DZ') : 'â€”'}</td>
-                           <td style={{ ...tdStyle, fontSize: 12.5 }}>{c.type_consultation_label || c.type_consultation || 'â€”'}</td>
-                           <td style={{ ...tdStyle, fontSize: 12.5 }}>{c.ps_ecog ?? 'â€”'}</td>
-                           <td style={{ ...tdStyle, fontSize: 12.5 }}>{c.poids_kg ? `${c.poids_kg} kg` : 'â€”'}</td>
+                           <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{c.date_consultation ? new Date(c.date_consultation).toLocaleDateString('fr-DZ') : '—'}</td>
+                           <td style={{ ...tdStyle, fontSize: 12.5 }}>{c.type_consultation_label || c.type_consultation || '—'}</td>
+                           <td style={{ ...tdStyle, fontSize: 12.5 }}>{c.ps_ecog ?? '—'}</td>
+                           <td style={{ ...tdStyle, fontSize: 12.5 }}>{c.poids_kg ? `${c.poids_kg} kg` : '—'}</td>
                            <td style={tdStyle}>
                              <span style={{ padding: '4px 10px', borderRadius: 20, background: 'rgba(37,99,235,0.1)', color: '#2563eb', fontSize: 11, fontWeight: 600 }}>
-                               {c.statut_label || c.statut || 'â€”'}
+                               {c.statut_label || c.statut || '—'}
                              </span>
                            </td>
                            <td style={tdStyle} onClick={e => e.stopPropagation()}>
@@ -1399,7 +1408,7 @@ export default function PatientDossierPage() {
   );
 }
 
-// Micro-components originaux conservÃ©s
+// Micro-components originaux conservés
 function Info({ val, mono }) { return <span style={{ fontSize: 12.5, color: '#334155' }}><span style={{ fontFamily: mono ? 'var(--font-mono)' : 'inherit', color: '#0f172a' }}>{val}</span></span>; }
 function Grid({ children }) { return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>{children}</div>; }
 function SectionLabel({ children, style: s }) { return <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: '#64748b', marginBottom: 12, ...s }}>{children}</div>; }
@@ -1407,7 +1416,7 @@ function InfoRow({ label, value, mono, full }) {
   return (
     <div style={{ padding: '10px 0', borderBottom: '1px solid rgba(37,99,235,0.12)', gridColumn: full ? '1 / -1' : 'auto' }}>
       <div style={{ fontSize: 11, color: '#64748b', marginBottom: 3, letterSpacing: 0.3, textTransform: 'uppercase' }}>{label}</div>
-      <div style={{ fontSize: 13.5, color: '#0f172a', fontFamily: mono ? 'var(--font-mono)' : 'inherit' }}>{value || 'â€”'}</div>
+      <div style={{ fontSize: 13.5, color: '#0f172a', fontFamily: mono ? 'var(--font-mono)' : 'inherit' }}>{value || '—'}</div>
     </div>
   );
 }
@@ -1417,7 +1426,7 @@ function HabitudeRow({ label, value, colorMap, labelMap }) {
     <div style={{ padding: '12px 0', borderBottom: '1px solid rgba(37,99,235,0.12)' }}>
       <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6, letterSpacing: 0.3, textTransform: 'uppercase' }}>{label}</div>
       <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12.5, fontWeight: 600, background: cv.bg, color: cv.color, border: '1px solid ' + cv.border }}>
-        {labelMap[value] || value || 'â€”'}
+        {labelMap[value] || value || '—'}
       </span>
     </div>
   );

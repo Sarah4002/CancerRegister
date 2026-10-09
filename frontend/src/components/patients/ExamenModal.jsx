@@ -7,6 +7,8 @@ export default function ExamenModal({ patientId, examen, onClose, onSuccess }) {
   const [nomExamen, setNomExamen] = useState(examen?.nom_examen || '');
   const [datePrescription, setDatePrescription] = useState(examen?.date_prescription || new Date().toISOString().split('T')[0]);
   const [resultat, setResultat] = useState(examen?.resultat || '');
+  const [dateRealisation, setDateRealisation] = useState(examen?.date_realisation || new Date().toISOString().split('T')[0]);
+  const [fichier, setFichier] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -18,19 +20,25 @@ export default function ExamenModal({ patientId, examen, onClose, onSuccess }) {
     
     setSubmitting(true);
     try {
-      const payload = {
-        patient: patientId,
-        categorie,
-        nom_examen: nomExamen,
-        date_prescription: datePrescription,
-        resultat,
-        statut: resultat.trim()
-          ? 'resultat_disponible'
-          : (examen?.resultat ? 'prescrit' : (examen?.statut || 'prescrit')),
-        date_realisation: resultat.trim() ? (examen?.date_realisation || new Date().toISOString().split('T')[0]) : examen?.date_realisation || null,
-      };
-      if (examen) await examenService.update(examen.id, payload);
-      else await examenService.create(payload);
+      const hasResult = Boolean(resultat.trim() || fichier);
+      const payload = new FormData();
+      if (examen) {
+        payload.append('resultat', resultat);
+        payload.append('statut', hasResult ? 'resultat_disponible' : (examen.statut || 'prescrit'));
+        if (hasResult) payload.append('date_realisation', dateRealisation);
+        if (fichier) payload.append('fichier_resultat', fichier);
+        await examenService.update(examen.id, payload);
+      } else {
+        payload.append('patient', patientId);
+        payload.append('categorie', categorie);
+        payload.append('nom_examen', nomExamen);
+        payload.append('date_prescription', datePrescription);
+        payload.append('resultat', resultat);
+        payload.append('statut', hasResult ? 'resultat_disponible' : 'prescrit');
+        if (hasResult) payload.append('date_realisation', dateRealisation);
+        if (fichier) payload.append('fichier_dicom', fichier);
+        await examenService.create(payload);
+      }
       onSuccess();
       onClose();
     } catch (err) {
@@ -89,19 +97,33 @@ export default function ExamenModal({ patientId, examen, onClose, onSuccess }) {
               value={datePrescription} 
               onChange={e => setDatePrescription(e.target.value)} 
               style={inputSt}
+              disabled={Boolean(examen)}
               required
             />
           </div>
 
           <div style={fieldSt}>
             <label style={labelSt}>Résultat (laisser vide si en attente)</label>
-            <input 
-              type="text" 
+            <textarea
               value={resultat}
               onChange={e => setResultat(e.target.value)}
+              rows={4}
               placeholder="Conclusion ou résultat de l'examen..."
               style={inputSt}
             />
+          </div>
+
+          {examen && <div style={fieldSt}>
+            <label style={labelSt}>Date de réalisation</label>
+            <input type="date" value={dateRealisation} onChange={e => setDateRealisation(e.target.value)} style={inputSt} />
+          </div>}
+
+          <div style={fieldSt}>
+            <label style={labelSt}>{examen ? 'Importer le compte rendu ou les images' : 'Joindre un document à la demande'}</label>
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png,.dcm,.doc,.docx" onChange={e => setFichier(e.target.files?.[0] || null)} style={inputSt} />
+            {fichier && <small style={{ display:'block', marginTop:5, color:'var(--text-muted, #888)' }}>{fichier.name}</small>}
+            {examen?.fichier_resultat && <a href={examen.fichier_resultat} target="_blank" rel="noreferrer" style={{ display:'inline-block', marginTop:7, color:'#60a5fa', fontSize:12 }}>Ouvrir le fichier de résultat actuel</a>}
+            {examen?.fichier_dicom_url && <a href={examen.fichier_dicom_url} target="_blank" rel="noreferrer" style={{ display:'inline-block', marginTop:7, color:'#60a5fa', fontSize:12 }}>Ouvrir le document joint à la demande</a>}
           </div>
 
           <div style={footerSt}>
