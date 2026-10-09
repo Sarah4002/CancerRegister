@@ -47,6 +47,9 @@ export default function ConsultationDetailPage() {
   const navigate  = useNavigate();
   const [data, setData]     = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [form, setForm] = useState({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     suiviService.consultations.get(id)
@@ -68,8 +71,54 @@ export default function ConsultationDetailPage() {
   const ec  = EVOLUTION_COLORS[data.evolution_maladie];
   const psColor = data.ps_ecog !== null && data.ps_ecog !== undefined ? PS_COLORS[data.ps_ecog] : '#9ca3af';
 
+  const openEdit = () => {
+    setForm({ ...data });
+    setEditMode(true);
+  };
+  const cancelEdit = () => {
+    setForm({});
+    setEditMode(false);
+  };
+  const saveEdit = async () => {
+    setSaving(true);
+    try {
+      const payload = {
+        date_consultation: form.date_consultation,
+        type_consultation: form.type_consultation,
+        statut: form.statut,
+        poids_kg: form.poids_kg || null,
+        taille_cm: form.taille_cm || null,
+        ta_systolique: form.ta_systolique || null,
+        ta_diastolique: form.ta_diastolique || null,
+        frequence_cardiaque: form.frequence_cardiaque || null,
+        temperature: form.temperature || null,
+        evolution_maladie: form.evolution_maladie || null,
+        motif: form.motif || '',
+        examen_clinique: form.examen_clinique || '',
+        conclusion: form.conclusion || '',
+        conduite_a_tenir: form.conduite_a_tenir || '',
+      };
+      const { data: updated } = await suiviService.consultations.patch(id, payload);
+      setData(updated);
+      setEditMode(false);
+      toast.success('Consultation mise à jour.');
+    } catch (error) {
+      toast.error(error.response?.data ? Object.values(error.response.data).flat().join(' ') : 'Erreur lors de la mise à jour.');
+    } finally {
+      setSaving(false);
+    }
+  };
+  const updateField = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+
   return (
     <AppLayout title="Consultation de Suivi">
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', color:'#64748b', fontSize:12.5, cursor:'pointer', marginBottom:14, padding:0 }}
+      >
+        <span aria-hidden="true">←</span> Retour
+      </button>
       {/* Header */}
       <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:'16px', padding:'24px', marginBottom:20, display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:14, boxShadow:'0 8px 24px rgba(15,23,42,0.03)' }}>
         <div style={{ display:'flex', gap:14, alignItems:'flex-start' }}>
@@ -92,16 +141,44 @@ export default function ConsultationDetailPage() {
           </div>
         </div>
         <div style={{ display:'flex', gap:8 }}>
+          {!editMode && <button type="button" onClick={openEdit} style={{ padding:'9px 18px', background:'#2563eb', color:'#fff', border:'none', borderRadius:12, cursor:'pointer', fontSize:13, fontWeight:600 }}>Modifier</button>}
           <Link to={`/patients/${data.patient}`} style={{ textDecoration:'none' }}>
             <button style={btnSt('#7c3aed')}>Patient</button>
-          </Link>
-          <Link to="/suivi" style={{ textDecoration:'none' }}>
-            <button style={btnSt('#64748b', true)}>Retour</button>
           </Link>
         </div>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+      {editMode ? (
+        <div style={{ background:'#ffffff', border:'1px solid rgba(37,99,235,0.08)', borderRadius:16, padding:24, boxShadow:'0 8px 24px rgba(15,23,42,0.025)' }}>
+          <SectionLabel>Modifier la consultation</SectionLabel>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(2, minmax(0, 1fr))', gap:'0 24px' }}>
+            <EditField label="Date de consultation" type="date" value={form.date_consultation} onChange={(value) => updateField('date_consultation', value)} />
+            <EditField label="Type de consultation" as="select" value={form.type_consultation} onChange={(value) => updateField('type_consultation', value)} options={[
+              ['initiale', 'Consultation initiale'], ['suivi', 'Suivi standard'], ['post_trt', 'Post-traitement'], ['urgence', 'Urgence'], ['bilan', "Bilan d'extension"], ['annonce', "Consultation d'annonce"], ['palliative', 'Soins palliatifs'],
+            ]} />
+            <EditField label="Statut" as="select" value={form.statut} onChange={(value) => updateField('statut', value)} options={[
+              ['planifiee', 'Planifiée'], ['realisee', 'Réalisée'], ['annulee', 'Annulée'], ['reportee', 'Reportée'],
+            ]} />
+            <EditField label="Évolution" as="select" value={form.evolution_maladie} onChange={(value) => updateField('evolution_maladie', value)} options={[
+              ['stable', 'Stable'], ['regression', 'Régression'], ['progression', 'Progression'], ['remission', 'Rémission'], ['inconnu', 'Non évaluable'],
+            ]} />
+            <EditField label="Poids (kg)" type="number" value={form.poids_kg} onChange={(value) => updateField('poids_kg', value)} />
+            <EditField label="Taille (cm)" type="number" value={form.taille_cm} onChange={(value) => updateField('taille_cm', value)} />
+            <EditField label="Tension systolique" type="number" value={form.ta_systolique} onChange={(value) => updateField('ta_systolique', value)} />
+            <EditField label="Tension diastolique" type="number" value={form.ta_diastolique} onChange={(value) => updateField('ta_diastolique', value)} />
+            <EditField label="Fréquence cardiaque" type="number" value={form.frequence_cardiaque} onChange={(value) => updateField('frequence_cardiaque', value)} />
+            <EditField label="Température (°C)" type="number" value={form.temperature} onChange={(value) => updateField('temperature', value)} />
+            <EditField label="Motif" as="textarea" value={form.motif} onChange={(value) => updateField('motif', value)} />
+            <EditField label="Examen clinique" as="textarea" value={form.examen_clinique} onChange={(value) => updateField('examen_clinique', value)} />
+            <EditField label="Conclusion" as="textarea" value={form.conclusion} onChange={(value) => updateField('conclusion', value)} />
+            <EditField label="Conduite à tenir" as="textarea" value={form.conduite_a_tenir} onChange={(value) => updateField('conduite_a_tenir', value)} />
+          </div>
+          <div style={{ display:'flex', justifyContent:'flex-end', gap:10, marginTop:18, paddingTop:18, borderTop:'1px solid rgba(37,99,235,0.12)' }}>
+            <button type="button" onClick={cancelEdit} disabled={saving} style={secondaryButtonStyle}>Annuler</button>
+            <button type="button" onClick={saveEdit} disabled={saving} style={primaryButtonStyle}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
+          </div>
+        </div>
+      ) : <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
 
         {/* Parametres cliniques */}
         <Card title="Parametres cliniques" color="#7c3aed">
@@ -223,10 +300,37 @@ export default function ConsultationDetailPage() {
             </Card>
           </div>
         )}
-      </div>
+      </div>}
     </AppLayout>
   );
 }
+
+function SectionLabel({ children }) {
+  return <div style={{ fontSize:11, fontWeight:700, letterSpacing:0.8, textTransform:'uppercase', color:'#64748b', marginBottom:14, paddingBottom:10, borderBottom:'1px solid rgba(37,99,235,0.12)' }}>{children}</div>;
+}
+
+function EditField({ label, value, onChange, type = 'text', as, options = [] }) {
+  const fieldStyle = { width:'100%', padding:'10px 12px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:10, color:'#0f172a', fontSize:13, outline:'none', boxSizing:'border-box', fontFamily:'var(--font-body)' };
+  const commonProps = { value: value ?? '', onChange: (event) => onChange(event.target.value), style:fieldStyle };
+  return (
+    <label style={{ display:'block', marginBottom:16, fontSize:11, fontWeight:600, color:'#64748b', letterSpacing:0.3, textTransform:'uppercase' }}>
+      {label}
+      {as === 'textarea' ? (
+        <textarea {...commonProps} rows={3} style={{ ...fieldStyle, display:'block', marginTop:6, resize:'vertical', textTransform:'none' }} />
+      ) : as === 'select' ? (
+        <select {...commonProps} style={{ ...fieldStyle, display:'block', marginTop:6, textTransform:'none' }}>
+          <option value="">— Sélectionner —</option>
+          {options.map(([optionValue, optionLabel]) => <option key={optionValue} value={optionValue}>{optionLabel}</option>)}
+        </select>
+      ) : (
+        <input {...commonProps} type={type} style={{ ...fieldStyle, display:'block', marginTop:6, textTransform:'none' }} />
+      )}
+    </label>
+  );
+}
+
+const primaryButtonStyle = { padding:'10px 22px', background:'#2563eb', border:'none', borderRadius:12, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' };
+const secondaryButtonStyle = { padding:'10px 20px', background:'#f1f5f9', border:'1px solid rgba(37,99,235,0.12)', borderRadius:12, color:'#334155', fontSize:13, cursor:'pointer' };
 
 function Card({ title, color, children }) {
   return (
