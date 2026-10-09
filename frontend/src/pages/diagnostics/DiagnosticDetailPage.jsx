@@ -320,10 +320,10 @@ export default function DiagnosticDetailPage() {
       {!editMode && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
          
-          <div style={{ display: 'flex', gap: 10 }}>
-            
-            <button
-              onClick={openEdit}
+         <div style={{ display: 'flex', gap: 10, marginLeft: 'auto' }}>
+           <button
+             onClick={openEdit}
+  
               style={{ padding: '10px 18px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
             >
               Modifier
