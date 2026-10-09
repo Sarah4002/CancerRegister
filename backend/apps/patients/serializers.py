@@ -150,7 +150,7 @@ class PatientCreateSerializer(serializers.ModelSerializer):
         model = Patient
         fields = [
             # Identifiants
-            'id_national', 'num_securite_sociale', 'num_matricule',
+            'id', 'registration_number', 'id_national', 'num_securite_sociale', 'num_matricule',
             # Identité
             'nom', 'prenom', 'nom_jeune_fille', 'sexe',
             'date_naissance', 'age_diagnostic', 'lieu_naissance', 'nationalite',
@@ -173,6 +173,7 @@ class PatientCreateSerializer(serializers.ModelSerializer):
             # Notes
             'notes',
         ]
+        read_only_fields = ['id', 'registration_number']
 
     def create(self, validated_data):
         contacts_data = validated_data.pop('contacts_urgence', [])
@@ -197,7 +198,7 @@ class PatientAdministrativeSerializer(PatientCreateSerializer):
     """Identité et coordonnées, sans antécédents ni informations cliniques."""
     class Meta(PatientCreateSerializer.Meta):
         fields = [
-            'id_national', 'num_securite_sociale', 'num_matricule',
+            'id', 'registration_number', 'id_national', 'num_securite_sociale', 'num_matricule',
             'nom', 'prenom', 'nom_jeune_fille', 'sexe', 'date_naissance',
             'age_diagnostic', 'lieu_naissance', 'nationalite',
             'adresse', 'commune', 'wilaya', 'code_postal',

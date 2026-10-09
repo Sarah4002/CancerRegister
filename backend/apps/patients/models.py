@@ -15,6 +15,7 @@ class Patient(models.Model):
     class Sexe(models.TextChoices):
         MASCULIN = 'M', 'Masculin'
         FEMININ  = 'F', 'Féminin'
+        INCONNU  = 'U', 'Inconnu'
 
     class StatutVital(models.TextChoices):
         VIVANT    = 'vivant',  'Vivant'

@@ -213,24 +213,12 @@ export default function ConsultationDetailPage() {
         .label-st { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 6px; font-weight: 600; }
       `}</style>
 
-      <button
-        onClick={() => navigate(-1)}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#64748b', fontSize: 12.5, cursor: 'pointer', marginBottom: 14, padding: 0 }}
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-        Retour
-      </button>
+    
 
       {/* ── En-tête : badges + action Modifier ── */}
       {!editMode && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>{data.type_label}</span>
-            <Pill color={sc.color}>{data.statut_label}</Pill>
-            {ec && <Pill color={ec.color}>{ec.label}</Pill>}
-          </div>
+         
           <div style={{ display: 'flex', gap: 10, marginLeft: 'auto' }}>
             <button
               onClick={openEdit}

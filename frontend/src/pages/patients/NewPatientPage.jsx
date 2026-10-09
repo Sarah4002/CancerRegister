@@ -10,6 +10,7 @@ import { WILAYAS, COMMUNES_PAR_WILAYA } from './communesAlgerie';
 import VoiceDictation from '../../components/voice/VoiceDictation';
 import useCustomFields from '../../hooks/useCustomFields';
 import CustomFieldsSection from '../../components/custom_fields/CustomFieldsSection';
+import usePermissions from '../../hooks/usePermissions';
 
 const STEPS = [
   { label: 'Identite' },
@@ -21,7 +22,7 @@ const STEPS = [
 // Champs propres à chaque étape, utilisés pour ne valider que l'étape
 // affichée lorsqu'on clique sur "Continuer" (via trigger()).
 const STEP_FIELDS = [
-  ['nom', 'prenom', 'sexe', 'id_national', 'num_securite_sociale', 'date_naissance', 'age_diagnostic', 'lieu_naissance', 'nationalite'],
+  ['nom', 'prenom', 'nom_jeune_fille', 'sexe', 'id_national', 'num_securite_sociale', 'num_matricule', 'date_naissance', 'age_diagnostic', 'lieu_naissance', 'nationalite'],
   ['adresse', 'wilaya', 'commune', 'code_postal', 'telephone', 'telephone2', 'email', 'contact_nom', 'contact_prenom', 'contact_lien', 'contact_telephone'],
   ['niveau_instruction', 'profession', 'situation_familiale', 'nombre_enfants', 'etablissement_pec', 'statut_dossier', 'statut_vital', 'notes'],
   ['antecedents_personnels_liste', 'antecedents_personnels_autre', 'antecedents_familiaux_liste', 'antecedents_familiaux_autre', 'tabagisme', 'alcool', 'activite_physique', 'alimentation'],
@@ -129,8 +130,38 @@ const ANTECEDENTS_FAMILIAUX_OPTIONS = [
   'Aucun antécédent familial connu',
 ];
 
+// ── Options des habitudes de vie (choix unique) ───────────────
+const TABAGISME_OPTIONS = [
+  { v: 'non',     l: 'Non-fumeur' },
+  { v: 'ex',      l: 'Ex-fumeur' },
+  { v: 'actif',   l: 'Fumeur actif' },
+  { v: 'inconnu', l: 'Inconnu' },
+];
+const ALCOOL_OPTIONS = [
+  { v: 'non',     l: 'Non' },
+  { v: 'oui',     l: 'Oui' },
+  { v: 'inconnu', l: 'Inconnu' },
+];
+const ACTIVITE_OPTIONS = [
+  { v: 'sedentaire', l: 'Sédentaire' },
+  { v: 'moderee',    l: 'Modérée' },
+  { v: 'active',     l: 'Active' },
+  { v: 'inconnu',    l: 'Inconnu' },
+];
+const ALIMENTATION_OPTIONS = [
+  { v: 'equilibree',   l: 'Équilibrée' },
+  { v: 'grasse',       l: 'Riche en graisses' },
+  { v: 'sucree',       l: 'Riche en sucres' },
+  { v: 'vegetarienne', l: 'Végétarienne/Végane' },
+  { v: 'inconnu',      l: 'Inconnu' },
+];
+
 export default function NewPatientPage() {
   const navigate = useNavigate();
+  const { role } = usePermissions();
+  const isSecretary = role === 'secretaire';
+  const visibleSteps = isSecretary ? STEPS.slice(0, 3) : STEPS;
+  const lastStep = visibleSteps.length - 1;
   const [step, setStep]             = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
@@ -143,8 +174,19 @@ export default function NewPatientPage() {
   // valeurs des champs déjà saisis même quand leur étape n'est plus affichée,
   // tant qu'on ne fait pas de reset(). C'est ce qui permet d'aller en avant
   // puis en arrière dans le wizard sans jamais perdre de données.
+  //
+  // Les habitudes de vie ne sont plus des <select> (donc plus de valeur par
+  // défaut implicite) : on les initialise ici à "inconnu".
   const { register, handleSubmit, watch, setValue, getValues, trigger, formState: { errors } } =
-    useForm({ mode: 'onSubmit' });
+    useForm({
+      mode: 'onSubmit',
+      defaultValues: {
+        tabagisme: 'inconnu',
+        alcool: 'inconnu',
+        activite_physique: 'inconnu',
+        alimentation: 'inconnu',
+      },
+    });
 
   const watchedWilaya = watch('wilaya');
   const watchedDateNaissance = watch('date_naissance');
@@ -174,6 +216,18 @@ export default function NewPatientPage() {
     const current = watch('antecedents_familiaux_liste') || [];
     const updated = current.includes(opt) ? current.filter(o => o !== opt) : [...current, opt];
     setValue('antecedents_familiaux_liste', updated, { shouldDirty: true });
+  };
+
+  const validateEmergencyContactName = (value) => {
+    const hasContactData = ['contact_prenom', 'contact_lien', 'contact_telephone']
+      .some((key) => String(getValues(key) || '').trim());
+    return !hasContactData || Boolean(String(value || '').trim()) || 'Nom du contact requis';
+  };
+  const validateEmergencyContactPhone = (value) => {
+    const hasContactData = ['contact_nom', 'contact_prenom', 'contact_lien']
+      .some((key) => String(getValues(key) || '').trim());
+    if (!hasContactData && !String(value || '').trim()) return true;
+    return validatePhoneRequired(value);
   };
 
   // Vérification en temps réel : elle commence seulement une fois les quatre
@@ -220,15 +274,46 @@ export default function NewPatientPage() {
   // ── Helpers ───────────────────────────────────────────────
   const buildPayload = (data) => {
     const payload = { ...data };
+    const serializeAntecedents = (selected, details) => {
+      const choices = Array.isArray(selected) ? selected.filter(Boolean) : [];
+      const comment = String(details || '').trim();
+      if (!choices.length) return comment;
+      return `${choices.join('|')}||${comment}`;
+    };
+
+    payload.antecedents_personnels = serializeAntecedents(
+      payload.antecedents_personnels_liste,
+      payload.antecedents_personnels_autre,
+    );
+    payload.antecedents_familiaux = serializeAntecedents(
+      payload.antecedents_familiaux_liste,
+      payload.antecedents_familiaux_autre,
+    );
+    [
+      'antecedents_personnels_liste', 'antecedents_personnels_autre',
+      'antecedents_familiaux_liste', 'antecedents_familiaux_autre',
+    ].forEach((key) => delete payload[key]);
+
     const contacts = [];
     if (payload.contact_nom && payload.contact_telephone) {
       contacts.push({
         nom: payload.contact_nom, prenom: payload.contact_prenom || '',
-        lien: payload.contact_lien || '', telephone: payload.contact_telephone,
+        lien: payload.contact_lien || 'Autre', telephone: payload.contact_telephone,
       });
     }
     ['contact_nom','contact_prenom','contact_lien','contact_telephone'].forEach(k => delete payload[k]);
     if (contacts.length) payload.contacts_urgence = contacts;
+
+    // Le serializer administratif du secrétariat ne reçoit pas les champs
+    // cliniques ou le statut médical du dossier.
+    if (isSecretary) {
+      [
+        'antecedents_personnels', 'antecedents_familiaux', 'tabagisme', 'alcool',
+        'activite_physique', 'alimentation', 'statut_dossier', 'statut_vital',
+        'etablissement_pec', 'notes',
+      ].forEach((key) => delete payload[key]);
+    }
+
     Object.keys(payload).forEach(k => { if (payload[k] === '' || payload[k] === undefined) delete payload[k]; });
     return payload;
   };
@@ -269,10 +354,18 @@ export default function NewPatientPage() {
   const creerPatient = async (payload) => {
     try {
       const { data: patient } = await patientService.create(payload);
+      if (!patient.id) throw new Error('La réponse du serveur ne contient pas l’identifiant du patient.');
+      let customFieldsSaved = true;
       if (Object.keys(valeursCustom).length > 0) {
-        await sauvegarderCustom(patient.id);
+        try {
+          await sauvegarderCustom(patient.id);
+        } catch (customFieldError) {
+          console.error('Patient créé, mais les champs personnalisés n’ont pas été enregistrés.', customFieldError);
+          customFieldsSaved = false;
+        }
       }
-      toast.success('Patient ' + patient.registration_number + ' cree avec succes !');
+      toast.success('Patient ' + (patient.registration_number || '') + ' créé avec succès !');
+      if (!customFieldsSaved) toast.error('Les champs personnalisés n’ont pas été enregistrés.');
       navigate('/patients/' + patient.id);
     } catch (err) {
       const errs = err.response?.data;
@@ -322,11 +415,11 @@ export default function NewPatientPage() {
 
         {/* Stepper */}
         <div style={{ display: 'flex', marginBottom: 28, background: '#ffffff', border: '1px solid rgba(37,99,235,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
-          {STEPS.map((s, i) => (
+          {visibleSteps.map((s, i) => (
             <div key={i} onClick={() => i < step && setStep(i)} style={{
               flex: 1, padding: '14px 12px', textAlign: 'center',
               background: i === step ? 'rgba(37,99,235,0.08)' : i < step ? 'rgba(59,130,246,0.08)' : 'transparent',
-              borderRight: i < STEPS.length - 1 ? '1px solid rgba(37,99,235,0.12)' : 'none',
+              borderRight: i < visibleSteps.length - 1 ? '1px solid rgba(37,99,235,0.12)' : 'none',
               cursor: i < step ? 'pointer' : 'default', transition: 'all 0.2s',
             }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: i === step ? '#2563eb' : i < step ? '#1d4ed8' : '#64748b' }}>
@@ -344,7 +437,6 @@ export default function NewPatientPage() {
               <div style={{ animation: 'fadeUp 0.3s ease' }}>
                 <SectionTitle>Identite du patient</SectionTitle>
 
-              
                 <div style={{ margin: '12px 0', height: 1, background: 'rgba(37,99,235,0.12)' }} />
 
                 <Row>
@@ -353,6 +445,14 @@ export default function NewPatientPage() {
                   </Field>
                   <Field label="Prenom *" error={errors.prenom?.message}>
                     <input {...register('prenom', { required: 'Prenom requis' })} placeholder="Mohamed" style={inputStyle(errors.prenom)} />
+                  </Field>
+                </Row>
+                <Row>
+                  <Field label="Nom de jeune fille">
+                    <input {...register('nom_jeune_fille')} placeholder="Nom de naissance" style={inputStyle()} />
+                  </Field>
+                  <Field label="Matricule">
+                    <input {...register('num_matricule')} style={inputStyle()} />
                   </Field>
                 </Row>
                 <Row>
@@ -491,14 +591,14 @@ export default function NewPatientPage() {
 
                 <SectionTitle style={{ marginTop: 24 }}>Contact d'urgence</SectionTitle>
                 <Row>
-                  <Field label="Nom du contact"><input {...register('contact_nom')} placeholder="Benali" style={inputStyle()} /></Field>
+                  <Field label="Nom du contact" error={errors.contact_nom?.message}><input {...register('contact_nom', { validate: validateEmergencyContactName })} placeholder="Benali" style={inputStyle(errors.contact_nom)} /></Field>
                   <Field label="Prenom"><input {...register('contact_prenom')} placeholder="Ali" style={inputStyle()} /></Field>
                 </Row>
                 <Row>
                   <Field label="Lien de parente"><input {...register('contact_lien')} placeholder="Ex: Epoux, Fils, Soeur" style={inputStyle()} /></Field>
                   <Field label="Téléphone contact" error={errors.contact_telephone?.message}>
                     <input
-                      {...register('contact_telephone', { validate: validatePhone })}
+                      {...register('contact_telephone', { validate: validateEmergencyContactPhone })}
                       placeholder="0771234567"
                       maxLength={17}
                       style={inputStyle(errors.contact_telephone)}
@@ -543,6 +643,7 @@ export default function NewPatientPage() {
                     <input type="number" {...register('nombre_enfants')} placeholder="0" min="0" style={inputStyle()} />
                   </Field>
                 </Row>
+                {!isSecretary && <>
                 <SectionTitle style={{ marginTop: 24 }}>Prise en charge</SectionTitle>
                 <Field label="Etablissement de prise en charge">
                   <input {...register('etablissement_pec')} placeholder="CHU Oran" style={inputStyle()} />
@@ -564,11 +665,12 @@ export default function NewPatientPage() {
                 <Field label="Notes">
                   <textarea {...register('notes')} placeholder="Notes complementaires..." rows={3} style={{ ...inputStyle(), resize: 'vertical', lineHeight: 1.5 }} />
                 </Field>
+                </>}
               </div>
             )}
 
             {/* ══ STEP 3 : Antécédents ═══════════════════════════════ */}
-            {step === 3 && (
+            {step === 3 && !isSecretary && (
               <div style={{ animation: 'fadeUp 0.3s ease' }}>
                 <SectionTitle>Antecedents medicaux</SectionTitle>
 
@@ -602,35 +704,33 @@ export default function NewPatientPage() {
                   />
                 </Field>
 
+                {/* ── Habitudes de vie : choix unique ── */}
                 <SectionTitle style={{ marginTop: 20 }}>Habitudes de vie</SectionTitle>
-                <Row>
-                  <Field label="Tabagisme">
-                    <select {...register('tabagisme')} style={selectStyle()}>
-                      <option value="inconnu">Inconnu</option><option value="non">Non-fumeur</option>
-                      <option value="ex">Ex-fumeur</option><option value="actif">Fumeur actif</option>
-                    </select>
-                  </Field>
-                  <Field label="Consommation d'alcool">
-                    <select {...register('alcool')} style={selectStyle()}>
-                      <option value="inconnu">Inconnu</option><option value="non">Non</option><option value="oui">Oui</option>
-                    </select>
-                  </Field>
-                </Row>
-                <Row>
-                  <Field label="Activite physique">
-                    <select {...register('activite_physique')} style={selectStyle()}>
-                      <option value="inconnu">Inconnu</option><option value="sedentaire">Sedentaire</option>
-                      <option value="moderee">Moderee</option><option value="active">Active</option>
-                    </select>
-                  </Field>
-                  <Field label="Alimentation">
-                    <select {...register('alimentation')} style={selectStyle()}>
-                      <option value="inconnu">Inconnu</option><option value="equilibree">Equilibree</option>
-                      <option value="grasse">Riche en graisses</option><option value="sucree">Riche en sucres</option>
-                      <option value="vegetarienne">Vegetarienne/Vegane</option>
-                    </select>
-                  </Field>
-                </Row>
+
+                <SingleChoiceGroup
+                  label="Tabagisme"
+                  options={TABAGISME_OPTIONS}
+                  value={watch('tabagisme')}
+                  onChange={v => setValue('tabagisme', v, { shouldDirty: true })}
+                />
+                <SingleChoiceGroup
+                  label="Consommation d'alcool"
+                  options={ALCOOL_OPTIONS}
+                  value={watch('alcool')}
+                  onChange={v => setValue('alcool', v, { shouldDirty: true })}
+                />
+                <SingleChoiceGroup
+                  label="Activité physique"
+                  options={ACTIVITE_OPTIONS}
+                  value={watch('activite_physique')}
+                  onChange={v => setValue('activite_physique', v, { shouldDirty: true })}
+                />
+                <SingleChoiceGroup
+                  label="Alimentation"
+                  options={ALIMENTATION_OPTIONS}
+                  value={watch('alimentation')}
+                  onChange={v => setValue('alimentation', v, { shouldDirty: true })}
+                />
 
                 {/* ✅ CHAMPS PERSONNALISÉS */}
                 <CustomFieldsSection
@@ -665,8 +765,8 @@ export default function NewPatientPage() {
                 }}>Retour</button>
               )}
               <button
-                type={step === 3 ? 'submit' : 'button'}
-                onClick={step === 3 ? undefined : handleNext}
+                type={step === lastStep ? 'submit' : 'button'}
+                onClick={step === lastStep ? undefined : handleNext}
                 disabled={submitting}
                 style={{
                   flex: 1, padding: '12px',
@@ -680,7 +780,7 @@ export default function NewPatientPage() {
               >
                 {submitting
                   ? <><Spinner /> Verification...</>
-                  : step === 3 ? 'Enregistrer le patient' : 'Continuer'}
+                  : step === lastStep ? 'Enregistrer le patient' : 'Continuer'}
               </button>
             </div>
 
@@ -718,6 +818,8 @@ function Field({ label, error, children }) {
     </div>
   );
 }
+
+// Choix multiples (antécédents)
 function ChoiceGroup({ label, options, selected, onToggle }) {
   return (
     <div style={{ marginBottom: 16 }}>
@@ -749,6 +851,40 @@ function ChoiceGroup({ label, options, selected, onToggle }) {
     </div>
   );
 }
+
+// Choix unique (habitudes de vie) : un seul bouton actif à la fois
+function SingleChoiceGroup({ label, options, value, onChange }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#334155', marginBottom: 8, letterSpacing: 0.3 }}>
+        {label}
+      </label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {options.map(opt => {
+          const active = value === opt.v;
+          return (
+            <button
+              type="button"
+              key={opt.v}
+              onClick={() => onChange(opt.v)}
+              style={{
+                padding: '7px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 500, cursor: 'pointer',
+                border: `1px solid ${active ? '#2563eb50' : 'rgba(37,99,235,0.14)'}`,
+                background: active ? 'rgba(37,99,235,0.1)' : '#f8fafc',
+                color: active ? '#1d4ed8' : '#64748b',
+                transition: 'all .12s',
+              }}
+            >
+              {active && <span style={{ marginRight: 5 }}>✓</span>}
+              {opt.l}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function Spinner() {
   return <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />;
 }

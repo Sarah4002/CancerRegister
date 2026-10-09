@@ -306,15 +306,7 @@ export default function DiagnosticDetailPage() {
         .label-st { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 6px; font-weight: 600; }
       `}</style>
 
-      <button
-        onClick={() => navigate(-1)}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#64748b', fontSize: 12.5, cursor: 'pointer', marginBottom: 14, padding: 0 }}
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-        Retour
-      </button>
+    
 
       {/* ── En-tête avec titre + actions (Modifier / Supprimer) ── */}
       {!editMode && (
