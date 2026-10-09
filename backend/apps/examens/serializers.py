@@ -18,7 +18,7 @@ class ExamenMedicalSerializer(serializers.ModelSerializer):
             'id', 'patient', 'patient_nom', 'patient_numero', 'consultation', 'categorie', 'nom_examen',
             'date_prescription', 'date_realisation', 'resultat', 
             'fichier_dicom', 'fichier_dicom_url', 'fichier_resultat', 'service_destinataire', 'statut',
-            'statut_label', 'prescrit_par', 'prescrit_par_info', 'observations',
+            'statut_label', 'prescrit_par', 'prescrit_par_info', 'observations', 'note_medecin',
             'date_creation', 'date_mise_a_jour'
         ]
         read_only_fields = ['id', 'date_creation', 'date_mise_a_jour', 'prescrit_par', 'service_destinataire']

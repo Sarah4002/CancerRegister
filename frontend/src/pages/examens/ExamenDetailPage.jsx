@@ -13,13 +13,15 @@ const formatDate = value => value ? new Date(`${value}T00:00:00`).toLocaleDateSt
 export default function ExamenDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { can, role } = usePermissions();
+  const { can, role, user } = usePermissions();
   const [examen, setExamen] = useState(null);
+  const [noteMedecin, setNoteMedecin] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     examenService.get(id)
-      .then(({ data }) => setExamen(data))
+      .then(({ data }) => { setExamen(data); setNoteMedecin(data.note_medecin || ''); })
       .catch(() => { toast.error('Examen introuvable ou accès non autorisé.'); navigate('/examens', { replace:true }); })
       .finally(() => setLoading(false));
   }, [id, navigate]);
@@ -35,9 +37,21 @@ export default function ExamenDetailPage() {
   if (!examen) return null;
 
   const statusColor = STATUS_COLORS[examen.statut] || '#64748b';
+  const canAddMedicalNote = ['doctor', 'doctor_chef'].includes(role) && String(user?.id) === String(examen.prescrit_par);
+  const saveMedicalNote = async (event) => {
+    event.preventDefault();
+    setSavingNote(true);
+    try {
+      const { data } = await examenService.update(examen.id, { note_medecin: noteMedecin });
+      setExamen(data);
+      toast.success('Votre note a été ajoutée au compte rendu.');
+    } catch (error) {
+      toast.error(error.response?.data ? Object.values(error.response.data).flat().join(' ') : 'Impossible d’enregistrer la note.');
+    } finally { setSavingNote(false); }
+  };
   return <AppLayout title="Résultat d’examen" patientContext={createPatientSidebarContext(patient, 'examens', navigate, { can, role })}>
     <div style={{ maxWidth:960, margin:'0 auto', display:'grid', gap:16 }}>
-      <button type="button" onClick={() => navigate(`/patients/${examen.patient}`, { state:{ returnSection:'examens' } })} style={backStyle}>← Retour au dossier patient</button>
+   
       <section style={cardStyle}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:14, paddingBottom:18, borderBottom:'1px solid #e5edf7' }}>
           <div>
@@ -59,6 +73,16 @@ export default function ExamenDetailPage() {
         <div style={resultStyle}>{examen.resultat?.trim() || 'Aucun compte rendu saisi pour le moment.'}</div>
         {examen.observations && <Info label="Consignes de la demande" value={examen.observations} />}
       </section>
+
+      {(canAddMedicalNote || examen.note_medecin) && <section style={cardStyle}>
+        <h3 style={sectionHeading}>Note du médecin prescripteur</h3>
+        {canAddMedicalNote ? <form onSubmit={saveMedicalNote}>
+          <textarea value={noteMedecin} onChange={event => setNoteMedecin(event.target.value)} rows={4} placeholder="Ajouter une précision ou une conclusion clinique au compte rendu…" style={noteInputStyle} />
+          <div style={{ display:'flex', justifyContent:'flex-end', marginTop:12 }}>
+            <button type="submit" disabled={savingNote} style={saveButtonStyle}>{savingNote ? 'Enregistrement…' : 'Ajouter au compte rendu'}</button>
+          </div>
+        </form> : <div style={resultStyle}>{examen.note_medecin}</div>}
+      </section>}
 
       <section style={cardStyle}>
         <h3 style={sectionHeading}>Documents joints</h3>
@@ -88,3 +112,5 @@ const resultStyle = { color:'#0f172a', fontSize:14, lineHeight:1.8, whiteSpace:'
 const documentStyle = { display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, padding:'13px 15px', background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:10, color:'#334155', textDecoration:'none', fontSize:13 };
 const backStyle = { justifySelf:'start', padding:0, border:0, background:'none', color:'#2563eb', cursor:'pointer', fontSize:12.5 };
 const centerStyle = { display:'grid', placeItems:'center', minHeight:260, color:'#64748b' };
+const noteInputStyle = { width:'100%', boxSizing:'border-box', padding:'12px 14px', border:'1px solid #dbe5f2', borderRadius:10, background:'#f8fafc', color:'#0f172a', fontFamily:'var(--font-body)', fontSize:13, lineHeight:1.6, resize:'vertical' };
+const saveButtonStyle = { padding:'10px 16px', border:0, borderRadius:9, background:'#2563eb', color:'#fff', fontSize:12.5, fontWeight:700, cursor:'pointer' };

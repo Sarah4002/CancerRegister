@@ -50,6 +50,8 @@ class ExamenMedicalViewSet(viewsets.ModelViewSet):
         if not is_prescriber and role != examen.service_destinataire:
             raise PermissionDenied("Cet examen ne relève pas de votre service.")
         if is_prescriber:
+            if 'note_medecin' in self.request.data and examen.prescrit_par_id != self.request.user.id:
+                raise PermissionDenied("Seul le médecin prescripteur peut ajouter une note au compte rendu.")
             protected_fields = {'resultat', 'date_realisation', 'fichier_resultat', 'statut'}
             if set(self.request.data.keys()) & protected_fields:
                 raise PermissionDenied("Seul le service chargé de l’examen peut saisir son résultat.")

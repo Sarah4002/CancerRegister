@@ -35,6 +35,7 @@ class ExamenMedical(models.Model):
     statut = models.CharField(max_length=20, choices=StatutChoices.choices, default=StatutChoices.PRESCRIT)
     prescrit_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='examens_prescrits')
     observations = models.TextField(blank=True)
+    note_medecin = models.TextField(blank=True)
     
     date_creation = models.DateTimeField(auto_now_add=True)
     date_mise_a_jour = models.DateTimeField(auto_now=True)
